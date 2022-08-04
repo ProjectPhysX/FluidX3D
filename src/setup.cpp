@@ -833,25 +833,25 @@ void main_setup() { // Star Wars TIE fighter
 #else // BENCHMARK
 #include "info.hpp"
 void main_setup() { // benchmark
-	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	//LBM lbm( 32u,  32u,  32u, 1.0f);
-	//LBM lbm( 48u,  48u,  48u, 1.0f);
-	//LBM lbm( 64u,  64u,  64u, 1.0f);
-	//LBM lbm( 96u,  96u,  96u, 1.0f);
-	//LBM lbm(128u, 128u, 128u, 1.0f);
-	//LBM lbm(192u, 192u, 192u, 1.0f);
-	LBM lbm(256u, 256u, 256u, 1.0f);
-	//LBM lbm(384u, 384u, 384u, 1.0f);
-	//LBM lbm(464u, 464u, 464u, 1.0f);
-	//LBM lbm(480u, 480u, 480u, 1.0f);
-	//LBM lbm(512u, 512u, 512u, 1.0f);
-	// #############################################################################################################################################################################################
 	uint mlups = 0u;
-	for(uint i=0u; i<1000u; i++) {
-		lbm.run(10u);
-		mlups = max(mlups, to_uint((double)lbm.get_N()*1E-6/info.dt_smooth));
-	}
-	lbm.~LBM();
+	{ // ######################################################## define simulation box size, viscosity and volume force ###########################################################################
+		//LBM lbm( 32u,  32u,  32u, 1.0f);
+		//LBM lbm( 48u,  48u,  48u, 1.0f);
+		//LBM lbm( 64u,  64u,  64u, 1.0f);
+		//LBM lbm( 96u,  96u,  96u, 1.0f);
+		//LBM lbm(128u, 128u, 128u, 1.0f);
+		//LBM lbm(192u, 192u, 192u, 1.0f);
+		LBM lbm(256u, 256u, 256u, 1.0f);
+		//LBM lbm(384u, 384u, 384u, 1.0f);
+		//LBM lbm(464u, 464u, 464u, 1.0f);
+		//LBM lbm(480u, 480u, 480u, 1.0f);
+		//LBM lbm(512u, 512u, 512u, 1.0f);
+		// #########################################################################################################################################################################################
+		for(uint i=0u; i<1000u; i++) {
+			lbm.run(10u);
+			mlups = max(mlups, to_uint((double)lbm.get_N()*1E-6/info.dt_smooth));
+		}
+	} // make lbm object go out of scope to free its memory
 	print_info("Peak MLUPs/s = "+to_string(mlups));
 #if defined(_WIN32)
 	wait();
