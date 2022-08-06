@@ -202,7 +202,8 @@ Mesh* read_stl(LBM& lbm, const string& path, const float3& center, const float3x
 	Mesh* mesh = new Mesh(triangle_number, center);
 	mesh->p0[0] = float3(0.0f); // to fix warning C6001
 	for(uint i=0u; i<triangle_number; i++) {
-		const float* triangle_data = (float*)(data+(counter+=50u));
+		const float* triangle_data = (float*)(data+counter);
+		counter += 50u;
 		mesh->p0[i] = rotation*float3(triangle_data[ 3], triangle_data[ 4], triangle_data[ 5]); // read positions of triangle vertices and rotate them
 		mesh->p1[i] = rotation*float3(triangle_data[ 6], triangle_data[ 7], triangle_data[ 8]);
 		mesh->p2[i] = rotation*float3(triangle_data[ 9], triangle_data[10], triangle_data[11]);

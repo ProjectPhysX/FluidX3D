@@ -261,7 +261,7 @@
 	voxelize_stl(lbm, get_exe_path()+"../stl/757.stl", center, rotation, size); // https://www.thingiverse.com/thing:5091064/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
-		lbm.u.y[n] = u;
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	key_4 = true;
@@ -297,7 +297,7 @@
 	voxelize_stl(lbm, get_exe_path()+"../stl/X-wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
-		lbm.u.y[n] = u;
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	key_4 = true;
@@ -342,7 +342,7 @@ void main_setup() { // Star Wars TIE fighter
 	voxelize_mesh(lbm, mesh, TYPE_S);
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
-		lbm.u.y[n] = u;
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	key_4 = true;

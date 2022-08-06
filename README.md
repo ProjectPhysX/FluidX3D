@@ -79,7 +79,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - D3Q7 subgrid for thermal DDFs
   - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092) for thermal DDFs
   - optional [FP16S or FP16C compression](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) for thermal DDFs with [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)
-- Smagorinsky subgrid turbulence model to keep simulations with very large Reynolds number stable
+- Smagorinsky-Lilly subgrid turbulence model to keep simulations with very large Reynolds number stable
 
 
 
@@ -242,7 +242,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 
 <details><summary>What physical model does FluidX3D use?</summary>
 
-- FluidX3D implements the lattice Boltzmann method, a type of direct numerical simulation (DNS), the most accurate type of fluid simulation, but also the most computationally challenging. Optional extension models include volume force (Guo forcing), free surface ([volume-of-fluid](https://doi.org/10.15495/EPub_UBT_00005400) and [PLIC](https://doi.org/10.3390/computation10020021)), a temperature model and Smagorinsky subgrid turbulence model.
+- FluidX3D implements the lattice Boltzmann method, a type of direct numerical simulation (DNS), the most accurate type of fluid simulation, but also the most computationally challenging. Optional extension models include volume force (Guo forcing), free surface ([volume-of-fluid](https://doi.org/10.15495/EPub_UBT_00005400) and [PLIC](https://doi.org/10.3390/computation10020021)), a temperature model and Smagorinsky-Lilly subgrid turbulence model.
 </details>
 
 <details><summary>FluidX3D only uses FP32 or even FP32/FP16, in contrast to FP64. Are simulation results physically accurate?</summary>
