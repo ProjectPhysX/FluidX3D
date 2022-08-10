@@ -539,9 +539,9 @@ bool LBM::Graphics::update_camera() {
 }
 void* LBM::Graphics::draw_frame() {
 	const bool camera_update = update_camera();
-#ifdef WINDOWS_GRAPHICS
+#if defined(WINDOWS_GRAPHICS)||defined(CONSOLE_GRAPHICS)
 	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return (void*)bitmap.data(); // don't render a new frame if the scene hasn't changed since last frame
-#endif // WINDOWS_GRAPHICS
+#endif // WINDOWS_GRAPHICS or CONSOLE_GRAPHICS
 	t_last_frame = lbm->get_t();
 #ifndef UPDATE_FIELDS
 	if(key_2||key_3||key_4) lbm->update_fields(); // only call update_fields() if the time step has changed since the last rendered frame

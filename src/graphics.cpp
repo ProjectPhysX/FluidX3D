@@ -833,7 +833,7 @@ void update_frame(const double frametime) {
 	}
 	show_console_cursor(false);
 	print_video_dither(frame, textwidth, textheight);
-	print(alignr(textwidth, to_string(textwidth)+"x"+to_string(textheight)+" "+alignr(3, to_int(1.0/frametime))+"fps"));
+	print(alignr(textwidth, to_string(textwidth)+"x"+to_string(textheight)+" "+alignr(4, to_int(1.0/frametime))+"fps"));
 	show_console_cursor(true);
 }
 
