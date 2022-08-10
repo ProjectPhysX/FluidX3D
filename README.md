@@ -191,7 +191,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia GeForce GT 630 (OEM)   |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | AMD Radeon Vega 8 Graphics    |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
 | Intel UHD Graphics 630        |               0.46 |           7 |           51 |              151 (45%) |               301 (45%) |               187 (28%) |
-| Intel HD Graphics 5500        |               0.35 |           3 |           26 |              *75 (45%) |               192 (58%) |               108 (32%) |
+| Intel HD Graphics 5500        |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
 | Intel HD Graphics 4600        |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
 | Samsung ARM Mali-G72 MP18     |               0.24 |           4 |           29 |               14 ( 7%) |                17 ( 5%) |                12 ( 3%) |
 | Intel Xeon Phi 7210           |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
