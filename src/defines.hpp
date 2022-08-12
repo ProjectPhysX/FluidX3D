@@ -64,8 +64,9 @@
 #undef SURFACE
 #undef TEMPERATURE
 #undef SUBGRID
-#undef GRAPHICS
 #undef WINDOWS_GRAPHICS
+#undef CONSOLE_GRAPHICS
+#undef GRAPHICS
 #endif // BENCHMARK
 
 #ifdef FORCE_FIELD

@@ -370,6 +370,36 @@ void main_setup() { // Star Wars TIE fighter
 
 
 
+/*void main_setup() { // Star Trek Enterprise-E
+	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
+	const uint L = 528u;
+	const float Re = 100000.0f;
+	const float u = 0.1f;
+	LBM lbm(L, 3u*L, L/2u, units.nu_from_Re(Re, (float)L, u));
+	// #############################################################################################################################################################################################
+	const float size = 2.5f*(float)L;
+	const float3 center = float3(lbm.center().x, 16.0f+0.5f*size, lbm.center().z);
+	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(90.0f));
+	voxelize_stl(lbm, get_exe_path()+"../stl/Enterprise-E.stl", center, rotation, size); // https://www.thingiverse.com/thing:1423364/files
+	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
+		// ########################################################################### define geometry #############################################################################################
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
+		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
+	}	// #########################################################################################################################################################################################
+	key_4 = true;
+	lbm.graphics.set_camera_centered(-60.0f, 20.0f, 0.0f, 2.5f);
+	Clock clock;
+	lbm.run(0u);
+	while(lbm.get_t()<18000u) {
+		lbm.graphics.write_frame_png();
+		lbm.run(30u);
+	}
+	write_file(get_exe_path()+"time.txt", print_time(clock.stop()));
+	//lbm.run();
+} /**/
+
+
+
 /*void main_setup() { // F1 car
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
 	const uint L = 340u;
