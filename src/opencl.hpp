@@ -237,7 +237,7 @@ public:
 	T *s0=nullptr, *s1=nullptr, *s2=nullptr, *s3=nullptr, *s4=nullptr, *s5=nullptr, *s6=nullptr, *s7=nullptr, *s8=nullptr, *s9=nullptr, *sA=nullptr, *sB=nullptr, *sC=nullptr, *sD=nullptr, *sE=nullptr, *sF=nullptr;
 	inline Memory(Device& device, const ulong N, const uint dimensions=1u, const bool allocate_host=true, const bool allocate_device=true, const T value=(T)0) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
-		else if(N*(ulong)d==0ull) print_error("Memory size must be larger than 0.");
+		if(N*(ulong)dimensions==0ull) print_error("Memory size must be larger than 0.");
 		this->N = N;
 		this->d = dimensions;
 		allocate_device_buffer(device, allocate_device);
@@ -251,7 +251,7 @@ public:
 	}
 	inline Memory(Device& device, const ulong N, const uint dimensions, T* const host_buffer, const bool allocate_device=true) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
-		else if(N*(ulong)d==0ull) print_error("Memory size must be larger than 0.");
+		if(N*(ulong)dimensions==0ull) print_error("Memory size must be larger than 0.");
 		this->N = N;
 		this->d = dimensions;
 		allocate_device_buffer(device, allocate_device);

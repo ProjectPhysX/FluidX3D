@@ -1982,10 +1982,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 			p1 += (dt/ul)*un; // integrate forward in time
 			if(def_scale_u*ul<0.1f||p1.x<-0.5f*def_Nx||p1.x>0.5f*def_Nx||p1.y<-0.5f*def_Ny||p1.y>0.5f*def_Ny||p1.z<-0.5f*def_Nz||p1.z>0.5f*def_Nz) break;
 )+"#ifndef GRAPHICS_TEMPERATURE"+R(
-			draw_line(p0, p1, iron_color(255.0f*def_scale_u*ul), camera_cache, bitmap, zbuffer);
+			const uint c = iron_color(255.0f*def_scale_u*ul);
 )+"#else"+R( // GRAPHICS_TEMPERATURE
-			draw_line(p0, p1, iron_color(180.0f+250.0f*(T[n]-def_T_avg)), camera_cache, bitmap, zbuffer);
+			const uint c = iron_color(180.0f+250.0f*(T[n]-def_T_avg));
 )+"#endif"+R( // GRAPHICS_TEMPERATURE
+			draw_line(p0, p1, c, camera_cache, bitmap, zbuffer);
 		}
 	}
 }

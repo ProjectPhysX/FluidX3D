@@ -6,18 +6,13 @@
 Units units; // for unit conversion
 
 LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta) { // compiles OpenCL C code and allocates memory
-	this->Nx = Nx;
-	this->Ny = Ny;
-	this->Nz = Nz;
+	this->Nx = Nx; this->Ny = Ny; this->Nz = Nz;
 	this->nu = nu;
-	this->fx = fx;
-	this->fy = fy;
-	this->fz = fz;
+	this->fx = fx; this->fy = fy; this->fz = fz;
 	this->sigma = sigma;
 	this->alpha = alpha;
 	this->beta = beta;
 	sanity_checks_constructor();
-
 	string opencl_c_code;
 #ifdef GRAPHICS
 	graphics = Graphics(this);
