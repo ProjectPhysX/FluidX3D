@@ -177,6 +177,9 @@ public:
 		this->exists = true;
 	}
 	inline Device() {} // default constructor
+	inline void finish_queue() {
+		cl_queue.finish();
+	}
 	inline cl::Context get_cl_context() const {
 		return cl_context;
 	}
@@ -197,6 +200,7 @@ private:
 	uint d = 1u; // buffer dimensions
 	bool host_buffer_exists = false;
 	bool device_buffer_exists = false;
+	bool external_host_buffer = false;
 	T* host_buffer = nullptr; // host buffer
 	cl::Buffer device_buffer; // device buffer
 	Device* device = nullptr; // pointer to linked Device
@@ -258,6 +262,7 @@ public:
 		this->host_buffer = host_buffer;
 		initialize_auxiliary_pointers();
 		host_buffer_exists = true;
+		external_host_buffer = true;
 		write_to_device();
 	}
 	inline Memory() {} // default constructor
@@ -307,7 +312,7 @@ public:
 	}
 	inline void delete_host_buffer() {
 		host_buffer_exists = false;
-		delete[] host_buffer;
+		if(!external_host_buffer) delete[] host_buffer;
 		if(!device_buffer_exists) {
 			N = 0ull;
 			d = 1u;
@@ -460,7 +465,13 @@ public:
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void finish() {
+	inline void enqueue_read_from_device() {
+		read_from_device(false);
+	}
+	inline void enqueue_write_to_device() {
+		write_to_device(false);
+	}
+	inline void finish_queue() {
 		cl_queue.finish();
 	}
 	inline const cl::Buffer& get_cl_buffer() const {
@@ -518,11 +529,19 @@ public:
 		link_parameters(starting_position, parameters...); // expand variadic template to link kernel parameters
 		return *this;
 	}
-	inline Kernel& run(const uint t=1u) {
+	inline Kernel& enqueue_run(const uint t=1u) {
 		for(uint i=0u; i<t; i++) {
 			cl_queue.enqueueNDRangeKernel(cl_kernel, cl::NullRange, cl_range_global, cl_range_local);
 		}
+		return *this;
+	}
+	inline Kernel& finish_queue() {
 		cl_queue.finish();
+		return *this;
+	}
+	inline Kernel& run(const uint t=1u) {
+		enqueue_run(t);
+		finish_queue();
 		return *this;
 	}
 	inline Kernel& operator()(const uint t=1u) {

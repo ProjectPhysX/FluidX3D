@@ -387,7 +387,7 @@ string LBM::device_defines() const { return
 	"\n	#define def_Nx "+to_string(Nx)+"u"
 	"\n	#define def_Ny "+to_string(Ny)+"u"
 	"\n	#define def_Nz "+to_string(Nz)+"u"
-	"\n	#define def_N " +to_string(get_N())+"u"
+	"\n	#define def_N " +to_string(get_N())+"ul"
 
 	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // D2Q9/D3Q15/D3Q19/D3Q27
 	"\n	#define def_c 0.57735027f" // lattice speed of sound c = 1/sqrt(3)*dt

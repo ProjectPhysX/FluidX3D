@@ -40,16 +40,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 }
 //bool workgroup_any(const bool condition) { // returns true if any thread within the workgroup enters true
-//	volatile local uint workgroup_condition;
-//	workgroup_condition = 0u; // does not work on AMD GPUs
+//	volatile local uint workgroup_condition; // does not work on AMD GPUs (error: non-kernel function variable cannot be declared in local address space)
+//	workgroup_condition = 0u;
 //	barrier(CLK_LOCAL_MEM_FENCE);
 //	atomic_or(&workgroup_condition, (uint)condition);
 //	barrier(CLK_LOCAL_MEM_FENCE);
 //	return (bool)workgroup_condition;
 //}
 //bool workgroup_all(const bool condition) { // returns true if all threads within the workgroup enter true
-//	volatile local uint workgroup_condition;
-//	workgroup_condition = 1u; // does not work on AMD GPUs
+//	volatile local uint workgroup_condition; // does not work on AMD GPUs (error: non-kernel function variable cannot be declared in local address space)
+//	workgroup_condition = 1u;
 //	barrier(CLK_LOCAL_MEM_FENCE);
 //	atomic_and(&workgroup_condition, (uint)condition);
 //	barrier(CLK_LOCAL_MEM_FENCE);
@@ -821,7 +821,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 
 )+R(ulong index_f(const uint n, const uint i) { // 64-bit indexing (maximum 2^32 lattice points (1624^3 lattice resolution, 225GB)
-	return (ulong)i*(ulong)def_N+(ulong)n; // SoA (229% faster on GPU)
+	return (ulong)i*def_N+(ulong)n; // SoA (229% faster on GPU)
 }
 )+R(float c(const uint i) { // avoid constant keyword by encapsulating data in function which gets inlined by compiler
 	const float c[3u*def_velocity_set] = {
@@ -1019,8 +1019,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	uint ji; // reads velocities of only neighboring boundary nodes, which do not change during simulation
 	for(uint i=1u; i<def_velocity_set; i+=2u) { // loop is entirely unrolled by compiler, no unnecessary memory access is happening
 		const float w6 = -6.0f*w(i); // w(i) = w(i+1) if i is odd
-		ji = j[i+1u]; fhn[i   ] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i+1u)*u[ji]+c(def_velocity_set+i+1u)*u[(ulong)def_N+(ulong)ji]+c(2u*def_velocity_set+i+1u)*u[2ul*(ulong)def_N+(ulong)ji], fhn[i   ]) : fhn[i   ]; // boundary : regular
-		ji = j[i   ]; fhn[i+1u] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i   )*u[ji]+c(def_velocity_set+i   )*u[(ulong)def_N+(ulong)ji]+c(2u*def_velocity_set+i   )*u[2ul*(ulong)def_N+(ulong)ji], fhn[i+1u]) : fhn[i+1u];
+		ji = j[i+1u]; fhn[i   ] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i+1u)*u[ji]+c(def_velocity_set+i+1u)*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i+1u)*u[2ul*def_N+(ulong)ji], fhn[i   ]) : fhn[i   ]; // boundary : regular
+		ji = j[i   ]; fhn[i+1u] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i   )*u[ji]+c(def_velocity_set+i   )*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i   )*u[2ul*def_N+(ulong)ji], fhn[i+1u]) : fhn[i+1u];
 	}
 } // apply_moving_boundaries()
 )+"#endif"+R( // MOVING_BOUNDARIES
@@ -1034,10 +1034,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const uchar flagsji_sus = flags[j[i]]&(TYPE_SU|TYPE_S); // extract SURFACE flags
 		if(flagsji_sus==TYPE_F||flagsji_sus==TYPE_I||flagsji_sus==TYPE_IF) { // fluid or interface or (interface->fluid) neighbor
 			counter += 1.0f;
-			rhot += rho[                      j[i]];
-			uxt  += u[                        j[i]];
-			uyt  += u[    (ulong)def_N+(ulong)j[i]];
-			uzt  += u[2ul*(ulong)def_N+(ulong)j[i]];
+			rhot += rho[               j[i]];
+			uxt  += u[                 j[i]];
+			uyt  += u[    def_N+(ulong)j[i]];
+			uzt  += u[2ul*def_N+(ulong)j[i]];
 		}
 	}
 	*rhon = counter>0.0f ? rhot/counter : 1.0f;
@@ -1053,10 +1053,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const uchar flagsji_su = flags[j[i]]&TYPE_SU;
 		if(flagsji_su==TYPE_F) { // fluid neighbor
 			counter += 1.0f;
-			rhot += rho[                      j[i]];
-			uxt  += u[                        j[i]];
-			uyt  += u[    (ulong)def_N+(ulong)j[i]];
-			uzt  += u[2ul*(ulong)def_N+(ulong)j[i]];
+			rhot += rho[               j[i]];
+			uxt  += u[                 j[i]];
+			uyt  += u[    def_N+(ulong)j[i]];
+			uzt  += u[2ul*def_N+(ulong)j[i]];
 		}
 	}
 	*rhon = counter>0.0f ? rhot/counter : 1.0f;
@@ -1287,27 +1287,27 @@ string opencl_c_container() { return R( // ########################## begin of O
 		bool TYPE_ONLY_S = true; // has only solid neighbors
 		for(uint i=1u; i<def_velocity_set; i++) TYPE_ONLY_S = TYPE_ONLY_S&&(flagsj[i]&TYPE_BO)==TYPE_S;
 		if(TYPE_ONLY_S) {
-			u[                        n] = 0.0f; // reset velocity for solid lattice points with only boundary neighbors
-			u[    (ulong)def_N+(ulong)n] = 0.0f;
-			u[2ul*(ulong)def_N+(ulong)n] = 0.0f;
+			u[                 n] = 0.0f; // reset velocity for solid lattice points with only boundary neighbors
+			u[    def_N+(ulong)n] = 0.0f;
+			u[2ul*def_N+(ulong)n] = 0.0f;
 		}
 )+"#ifndef MOVING_BOUNDARIES"+R(
 		if(flagsn_bo==TYPE_S) {
-			u[                        n] = 0.0f; // reset velocity for all solid lattice points
-			u[    (ulong)def_N+(ulong)n] = 0.0f;
-			u[2ul*(ulong)def_N+(ulong)n] = 0.0f;
+			u[                 n] = 0.0f; // reset velocity for all solid lattice points
+			u[    def_N+(ulong)n] = 0.0f;
+			u[2ul*def_N+(ulong)n] = 0.0f;
 		}
 )+"#else"+R( // MOVING_BOUNDARIES
 	} else if(flagsn_bo!=TYPE_E) { // local lattice point is not solid and not equilibrium boundary
 		bool next_to_moving_boundary = false;
 		for(uint i=1u; i<def_velocity_set; i++) {
-			next_to_moving_boundary = next_to_moving_boundary||((flagsj[i]&TYPE_BO)==TYPE_S&&(u[j[i]]!=0.0f||u[(ulong)def_N+(ulong)j[i]]!=0.0f||u[2ul*(ulong)def_N+(ulong)j[i]]!=0.0f));
+			next_to_moving_boundary = next_to_moving_boundary||((flagsj[i]&TYPE_BO)==TYPE_S&&(u[j[i]]!=0.0f||u[def_N+(ulong)j[i]]!=0.0f||u[2ul*def_N+(ulong)j[i]]!=0.0f));
 		}
 		flags[n] = flagsn = next_to_moving_boundary ? flagsn|TYPE_MS : flagsn&~TYPE_MS; // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
 )+"#endif"+R( // MOVING_BOUNDARIES
 	}
 	float feq[def_velocity_set]; // f_equilibrium
-	calculate_f_eq(rho[n], u[n], u[(ulong)def_N+(ulong)n], u[2ul*(ulong)def_N+(ulong)n], feq);
+	calculate_f_eq(rho[n], u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n], feq);
 )+"#ifdef SURFACE"+R( // automatically generate the interface layer between fluid and gas
 	{ // separate block to avoid variable name conflicts
 		float phin = phi[n];
@@ -1324,9 +1324,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 			}
 		}
 		if((flagsn&TYPE_SU)==TYPE_G) { // node with updated flags is still gas
-			u[                        n] = 0.0f; // reset velocity for gas nodes
-			u[    (ulong)def_N+(ulong)n] = 0.0f;
-			u[2ul*(ulong)def_N+(ulong)n] = 0.0f;
+			u[                 n] = 0.0f; // reset velocity for gas nodes
+			u[    def_N+(ulong)n] = 0.0f;
+			u[2ul*def_N+(ulong)n] = 0.0f;
 			phin = 0.0f;
 		} else if((flagsn&TYPE_SU)==TYPE_I && (phin<0.0f||phin>1.0f)) {
 			phin = 0.5f; // node should be interface, but phi was invalid
@@ -1342,7 +1342,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef TEMPERATURE"+R(
 	{ // separate block to avoid variable name conflicts
 		float geq[7];
-		calculate_g_eq(T[n], u[n], u[(ulong)def_N+(ulong)n], u[2ul*(ulong)def_N+(ulong)n], geq);
+		calculate_g_eq(T[n], u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n], geq);
 		uint j7[7]; // neighbors of D3Q7 subset
 		neighbors_D3Q7(n, j7);
 		store_g(n, geq, gi, j7, 1ul);
@@ -1363,7 +1363,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(flagsn_bo!=TYPE_S&&flagsn_bo!=TYPE_E&&!(flagsn&TYPE_T)) { // local lattice point is not solid and not equilibrium boundary and not temperature boundary
 		bool next_to_moving_boundary = false;
 		for(uint i=1u; i<def_velocity_set; i++) {
-			next_to_moving_boundary = next_to_moving_boundary||((u[j[i]]!=0.0f||u[(ulong)def_N+(ulong)j[i]]!=0.0f||u[2ul*(ulong)def_N+(ulong)j[i]]!=0.0f)&&(flagsj[i]&TYPE_BO)==TYPE_S);
+			next_to_moving_boundary = next_to_moving_boundary||((u[j[i]]!=0.0f||u[def_N+(ulong)j[i]]!=0.0f||u[2ul*def_N+(ulong)j[i]]!=0.0f)&&(flagsj[i]&TYPE_BO)==TYPE_S);
 		}
 		flags[n] = next_to_moving_boundary ? flagsn|TYPE_MS : flagsn&~TYPE_MS; // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
 	}
@@ -1403,10 +1403,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	calculate_rho_u(fhn, &rhon, &uxn, &uyn, &uzn); // calculate density and velocity fields from fi
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
 	if(flagsn_bo==TYPE_E) {
-		rhon = rho[                      n]; // apply preset velocity/density
-		uxn  = u[                        n];
-		uyn  = u[    (ulong)def_N+(ulong)n];
-		uzn  = u[2ul*(ulong)def_N+(ulong)n];
+		rhon = rho[               n]; // apply preset velocity/density
+		uxn  = u[                 n];
+		uyn  = u[    def_N+(ulong)n];
+		uzn  = u[2ul*def_N+(ulong)n];
 	} else {
 		calculate_rho_u(fhn, &rhon, &uxn, &uyn, &uzn); // calculate density and velocity fields from fi
 	}
@@ -1416,9 +1416,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef FORCE_FIELD"+R(
 	{ // separate block to avoid variable name conflicts
-		fxn += F[                        n]; // apply force field
-		fyn += F[    (ulong)def_N+(ulong)n];
-		fzn += F[2ul*(ulong)def_N+(ulong)n];
+		fxn += F[                 n]; // apply force field
+		fyn += F[    def_N+(ulong)n];
+		fzn += F[2ul*def_N+(ulong)n];
 	}
 )+"#endif"+R( // FORCE_FIELD
 
@@ -1484,18 +1484,18 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifndef EQUILIBRIUM_BOUNDARIES"+R(
 )+"#ifdef UPDATE_FIELDS"+R(
-	rho[                      n] = rhon; // update density field
-	u[                        n] = uxn; // update velocity field
-	u[    (ulong)def_N+(ulong)n] = uyn;
-	u[2ul*(ulong)def_N+(ulong)n] = uzn;
+	rho[               n] = rhon; // update density field
+	u[                 n] = uxn; // update velocity field
+	u[    def_N+(ulong)n] = uyn;
+	u[2ul*def_N+(ulong)n] = uzn;
 )+"#endif"+R( // UPDATE_FIELDS
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
 )+"#ifdef UPDATE_FIELDS"+R(
 	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E nodes
-		rho[                      n] = rhon; // update density field
-		u[                        n] = uxn; // update velocity field
-		u[    (ulong)def_N+(ulong)n] = uyn;
-		u[2ul*(ulong)def_N+(ulong)n] = uzn;
+		rho[               n] = rhon; // update density field
+		u[                 n] = uxn; // update velocity field
+		u[    def_N+(ulong)n] = uyn;
+		u[2ul*def_N+(ulong)n] = uzn;
 	}
 )+"#endif"+R( // UPDATE_FIELDS
 )+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
@@ -1592,10 +1592,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 		calculate_rho_u(fon, &rhon, &uxn, &uyn, &uzn); // calculate density and velocity fields from fon (not fhn)
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
 		if(flagsn_bo==TYPE_E) {
-			rhon = rho[                      n]; // apply preset velocity/density
-			uxn  = u[                        n];
-			uyn  = u[    (ulong)def_N+(ulong)n];
-			uzn  = u[2ul*(ulong)def_N+(ulong)n];
+			rhon = rho[               n]; // apply preset velocity/density
+			uxn  = u[                 n];
+			uyn  = u[    def_N+(ulong)n];
+			uzn  = u[2ul*def_N+(ulong)n];
 		} else {
 			calculate_rho_u(fon, &rhon, &uxn, &uyn, &uzn); // calculate density and velocity fields from fon (not fhn)
 		}
@@ -1743,9 +1743,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef FORCE_FIELD"+R(
 	{ // separate block to avoid variable name conflicts
-		fxn += F[                        n]; // apply force field
-		fyn += F[    (ulong)def_N+(ulong)n];
-		fzn += F[2ul*(ulong)def_N+(ulong)n];
+		fxn += F[                 n]; // apply force field
+		fyn += F[    def_N+(ulong)n];
+		fzn += F[2ul*def_N+(ulong)n];
 	}
 )+"#endif"+R( // FORCE_FIELD
 
@@ -1784,16 +1784,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 
 )+"#ifndef EQUILIBRIUM_BOUNDARIES"+R(
-	rho[                      n] = rhon; // update density field
-	u[                        n] = uxn; // update velocity field
-	u[    (ulong)def_N+(ulong)n] = uyn;
-	u[2ul*(ulong)def_N+(ulong)n] = uzn;
+	rho[               n] = rhon; // update density field
+	u[                 n] = uxn; // update velocity field
+	u[    def_N+(ulong)n] = uyn;
+	u[2ul*def_N+(ulong)n] = uzn;
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
 	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E nodes
-		rho[                      n] = rhon; // update density field
-		u[                        n] = uxn; // update velocity field
-		u[    (ulong)def_N+(ulong)n] = uyn;
-		u[2ul*(ulong)def_N+(ulong)n] = uzn;
+		rho[               n] = rhon; // update density field
+		u[                 n] = uxn; // update velocity field
+		u[    def_N+(ulong)n] = uyn;
+		u[2ul*def_N+(ulong)n] = uzn;
 	}
 )+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
 } // update_fields()
@@ -1808,16 +1808,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
 	float Fb=1.0f, fx=0.0f, fy=0.0f, fz=0.0f;
 	calculate_rho_u(fhn, &Fb, &fx, &fy, &fz); // abuse calculate_rho_u() method for calculating force
-	F[                        n] = 2.0f*fx*Fb; // 2 times because fi are reflected on solid boundary nodes (bounced-back)
-	F[    (ulong)def_N+(ulong)n] = 2.0f*fy*Fb;
-	F[2ul*(ulong)def_N+(ulong)n] = 2.0f*fz*Fb;
+	F[                 n] = 2.0f*fx*Fb; // 2 times because fi are reflected on solid boundary nodes (bounced-back)
+	F[    def_N+(ulong)n] = 2.0f*fy*Fb;
+	F[2ul*def_N+(ulong)n] = 2.0f*fz*Fb;
 } // calculate_force_on_boundaries()
 )+"#endif"+R( // FORCE_FIELD
 
 
 
 )+R(float3 load_u(const uint n, const global float* u) {
-	return (float3)(u[n], u[(ulong)def_N+(ulong)n], u[2ul*(ulong)def_N+(ulong)n]);
+	return (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]);
 }
 )+R(float3 closest_u(const float3 p, const global float* u) { // return velocity of closest lattice point to point p
 	const uint x = (uint)(p.x+1.5f*(float)def_Nx)%def_Nx;
@@ -1926,7 +1926,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(!(not_xp||not_ym)) draw_line(p5, p6, c, camera_cache, bitmap, zbuffer);
 )+"#ifdef FORCE_FIELD"+R(
 	if(flagsn_bo==TYPE_S) {
-		const float3 Fn = def_scale_F*(float3)(F[n], F[(ulong)def_N+(ulong)n], F[2ul*(ulong)def_N+(ulong)n]);
+		const float3 Fn = def_scale_F*(float3)(F[n], F[def_N+(ulong)n], F[2ul*def_N+(ulong)n]);
 		const float Fnl = length(Fn);
 		if(Fnl>0.0f) {
 			const uint c = iron_color(255.0f*Fnl); // color boundaries depending on the force on them
@@ -1959,7 +1959,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(kernel void graphics_streamline(const global uchar* flags, const global float* u, const global float* camera, global uint* bitmap, global int* zbuffer, const global float* T) {
 )+"#endif"+R( // GRAPHICS_TEMPERATURE
 	const uint n = get_global_id(0);
-	if(n>=def_N/cb(def_streamline_sparse)) return;
+	if(n>=(uint)def_N/cb(def_streamline_sparse)) return;
 	const uint z = n/((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)); // disassemble 1D index to 3D coordinates
 	const uint t = n%((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse));
 	const uint y = t/(def_Nx/def_streamline_sparse);
