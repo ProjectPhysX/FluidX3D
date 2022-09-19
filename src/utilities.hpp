@@ -60,9 +60,9 @@ private:
 	typedef std::chrono::high_resolution_clock clock;
 	std::chrono::time_point<clock> t;
 public:
-	Clock() { start(); }
-	void start() { t = clock::now(); }
-	double stop() const { return std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()-t).count(); }
+	inline Clock() { start(); }
+	inline void start() { t = clock::now(); }
+	inline double stop() const { return std::chrono::duration_cast<std::chrono::duration<double>>(clock::now()-t).count(); }
 };
 inline void sleep(const double t) {
 	if(t>0.0) std::this_thread::sleep_for(std::chrono::milliseconds((int)(1E3*t+0.5)));
@@ -3010,10 +3010,10 @@ inline uint hsv_to_rgb(const float3& hsv) {
 #include <Windows.h> // for displaying colors and getting console size
 #undef min
 #undef max
-#elif defined(__linux__)
+#elif defined(__linux__)||defined(__APPLE__)
 #include <sys/ioctl.h> // for getting console size
 #include <unistd.h> // for getting path of executable
-#else // Windows/Linux
+#else // Linux
 #undef UTILITIES_CONSOLE_COLOR
 #endif // Windows/Linux
 #endif // UTILITIES_CONSOLE_COLOR
@@ -3042,7 +3042,7 @@ inline string get_exe_path() { // returns path where executable is located, ends
 	std::wstring ws(wc);
 	transform(ws.begin(), ws.end(), back_inserter(path), [](wchar_t c) { return (char)c; });
 	path = replace(path, "\\", "/");
-#elif defined(__linux__)
+#else // Linux
 	char c[260];
 	int length = (int)readlink("/proc/self/exe", c, 260);
 	path = string(c, length>0 ? length : 0);
@@ -3056,7 +3056,7 @@ inline void get_console_size(uint& width, uint& height) {
 	GetConsoleScreenBufferInfo(handle, &csbi);
 	width = (uint)(csbi.srWindow.Right-csbi.srWindow.Left+1); // (uint)(csbi.dwSize.X); gives size of screen buffer
 	height = (uint)(csbi.srWindow.Bottom-csbi.srWindow.Top+1); // (uint)(csbi.dwSize.Y); gives size of screen buffer
-#elif defined(__linux__)
+#else // Linux
 	struct winsize w;
 	ioctl(fileno(stdout), TIOCGWINSZ, &w);
 	width = (uint)(w.ws_col);
@@ -3070,7 +3070,7 @@ inline void get_console_font_size(uint& width, uint& height) {
 	GetCurrentConsoleFont(handle, false, &cfi);
 	width = (uint)(cfi.dwFontSize.X);
 	height = (uint)(cfi.dwFontSize.Y);
-#elif defined(__linux__)
+#else // Linux
 	//struct winsize w;
 	//ioctl(fileno(stdout), TIOCGWINSZ, &w);
 	width = 8u;//(uint)(w.ws_xpixel/w.ws_col);
@@ -3081,7 +3081,7 @@ inline void set_console_cursor(const uint x, const uint y) {
 #if defined(_WIN32)
 	static const HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCursorPosition(handle, {(short)x, (short)y});
-#elif defined(__linux__)
+#else // Linux
 	std::cout << "\033["+to_string(y+1u)+";"+to_string(x+1u)+"f";
 #endif // Windows/Linux
 }
@@ -3092,7 +3092,7 @@ inline void show_console_cursor(const bool show) {
 	GetConsoleCursorInfo(handle, &cci);
 	cci.bVisible = show; // show/hide cursor
 	SetConsoleCursorInfo(handle, &cci);
-#elif defined(__linux__)
+#else // Linux
 	std::cout << (show ? "\033[?25h" : "\033[?25l"); // show/hide cursor
 #endif // Windows/Linux
 }
@@ -3108,7 +3108,7 @@ inline void clear_console() {
 	FillConsoleOutputCharacter(handle, TEXT(' '), length, topLeft, &written); // flood-fill the console with spaces to clear it
 	FillConsoleOutputAttribute(handle, csbi.wAttributes, length, topLeft, &written); // reset attributes of every character to default, this clears all background colour formatting
 	SetConsoleCursorPosition(handle, topLeft); // move the cursor back to the top left for the next sequence of writes
-#elif defined(__linux__)
+#else // Linux
 	std::cout << "\033[2J";
 #endif // Windows/Linux
 }
@@ -3226,7 +3226,7 @@ inline void print_color(const int textcolor) {
 #if defined(_WIN32)
 	static const HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(handle, textcolor);
-#elif defined(__linux__)
+#else // Linux
 	std::cout << get_print_color(textcolor);
 #endif // Windows/Linux
 }
@@ -3234,7 +3234,7 @@ inline void print_color(const int textcolor, const int backgroundcolor) {
 #if defined(_WIN32)
 	static const HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(handle, backgroundcolor<<4|textcolor);
-#elif defined(__linux__)
+#else // Linux
 	std::cout << get_print_color(textcolor, backgroundcolor);
 #endif // Windows/Linux
 }
@@ -3242,7 +3242,7 @@ inline void print_color_reset() {
 #if defined(_WIN32)
 	static const HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(handle, 7); // reset color
-#elif defined(__linux__)
+#else // Linux
 	std::cout << "\033[0m"; // reset color
 #endif // Windows/Linux
 }
@@ -3299,7 +3299,7 @@ inline void print_image(const Image* image, const uint textwidth=0u, const uint 
 		print(segment, ltc, lbc); // print last segment, then reset color
 		println();
 	}
-#elif defined(__linux__)
+#else // Linux
 	const string s = "\u2580"; // trick to double vertical resolution: use graphic character
 	string r = ""; // append color changes to a string, print string in the end (much faster)
 	for(uint y=0u; y<newheight-1u; y+=2u) {
@@ -3338,7 +3338,7 @@ inline void print_image_bw(const Image* image, const uint textwidth=0u, const ui
 	const string ww = string("")+(char)219; // trick to double vertical resolution: use graphic characters
 	const string bw = string("")+(char)220;
 	const string wb = string("")+(char)223;
-#elif defined(__linux__)
+#else // Linux
 	const string ww = "\u2588"; // trick to double vertical resolution: use graphic characters
 	const string bw = "\u2584";
 	const string wb = "\u2580";
@@ -3418,7 +3418,7 @@ inline void print_image_dither(const Image* image, const uint textwidth=0u, cons
 		print(segment, ltc, lbc); // print last segment, then reset color
 		println();
 	}
-#elif defined(__linux__)
+#else // Linux
 	const string s[3] = { "\u2591", "\u2592", "\u2593" };
 	string r = ""; // append color changes to a string, print string in the end (much faster)
 	for(uint y=0u; y<newheight; y++) {
@@ -3507,7 +3507,7 @@ inline void print_video_dither(const Image* image, const uint textwidth=0u, cons
 			ly = y;
 		}
 		print(segment, ltc, lbc); // print last segment, then reset color
-#elif defined(__linux__)
+#else // Linux
 		const string s[3] = { "\u2591", "\u2592", "\u2593" };
 		string r = ""; // append color changes to a string, print string in the end (much faster)
 		uint lx=max_uint, ly=max_uint;
@@ -3570,7 +3570,7 @@ inline Image* screenshot(Image* image=nullptr) {
 inline void print_color_test() {
 #ifdef _WIN32
 	const string s = string("")+(char)223; // trick to double vertical resolution: use graphic character
-#elif defined(__linux__)
+#else // Linux
 	const string s = "\u2580"; // trick to double vertical resolution: use graphic character
 #endif // Windows/Linux
 	print(s, color_magenta   , color_black     );
@@ -3646,7 +3646,7 @@ inline int key_press() { // not working: F11 (-122, toggles fullscreen)
 		}
 	}
 }
-#elif defined(__linux__)
+#else // Linux
 #include <termios.h>
 inline int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-20), windows key (-91), kontext menu key (-93)
 	struct termios term;

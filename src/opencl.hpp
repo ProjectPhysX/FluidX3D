@@ -57,8 +57,9 @@ struct Device_Info {
 		const float nvidia = (float)(contains(to_lower(vendor), "nvidia"))*(nvidia_192_cores_per_cu?192.0f:(nvidia_64_cores_per_cu?64.0f:128.0f)); // Nvidia GPUs have 192 cores/CU (Kepler), 128 cores/CU (Maxwell, Pascal, Ampere) or 64 cores/CU (P100, Volta, Turing, A100)
 		const float amd = (float)(contains_any(to_lower(vendor), {"amd", "advanced"}))*(is_gpu?(amd_128_cores_per_dualcu?128.0f:64.0f):0.5f); // AMD GPUs have 64 cores/CU (GCN, CDNA) or 128 cores/dualCU (RDNA, RDNA2), AMD CPUs (with SMT) have 1/2 core/CU
 		const float intel = (float)(contains(to_lower(vendor), "intel"))*(is_gpu?8.0f:0.5f); // Intel integrated GPUs usually have 8 cores/CU, Intel CPUs (with HT) have 1/2 core/CU
+		const float apple = (float)(contains(to_lower(vendor), "apple"))*(128.0f); // Apple ARM GPUs usually have 128 cores/CU
 		const float arm = (float)(contains(to_lower(vendor), "arm"))*(is_gpu?8.0f:1.0f); // ARM GPUs usually have 8 cores/CU, ARM CPUs have 1 core/CU
-		cores = to_uint((float)compute_units*(nvidia+amd+intel+arm)); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
+		cores = to_uint((float)compute_units*(nvidia+amd+intel+apple+arm)); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 		tflops = 1E-6f*(float)cores*(float)ipc*(float)clock_frequency; // estimated device floating point performance in TeraFLOPs/s
 	}
 	inline Device_Info() {}; // default constructor
@@ -77,7 +78,7 @@ inline void print_device_info(const Device_Info& d, const int id=-1) { // print 
 	println("| Buffer Limits  | "+alignl(58, to_string(d.max_global_buffer)+" MB global, "+to_string(d.max_constant_buffer)+" KB constant")+" |");
 	println("|----------------'------------------------------------------------------------|");
 }
-inline vector<Device_Info> get_devices() { // returns a vector of all available OpenCL devices
+inline vector<Device_Info> get_devices(const bool print_info=true) { // returns a vector of all available OpenCL devices
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
 	cl::Platform::get(&cl_platforms);
@@ -91,14 +92,14 @@ inline vector<Device_Info> get_devices() { // returns a vector of all available 
 	if((uint)cl_platforms.size()==0u||(uint)devices.size()==0u) {
 		print_error("There are no OpenCL devices available. Make sure that the OpenCL 1.2 Runtime for your device is installed. For GPUs it comes by default with the graphics driver, for CPUs it has to be installed separately.");
 	}
-	println("\r|----------------.------------------------------------------------------------|");
-	for(uint i=0u; i<(uint)devices.size(); i++) {
-		println("| Device ID "+alignr(4u, i)+" | "+alignl(58u, devices[i].name)+" |");
+	if(print_info) {
+		println("\r|----------------.------------------------------------------------------------|");
+		for(uint i=0u; i<(uint)devices.size(); i++) println("| Device ID "+alignr(4u, i)+" | "+alignl(58u, devices[i].name)+" |");
+		println("|----------------'------------------------------------------------------------|");
 	}
-	println("|----------------'------------------------------------------------------------|");
 	return devices;
 }
-inline Device_Info select_device_with_most_flops(const vector<Device_Info>& devices=get_devices()) { // returns device with best floating-point performance
+inline Device_Info select_device_with_most_flops(const vector<Device_Info>& devices=get_devices(), const bool print_info=true) { // returns device with best floating-point performance
 	float best_value = 0.0f;
 	uint best_i = 0u;
 	for(uint i=0u; i<(uint)devices.size(); i++) { // find device with highest (estimated) floating point performance
@@ -107,10 +108,10 @@ inline Device_Info select_device_with_most_flops(const vector<Device_Info>& devi
 			best_i = i;
 		}
 	}
-	print_device_info(devices[best_i], best_i);
+	if(print_info) print_device_info(devices[best_i], best_i);
 	return devices[best_i];
 }
-inline Device_Info select_device_with_most_memory(const vector<Device_Info>& devices=get_devices()) { // returns device with largest memory capacity
+inline Device_Info select_device_with_most_memory(const vector<Device_Info>& devices=get_devices(), const bool print_info=true) { // returns device with largest memory capacity
 	uint best_value = 0u;
 	uint best_i = 0u;
 	for(uint i=0u; i<(uint)devices.size(); i++) { // find device with most memory
@@ -119,12 +120,12 @@ inline Device_Info select_device_with_most_memory(const vector<Device_Info>& dev
 			best_i = i;
 		}
 	}
-	print_device_info(devices[best_i], best_i);
+	if(print_info) print_device_info(devices[best_i], best_i);
 	return devices[best_i];
 }
-inline Device_Info select_device_with_id(const uint id, const vector<Device_Info>& devices=get_devices()) { // returns device with specified ID
+inline Device_Info select_device_with_id(const uint id, const vector<Device_Info>& devices=get_devices(), const bool print_info=true) { // returns device with specified ID
 	if(id<(uint)devices.size()) {
-		print_device_info(devices[id], id);
+		if(print_info) print_device_info(devices[id], id);
 		return devices[id];
 	} else {
 		print_error("Your selected Device ID ("+to_string(id)+") is wrong.");
@@ -470,6 +471,12 @@ public:
 	}
 	inline void enqueue_write_to_device() {
 		write_to_device(false);
+	}
+	inline void enqueue_read_from_device(const ulong offset, const ulong length) {
+		read_from_device(offset, length, false);
+	}
+	inline void enqueue_write_to_device(const ulong offset, const ulong length) {
+		write_to_device(offset, length, false);
 	}
 	inline void finish_queue() {
 		cl_queue.finish();
