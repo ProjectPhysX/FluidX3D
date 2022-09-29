@@ -6,6 +6,7 @@
 
 class LBM {
 private:
+	Device device; // OpenCL device associated with this LBM object
 	Kernel kernel_initialize; // initialization kernel
 	Kernel kernel_stream_collide; // main LBM kernel
 	Kernel kernel_update_fields; // reads DDFs and updates (rho, u, T) in device memory
@@ -14,12 +15,16 @@ private:
 
 #if defined(D2Q9)
 	const uint velocity_set = 9u;
+	const uint dimensions = 2u;
 #elif defined(D3Q15)
 	const uint velocity_set = 15u;
+	const uint dimensions = 3u;
 #elif defined(D3Q19)
 	const uint velocity_set = 19u;
+	const uint dimensions = 3u;
 #elif defined(D3Q27)
 	const uint velocity_set = 27u;
+	const uint dimensions = 3u;
 #endif // D3Q27
 
 #ifdef FORCE_FIELD
@@ -116,6 +121,9 @@ public:
 		coordinates(n, x, y, z);
 		return position(x, y, z);
 	}
+	float3 size() const { // returns size of box
+		return float3((float)Nx, (float)Ny, (float)Nz);
+	}
 	float3 center() const { // returns center of box
 		return float3(0.5f*(float)Nx-0.5f, 0.5f*(float)Ny-0.5f, 0.5f*(float)Nz-0.5f);
 	}
@@ -169,6 +177,12 @@ public:
 	void T_write_host_to_vtk(const string& path=""); // write binary .vtk file
 	void T_write_device_to_vtk(const string& path=""); // write binary .vtk file
 #endif // TEMPERATURE
+
+	void voxelize_mesh(const Mesh* mesh, const uchar flag=TYPE_S); // voxelize mesh
+	void voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file
+	void voxelize_stl(const string& path, const float3x3& rotation, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center)
+	void voxelize_stl(const string& path, const float3& center, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (no rotation)
+	void voxelize_stl(const string& path, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center, no rotation)
 
 #ifdef GRAPHICS
 	class Graphics {

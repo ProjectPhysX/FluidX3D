@@ -47,7 +47,7 @@
 
 /*void main_setup() { // Poiseuille flow validation
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint R = 63; // channel radius (default: 63)
+	const uint R = 63u; // channel radius (default: 63)
 	const float umax = 0.1f; // maximum velocity in channel center (must be < 0.57735027f)
 	const float tau = 1.0f; // relaxation time (must be > 0.5f), tau = nu*3+0.5
 	const float nu = units.nu_from_tau(tau); // nu = (tau-0.5)/3
@@ -186,8 +186,8 @@
 	const float3 p2 = offset+float3(+20*(int)L/64, 90*(int)L/64, -10*(int)L/64);
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
-		lbm.u.y[n] = u;
 		if(triangle(x, y, z, p0, p1, p2)) lbm.flags[n] = TYPE_S;
+		else lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	//voxelize_triangle(lbm, p0, p1, p2, TYPE_S);
@@ -199,19 +199,20 @@
 /*void main_setup() { // Concorde
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
 	const uint L = 256u;
-	const float Re = 10000.0f;
-	const float u = 0.2f;
-	LBM lbm(L, 3u*L, L, units.nu_from_Re(Re, (float)L, u));
+	const float Re = 1000000.0f;
+	const float u = 0.1f;
+	LBM lbm(L, L*3u, L/2u, units.nu_from_Re(Re, (float)L, u));
 	// #############################################################################################################################################################################################
 	const float size = 1.75f*(float)L;
-	const float3 center = float3(lbm.center().x, 2.0f+0.5f*size, lbm.center().z);
+	const float3 center = float3(lbm.center().x, 0.52f*size, lbm.center().z+0.03f*size);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-10.0f))*float3x3(float3(0, 0, 1), radians(90.0f))*float3x3(float3(1, 0, 0), radians(90.0f));
-	voxelize_stl(lbm, get_exe_path()+"../stl/Concorde.stl", center, rotation, size); // https://www.thingiverse.com/thing:1176931/files
+	lbm.voxelize_stl(get_exe_path()+"../stl/Concorde.stl", center, rotation, size); // https://www.thingiverse.com/thing:1176931/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
-		lbm.u.y[n] = u;
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
+	key_4 = true;
 	lbm.run();
 } /**/
 
@@ -219,22 +220,21 @@
 
 /*void main_setup() { // Boeing 747
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 912u;
-	const float Re = 50000.0f;
-	const float u = 0.125f;
-	LBM lbm(L, 2u*L, L/2u, units.nu_from_Re(Re, (float)L, u));
+	const uint L = 256u;
+	const float Re = 1000000.0f;
+	const float u = 0.1f;
+	LBM lbm(L, L*2u, L/2u, units.nu_from_Re(Re, (float)L, u));
 	// #############################################################################################################################################################################################
 	const float size = 1.0f*(float)L;
-	const float3 center = float3(lbm.center().x, 12.0f+0.5f*size, lbm.center().z);
+	const float3 center = float3(lbm.center().x, 0.55f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-15.0f));
-	voxelize_stl(lbm, get_exe_path()+"../stl/747-400.stl", center, rotation, size); // https://www.thingiverse.com/thing:2772812/files
-	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
+	lbm.voxelize_stl(get_exe_path()+"../stl/747.stl", center, rotation, size); // https://www.thingiverse.com/thing:2772812/files
+	const ulong N=lbm.get_N(); uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
-		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.u.y[n] = u;
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-		//if(cylinder(x, y, z, lbm.center()-float3(0.0f, size*0.06f, size*0.092f)+float3(0.0f, 12.0f, 0.0f), float3(0.0f, size*0.005f, size*0.032f), size*0.003f)) lbm.flags[n] = TYPE_S;
 	}	// #########################################################################################################################################################################################
-	//key_4 = true;
+	key_4 = true;
 	//lbm.graphics.set_camera_free(float3(1.0f*(float)Nx, -0.4f*(float)Ny, 2.0f*(float)Nz), -33.0f, 42.0f, 68.0f);
 	//Clock clock;
 	//lbm.run(0u);
@@ -258,7 +258,7 @@
 	const float size = 1.1f*(float)L;
 	const float3 center = float3(lbm.center().x, 32.0f+0.5f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(75.0f));
-	voxelize_stl(lbm, get_exe_path()+"../stl/757.stl", center, rotation, size); // https://www.thingiverse.com/thing:5091064/files
+	lbm.voxelize_stl(get_exe_path()+"../stl/757.stl", center, rotation, size); // https://www.thingiverse.com/thing:5091064/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
@@ -286,15 +286,15 @@
 
 /*void main_setup() { // Star Wars X-wing
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 1076u;
+	const uint L = 256u;
 	const float Re = 100000.0f;
 	const float u = 0.125f;
-	LBM lbm(L, 2u*L, L/2u, units.nu_from_Re(Re, (float)L, u));
+	LBM lbm(L, L*2u, L/2u, units.nu_from_Re(Re, (float)L, u));
 	// #############################################################################################################################################################################################
 	const float size = 1.0f*(float)L;
 	const float3 center = float3(lbm.center().x, 32.0f+0.5f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(180.0f));
-	voxelize_stl(lbm, get_exe_path()+"../stl/X-wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
+	voxelize_stl_hull(lbm, get_exe_path()+"../stl/X-wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
@@ -325,21 +325,21 @@ void revoxelize(LBM* lbm, Mesh* mesh) { // voxelize new frames in detached threa
 	for(uint n=0u; n<lbm->get_N(); n++) lbm->flags[n] &= ~TYPE_S; // clear flags
 	const float3x3 rotation = float3x3(float3(0.2f, 1.0f, 0.1f), radians(0.4032f)); // create rotation matrix to rotate mesh
 	mesh->rotate(rotation); // rotate mesh
-	voxelize_mesh(*lbm, mesh, TYPE_S); // voxelize rotated mesh in lbm.flags
+	voxelize_mesh_hull(*lbm, mesh, TYPE_S); // voxelize rotated mesh in lbm.flags
 	revoxelizing = false; // indicate new voxelizer thread has finished
 }
 void main_setup() { // Star Wars TIE fighter
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 852u;
+	const uint L = 256u;
 	const float Re = 100000.0f;
 	const float u = 0.125f;
-	LBM lbm(L, 2u*L, L, units.nu_from_Re(Re, (float)L, u));
+	LBM lbm(L, L*2u, L, units.nu_from_Re(Re, (float)L, u));
 	// #############################################################################################################################################################################################
 	const float size = 0.65f*(float)L;
-	const float3 center = float3(lbm.center().x, 32.0f+0.5f*size, lbm.center().z);
+	const float3 center = float3(lbm.center().x, 0.6f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(90.0f));
-	Mesh* mesh = read_stl(lbm, get_exe_path()+"../stl/TIE-fighter.stl", center, rotation, size); // https://www.thingiverse.com/thing:2919109/files
-	voxelize_mesh(lbm, mesh, TYPE_S);
+	Mesh* mesh = read_stl(get_exe_path()+"../stl/TIE-fighter.stl", lbm.size(), center, rotation, size); // https://www.thingiverse.com/thing:2919109/files
+	voxelize_mesh_hull(lbm, mesh, TYPE_S);
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
@@ -348,7 +348,6 @@ void main_setup() { // Star Wars TIE fighter
 	key_4 = true;
 	//Clock clock;
 	lbm.run(0u);
-	uint k=0u;
 	while(lbm.get_t()<50000u) {
 	//	lbm.graphics.set_camera_free(float3(1.0f*(float)Nx, -0.4f*(float)Ny, 0.63f*(float)Nz), -33.0f, 33.0f, 80.0f);
 	//	lbm.graphics.write_frame_png(get_exe_path()+"export/t/");
@@ -375,48 +374,69 @@ void main_setup() { // Star Wars TIE fighter
 	const uint L = 528u;
 	const float Re = 100000.0f;
 	const float u = 0.1f;
-	LBM lbm(L, 3u*L, L/2u, units.nu_from_Re(Re, (float)L, u));
+	LBM lbm(L, L*3u, L/2u, units.nu_from_Re(Re, (float)L, u));
 	// #############################################################################################################################################################################################
 	const float size = 2.5f*(float)L;
 	const float3 center = float3(lbm.center().x, 16.0f+0.5f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(90.0f));
-	voxelize_stl(lbm, get_exe_path()+"../stl/Enterprise-E.stl", center, rotation, size); // https://www.thingiverse.com/thing:1423364/files
+	lbm.voxelize_stl(get_exe_path()+"../stl/Enterprise-E.stl", center, rotation, size); // https://www.thingiverse.com/thing:1423364/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	key_4 = true;
-	lbm.graphics.set_camera_centered(-60.0f, 20.0f, 0.0f, 2.5f);
-	Clock clock;
-	lbm.run(0u);
-	while(lbm.get_t()<18000u) {
-		lbm.graphics.write_frame_png();
-		lbm.run(30u);
-	}
-	write_file(get_exe_path()+"time.txt", print_time(clock.stop()));
-	//lbm.run();
+	//lbm.graphics.set_camera_centered(-60.0f, 20.0f, 0.0f, 2.5f);
+	//Clock clock;
+	//lbm.run(0u);
+	//while(lbm.get_t()<18000u) {
+	//	lbm.graphics.write_frame_png();
+	//	lbm.run(30u);
+	//}
+	//write_file(get_exe_path()+"time.txt", print_time(clock.stop()));
+	lbm.run();
 } /**/
 
 
 
 /*void main_setup() { // F1 car
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 340u;
-	const float Re = 3000.0f;
-	const float u = 0.2f;
-	LBM lbm(L, 2u*L, L*2u/3u, units.nu_from_Re(Re, (float)L, u));
+	const uint L = 256u; // 2152u on 8x MI200
+	const float kmh = 100.0f;
+	const float si_u = kmh/3.6f;
+	const float si_x = 2.0f;
+	const float si_rho = 1.225f;
+	const float si_nu = 1.48E-5f;
+	const float Re = units.si_Re(si_x, si_u, si_nu);
+	print_info("Re = "+to_string(Re));
+	const float u = 0.08f;
+	const float size = 1.6f*(float)L;
+	units.set_m_kg_s(size*2.0f/5.5f, u, 1.0f, si_x, si_u, si_rho);
+	const float nu = units.nu(si_nu);
+	print_info("1s = "+to_string(units.t(1.0f)));
+	LBM lbm(L, L*2u, L/2u, nu);
 	// #############################################################################################################################################################################################
-	const float size = 1.5f*(float)L;
-	const float3 center = float3(lbm.center().x, 0.525f*size, 0.135f*size);
-	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(180.0f));
-	voxelize_stl(lbm, get_exe_path()+"../stl/Formula1Car.stl", center, rotation, size); // https://www.thingiverse.com/thing:5397769/files
+	const float3 center = float3(lbm.center().x, 0.525f*size, 0.116f*size);
+	lbm.voxelize_stl(get_exe_path()+"../stl/Ferrari_SF71H_V5.stl", center, size); // https://www.thingiverse.com/thing:2990512/files
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 		if(z==0u) lbm.flags[n] = TYPE_S;
 	}	// #########################################################################################################################################################################################
+	key_4 = true;
+	//Clock clock;
+	//lbm.run(0u);
+	//while(lbm.get_t()<=units.t(1.0f)) {
+	//	lbm.graphics.set_camera_free(float3(0.779346f*(float)Nx, -0.315650f*(float)Ny, 0.329444f*(float)Nz), -27.0f, 19.0f, 100.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/a/");
+	//	lbm.graphics.set_camera_free(float3(0.556877f*(float)Nx, 0.228191f*(float)Ny, 1.159613f*(float)Nz), 19.0f, 53.0f, 100.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/b/");
+	//	lbm.graphics.set_camera_free(float3(0.220650f*(float)Nx, -0.589529f*(float)Ny, 0.085407f*(float)Nz), -72.0f, 21.0f, 86.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/c/");
+	//	lbm.run(units.t(0.5f/600.0f)); // run LBM in parallel while CPU is voxelizing the next frame
+	//}
+	//write_file(get_exe_path()+"time.txt", print_time(clock.stop()));
 	lbm.run();
 } /**/
 
@@ -598,7 +618,7 @@ void main_setup() { // Star Wars TIE fighter
 
 
 /*void main_setup() { // raindrop setup (#define D3Q19, SRT, VOLUME_FORCE, EQUILIBRIUM_BOUNDARIES, SURFACE)
-	const int box_diameter = 592; // 936 for Quadro RTX 8000 (48GB)
+	const int box_diameter = 256; // 936 for Quadro RTX 8000, 1064 for MI200
 	float drop_diameter = box_diameter/5;
 	const int select_drop_size = 12;
 	const float alpha_sim = 20.0f;
@@ -646,8 +666,8 @@ void main_setup() { // Star Wars TIE fighter
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		lbm.rho[n] = rho; // set density everywhere
-		if(sphere(x, y, z, float3(0.5f*Nx, 0.5f*Ny-2.0f*R*tan(alpha*pif/180.0f), H+R+2.5f)+0.5f, R+2.0f)) {
-			const float b = sphere_plic(x, y, z, float3(0.5f*Nx, 0.5f*Ny-2.0f*R*tan(alpha*pif/180.0f)+0.5f, H+R+2.5f), R);
+		if(sphere(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*R*tan(alpha*pif/180.0f), H+R+2.5f)+0.5f, R+2.0f)) {
+			const float b = sphere_plic(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*R*tan(alpha*pif/180.0f)+0.5f, H+R+2.5f), R);
 			if(b!=-1.0f) {
 				lbm.u.y[n] =  sin(alpha*pif/180.0f)*u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
 				lbm.u.z[n] = -cos(alpha*pif/180.0f)*u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
@@ -661,11 +681,11 @@ void main_setup() { // Star Wars TIE fighter
 			}
 		}
 		if(z==0) lbm.flags[n] = TYPE_S;
-		else if(z==H) {
+		else if(z==to_uint(H)) {
 			lbm.flags[n] = TYPE_I;
 			lbm.phi[n] = 0.5f; // not strictly necessary, but should be clearer (phi is automatically initialized to 0.5f for TYPE_I if not initialized)
-		} else if(z<H) lbm.flags[n] = TYPE_F;
-		else if(z==Nz-1) { // make drops that hit the simulation box ceiling disappear
+		} else if((float)z<H) lbm.flags[n] = TYPE_F;
+		else if((x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u)&&(float)z>H+R) { // make drops that hit the simulation box ceiling disappear
 			lbm.rho[n] = 0.5f;
 			lbm.flags[n] = TYPE_E;
 		}
@@ -673,21 +693,27 @@ void main_setup() { // Star Wars TIE fighter
 	lbm.run(0u);
 	//key_1 = false; // turn off boundary
 	//key_6 = true; // turn on surface raytracing
-	//lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
 	//Clock clock;
 
 	// image
 	//lbm.run(units.t(0.0015f));
 	//print_info("compute time: "+print_time(clock.stop()));
 	//clock.start();
+	//lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
 	//lbm.graphics.write_frame_png();
 	//print_info("render time: "+to_string(clock.stop(), 3u));
 
 	// video
-	//lbm.graphics.write_frame_png();
-	//while(units.si_t(lbm.get_t())<0.0015f) {
-	//	lbm.run(units.t(0.0015f)/300u);
-	//	lbm.graphics.write_frame_png();
+	//while(units.si_t(lbm.get_t())<=0.003f) {
+	//	lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/new/");
+	//	lbm.graphics.set_camera_centered(10.0f, 40.0f, 100.0f, 1.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/p/");
+	//	lbm.graphics.set_camera_centered(0.0f, 0.0f, 45.0f, 1.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/o/");
+	//	lbm.graphics.set_camera_centered(0.0f, 90.0f, 45.0f, 1.0f);
+	//	lbm.graphics.write_frame_png(get_exe_path()+"export/t/");
+	//	lbm.run(units.t(0.004f/600u));
 	//}
 	//print_info("compute + render time: "+to_string(clock.stop(), 3u));
 

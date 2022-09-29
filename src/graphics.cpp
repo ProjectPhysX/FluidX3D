@@ -901,8 +901,8 @@ void draw_label(const Color& c, const string& s, const int x, const int y) {}
 int main(int argc, char* argv[]) {
 	main_arguments = get_main_arguments(argc, argv);
 	camera.fps_limit = 60u; // find out screen refresh rate
-	camera.width  = GRAPGICS_FRAME_WIDTH; // must be divisible by 8
-	camera.height = GRAPGICS_FRAME_HEIGHT; // must be divisible by 8
+	camera.width  = GRAPHICS_FRAME_WIDTH; // must be divisible by 8
+	camera.height = GRAPHICS_FRAME_HEIGHT; // must be divisible by 8
 	camera.fov = 100.0f;
 	set_zoom(1.0f); // set initial zoom
 	camera.update_matrix();

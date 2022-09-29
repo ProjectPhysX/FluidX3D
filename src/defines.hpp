@@ -10,6 +10,11 @@
 #define SRT // choose single-relaxation-time LBM collision operator; (default)
 //#define TRT // choose two-relaxation-time LBM collision operator
 
+//#define FP16S // compress LBM DDFs to range-shifted IEEE-754 FP16; number conversion is done in hardware; all arithmetic is still done in FP32
+//#define FP16C // compress LBM DDFs to more accurate custom FP16C format; number conversion is emulated in software; all arithmetic is still done in FP32
+
+#define BENCHMARK // disable all extensions and setups and run benchmark setup instead
+
 //#define VOLUME_FORCE // enables global force per volume in one direction, specified in the LBM class constructor; the force can be changed on-the-fly between time steps at no performance cost
 //#define FORCE_FIELD // enables a force per volume for each lattice point independently; allocates an extra 12 Bytes/node; enables computing the forces from the fluid on solid boundaries with lbm.calculate_force_on_boundaries();
 //#define MOVING_BOUNDARIES // enables moving solids: set solid nodes to TYPE_S and set their velocity u unequal to zero
@@ -18,17 +23,12 @@
 //#define TEMPERATURE // enables temperature extension; set fixed-temperature nodes with TYPE_T (similar to EQUILIBRIUM_BOUNDARIES); allocates an extra 32 (FP32) or 18 (FP16) Bytes/node
 //#define SUBGRID // enables Smagorinsky-Lilly subgrid turbulence model to keep simulations with very large Reynolds number stable
 
-//#define FP16S // compress LBM DDFs to range-shifted IEEE-754 FP16; number conversion is done in hardware; all arithmetic is still done in FP32
-//#define FP16C // compress LBM DDFs to more accurate custom FP16C format; number conversion is emulated in software; all arithmetic is still done in FP32
-
 //#define WINDOWS_GRAPHICS // enable interactive graphics in Windows; start/pause the simulation by pressing P
 //#define CONSOLE_GRAPHICS // enable interactive graphics in the console; start/pause the simulation by pressing P
 //#define GRAPHICS // run FluidX3D in the console, but still enable graphics functionality for writing rendered frames to the hard drive
 
-#define BENCHMARK // disable all extensions and setups and run benchmark setup instead
-
-#define GRAPGICS_FRAME_WIDTH 15360 // set frame width if only GRAPHICS is enabled
-#define GRAPGICS_FRAME_HEIGHT 8640 // set frame height if only GRAPHICS is enabled
+#define GRAPHICS_FRAME_WIDTH 3840 // set frame width if only GRAPHICS is enabled
+#define GRAPHICS_FRAME_HEIGHT 2160 // set frame height if only GRAPHICS is enabled
 #define GRAPHICS_BACKGROUND_COLOR 0x000000 // set background color; black background (default) = 0x000000, white background = 0xFFFFFF
 #define GRAPHICS_U_MAX 0.15f // maximum velocity for velocity coloring in units of LBM lattice speed of sound (c=1/sqrt(3)) (default: 0.15f)
 #define GRAPHICS_Q_CRITERION 0.0001f // Q-criterion value for Q-criterion isosurface visualization (default: 0.0001f)

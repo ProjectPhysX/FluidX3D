@@ -2,7 +2,7 @@
 
 The fastest and most memory efficient lattice Boltzmann CFD software, running on any GPU via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper").
 
-<a href="https://youtu.be/5AzxwQpng0M"><img src="https://img.youtube.com/vi/5AzxwQpng0M/maxresdefault.jpg" alt="10 billion voxel Space Shuttle simulation" width="50%"></img></a><a href="https://youtu.be/NJnMQwp3wBI"><img src="https://img.youtube.com/vi/NJnMQwp3wBI/maxresdefault.jpg" alt="700 million voxel raindrop simulation" width="50%"></img></a><br>
+<a href="https://youtu.be/5AzxwQpng0M"><img src="https://img.youtube.com/vi/5AzxwQpng0M/maxresdefault.jpg" alt="10 billion voxel Space Shuttle simulation" width="50%"></img></a><a href="https://youtu.be/VadLwt9OqMo"><img src="https://img.youtube.com/vi/VadLwt9OqMo/maxresdefault.jpg" alt="1 billion voxel raindrop simulation" width="50%"></img></a><br>
 <a href="https://youtu.be/NQPgumd3Ei8"><img src="https://img.youtube.com/vi/NQPgumd3Ei8/maxresdefault.jpg" alt="Hydraulic jump simulation" width="50%"></img></a><a href="https://youtu.be/3JNVBQyetMA"><img src="https://img.youtube.com/vi/3JNVBQyetMA/maxresdefault.jpg" alt="Star Wars X-wing simulation" width="50%"></img></a>
 
 
@@ -175,6 +175,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia A100 SXM4 40GB         |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
 | Nvidia A100 PCIe 40GB         |              19.49 |          40 |         1555 |             8526 (84%) |             16035 (79%) |             11088 (55%) |
 | Nvidia Tesla V100 16GB        |              14.13 |          16 |          900 |             5128 (87%) |             10325 (88%) |              7683 (66%) |
+| Nvidia Quadro GV100           |              16.66 |          32 |          870 |             3442 (61%) |              6641 (59%) |              5863 (52%) |
 | Nvidia Tesla P100 16GB        |               9.52 |          16 |          732 |             3295 (69%) |              5950 (63%) |              4176 (44%) |
 | Nvidia Tesla P100 12GB        |               9.52 |          12 |          549 |             2427 (68%) |              4141 (58%) |              3999 (56%) |
 | Nvidia Tesla K40m             |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
@@ -198,7 +199,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia GeForce GTX 960M       |               1.51 |           4 |           80 |              442 (84%) |               872 (84%) |               627 (60%) |
 | Nvidia Quadro K2000           |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | Nvidia GeForce GT 630 (OEM)   |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
-| Apple M1 Pro 16-Core 16GB     |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
+| Apple M1 Pro GPU 16C 16GB     |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
 | AMD Radeon Vega 8 Graphics    |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
 | Intel UHD Graphics 630        |               0.46 |           7 |           51 |              151 (45%) |               301 (45%) |               187 (28%) |
 | Intel HD Graphics 5500        |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |

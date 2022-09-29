@@ -184,81 +184,20 @@ void voxelize_triangle(LBM& lbm, const float3& p0, const float3& p1, const float
 	for(float i=0.0f; i<vl; i+=0.25f) voxelize_line(lbm, p1+(i/vl)*v, p0, flag);
 	for(float i=0.0f; i<wl; i+=0.25f) voxelize_line(lbm, p2+(i/wl)*w, p1, flag);
 }
-Mesh* read_stl(LBM& lbm, const string& path, const float3& center, const float3x3& rotation, const float size) { // read binary .stl file
-	const string filename = create_file_extension(path, ".stl");
-	std::ifstream file(filename, std::ios::in|std::ios::binary);
-	if(file.fail()) print_error("File \""+filename+"\" does not exist!");
-	file.seekg(0, std::ios::end);
-	const uint filesize = (uint)file.tellg();
-	file.seekg(0, std::ios::beg);
-	uchar* data = new uchar[filesize];
-	file.read((char*)data, filesize);
-	file.close();
-	if(filesize==0u) println("\rError: File \""+filename+"\" is corrupt!");
-	const uint triangle_number = ((uint*)data)[20];
-	uint counter = 84u;
-	if(triangle_number>0u&&filesize==84u+50u*triangle_number) print_info("Loading \""+filename+"\" with "+to_string(triangle_number)+" triangles.");
-	else print_error("File \""+filename+"\" is corrupt or unsupported! Only binary .stl files are supported.");
-	Mesh* mesh = new Mesh(triangle_number, center);
-	mesh->p0[0] = float3(0.0f); // to fix warning C6001
-	for(uint i=0u; i<triangle_number; i++) {
-		const float* triangle_data = (float*)(data+counter);
-		counter += 50u;
-		mesh->p0[i] = rotation*float3(triangle_data[ 3], triangle_data[ 4], triangle_data[ 5]); // read positions of triangle vertices and rotate them
-		mesh->p1[i] = rotation*float3(triangle_data[ 6], triangle_data[ 7], triangle_data[ 8]);
-		mesh->p2[i] = rotation*float3(triangle_data[ 9], triangle_data[10], triangle_data[11]);
-	}
-	delete[] data;
-	float3 pmin=mesh->p0[0], pmax=pmin; // auto-rescale mesh
-	for(uint i=0u; i<triangle_number; i++) {
-		const float3 p0=mesh->p0[i], p1=mesh->p1[i], p2=mesh->p2[i];
-		pmin.x = fmin(fmin(fmin(p0.x, p1.x), p2.x), pmin.x);
-		pmin.y = fmin(fmin(fmin(p0.y, p1.y), p2.y), pmin.y);
-		pmin.z = fmin(fmin(fmin(p0.z, p1.z), p2.z), pmin.z);
-		pmax.x = fmax(fmax(fmax(p0.x, p1.x), p2.x), pmax.x);
-		pmax.y = fmax(fmax(fmax(p0.y, p1.y), p2.y), pmax.y);
-		pmax.z = fmax(fmax(fmax(p0.z, p1.z), p2.z), pmax.z);
-	}
-	const float3 offset = -0.5f*(pmin+pmax);
-	float scale = 1.0f;
-	if(size>0) { // rescale to specified size
-		scale = size/fmax(fmax(pmax.x-pmin.x, pmax.y-pmin.y), pmax.z-pmin.z);
-	} else { // auto-rescale to largest possible size
-		const float scale_x = (float)lbm.get_Nx()/(pmax.x-pmin.x);
-		const float scale_y = (float)lbm.get_Ny()/(pmax.y-pmin.y);
-		const float scale_z = (float)lbm.get_Nz()/(pmax.z-pmin.z);
-		scale = fmin(fmin(scale_x, scale_y), scale_z);
-	}
-	for(uint i=0u; i<triangle_number; i++) { // rescale mesh
-		mesh->p0[i] = center+scale*(offset+mesh->p0[i]);
-		mesh->p1[i] = center+scale*(offset+mesh->p1[i]);
-		mesh->p2[i] = center+scale*(offset+mesh->p2[i]);
-	}
-	return mesh;
-}
-Mesh* read_stl(LBM& lbm, const string& path, const float3x3& rotation, const float size) { // read binary .stl file (place in box center)
-	return read_stl(lbm, path, lbm.center(), rotation, size);
-}
-Mesh* read_stl(LBM& lbm, const string& path, const float3& center, const float size) { // read binary .stl file (no rotation)
-	return read_stl(lbm, path, center, float3x3(1.0f), size);
-}
-Mesh* read_stl(LBM& lbm, const string& path, const float size) { // read binary .stl file (place in box center, no rotation)
-	return read_stl(lbm, path, lbm.center(), float3x3(1.0f), size);
-}
-void voxelize_mesh(LBM& lbm, const Mesh* mesh, const uchar flag) { // voxelize mesh
+void voxelize_mesh_hull(LBM& lbm, const Mesh* mesh, const uchar flag) { // voxelize mesh
 	for(uint i=0u; i<mesh->triangle_number; i++) voxelize_triangle(lbm, mesh->p0[i], mesh->p1[i], mesh->p2[i], flag); // voxelize mesh
 }
-void voxelize_stl(LBM& lbm, const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file
-	const Mesh* mesh = read_stl(lbm, path, center, rotation, size);
-	voxelize_mesh(lbm, mesh, flag);
+void voxelize_stl_hull(LBM& lbm, const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file
+	const Mesh* mesh = read_stl(path, float3(lbm.get_Nx(), lbm.get_Ny(), lbm.get_Nz()), center, rotation, size);
+	voxelize_mesh_hull(lbm, mesh, flag);
 	delete mesh;
 }
-void voxelize_stl(LBM& lbm, const string& path, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center)
-	voxelize_stl(lbm, path, lbm.center(), rotation, size, flag);
+void voxelize_stl_hull(LBM& lbm, const string& path, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center)
+	voxelize_stl_hull(lbm, path, lbm.center(), rotation, size, flag);
 }
-void voxelize_stl(LBM& lbm, const string& path, const float3& center, const float size, const uchar flag) { // read and voxelize binary .stl file (no rotation)
-	voxelize_stl(lbm, path, center, float3x3(1.0f), size, flag);
+void voxelize_stl_hull(LBM& lbm, const string& path, const float3& center, const float size, const uchar flag) { // read and voxelize binary .stl file (no rotation)
+	voxelize_stl_hull(lbm, path, center, float3x3(1.0f), size, flag);
 }
-void voxelize_stl(LBM& lbm, const string& path, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center, no rotation)
-	voxelize_stl(lbm, path, lbm.center(), float3x3(1.0f), size, flag);
+void voxelize_stl_hull(LBM& lbm, const string& path, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center, no rotation)
+	voxelize_stl_hull(lbm, path, lbm.center(), float3x3(1.0f), size, flag);
 }

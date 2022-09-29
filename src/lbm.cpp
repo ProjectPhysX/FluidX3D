@@ -22,7 +22,8 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const floa
 #endif // GRAPHICS
 	int select_device = -1;
 	if((int)main_arguments.size()>0) select_device = to_int(main_arguments[0]);
-	Device device(select_device<0 ? select_device_with_most_flops() : select_device_with_id((uint)select_device), opencl_c_code);
+	const vector<Device_Info>& devices = get_devices();
+	this->device = Device(select_device<0 ? select_device_with_most_flops(devices) : select_device_with_id((uint)select_device, devices), opencl_c_code);
 	allocate(device); // lbm first
 #ifdef GRAPHICS
 	graphics.allocate(device); // graphics after lbm
@@ -383,33 +384,60 @@ void LBM::T_write_device_to_vtk(const string& path) {
 }
 #endif // TEMPERATURE
 
+void LBM::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
+	print_info("Voxelizing mesh. This may take a few minutes.");
+	Memory<float3> p0(device, mesh->triangle_number, 1u, mesh->p0);
+	Memory<float3> p1(device, mesh->triangle_number, 1u, mesh->p1);
+	Memory<float3> p2(device, mesh->triangle_number, 1u, mesh->p2);
+	const float x0=mesh->pmin.x, y0=mesh->pmin.y, z0=mesh->pmin.z, x1=mesh->pmax.x, y1=mesh->pmax.y, z1=mesh->pmax.z; // use bounding box of mesh to speed up voxelization
+	Kernel kernel_voxelize_mesh(device, get_N(), "voxelize_mesh", flags, flag, p0, p1, p2, mesh->triangle_number, x0, y0, z0, x1, y1, z1);
+	p0.write_to_device();
+	p1.write_to_device();
+	p2.write_to_device();
+	flags.write_to_device();
+	kernel_voxelize_mesh.run();
+	flags.read_from_device();
+}
+void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
+	const Mesh* mesh = read_stl(path, float3(get_Nx(), get_Ny(), get_Nz()), center, rotation, size);
+	voxelize_mesh(mesh, flag);
+	delete mesh;
+}
+void LBM::voxelize_stl(const string& path, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center)
+	voxelize_stl(path, center(), rotation, size, flag);
+}
+void LBM::voxelize_stl(const string& path, const float3& center, const float size, const uchar flag) { // read and voxelize binary .stl file (no rotation)
+	voxelize_stl(path, center, float3x3(1.0f), size, flag);
+}
+void LBM::voxelize_stl(const string& path, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center, no rotation)
+	voxelize_stl(path, center(), float3x3(1.0f), size, flag);
+}
+
 string LBM::device_defines() const { return
 	"\n	#define def_Nx "+to_string(Nx)+"u"
 	"\n	#define def_Ny "+to_string(Ny)+"u"
 	"\n	#define def_Nz "+to_string(Nz)+"u"
 	"\n	#define def_N " +to_string(get_N())+"ul"
 
-	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // D2Q9/D3Q15/D3Q19/D3Q27
-	"\n	#define def_c 0.57735027f" // lattice speed of sound c = 1/sqrt(3)*dt
-	"\n	#define def_w " +to_string(1.0f/(3.0f*nu+0.5f))+"f" // relaxation rate w = dt/tau = dt/(nu/c^2+dt/2) = 1/(3*nu+1/2)
+	"\n	#define D"+to_string(dimensions)+"Q"+to_string(velocity_set)+"" // D2Q9/D3Q15/D3Q19/D3Q27
+	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)
+	"\n	#define def_dimensions "+to_string(dimensions)+"u" // number spatial dimensions (2D or 3D)
 
+	"\n	#define def_c 0.57735027f" // lattice speed of sound c = 1/sqrt(3)*dt
+	"\n	#define def_w " +to_string(1.0f/get_tau())+"f" // relaxation rate w = dt/tau = dt/(nu/c^2+dt/2) = 1/(3*nu+1/2)
 #if defined(D2Q9)
-	"\n	#define D2Q9"
 	"\n	#define def_w0 (1.0f/2.25f)" // center (0)
 	"\n	#define def_ws (1.0f/9.0f)" // straight (1-4)
 	"\n	#define def_we (1.0f/36.0f)" // edge (5-8)
 #elif defined(D3Q15)
-	"\n	#define D3Q15"
 	"\n	#define def_w0 (1.0f/4.5f)" // center (0)
 	"\n	#define def_ws (1.0f/9.0f)" // straight (1-6)
 	"\n	#define def_wc (1.0f/72.0f)" // corner (7-14)
 #elif defined(D3Q19)
-	"\n	#define D3Q19"
 	"\n	#define def_w0 (1.0f/3.0f)" // center (0)
 	"\n	#define def_ws (1.0f/18.0f)" // straight (1-6)
 	"\n	#define def_we (1.0f/36.0f)" // edge (7-18)
 #elif defined(D3Q27)
-	"\n	#define D3Q27"
 	"\n	#define def_w0 (1.0f/3.375f)" // center (0)
 	"\n	#define def_ws (1.0f/13.5f)" // straight (1-6)
 	"\n	#define def_we (1.0f/54.0f)" // edge (7-18)
@@ -479,9 +507,9 @@ string LBM::device_defines() const { return
 
 #ifdef TEMPERATURE
 	"\n	#define TEMPERATURE"
-	"\n	#define def_T_avg "+to_string(T_avg)+"f" // average temperature
-	"\n	#define def_beta "+to_string(beta)+"f" // thermal expansion coefficient
 	"\n	#define def_w_T "+to_string(1.0f/(2.0f*alpha+0.5f))+"f" // wT = dt/tauT = 1/(2*alpha+1/2), alpha = thermal diffusion coefficient
+	"\n	#define def_beta "+to_string(beta)+"f" // thermal expansion coefficient
+	"\n	#define def_T_avg "+to_string(T_avg)+"f" // average temperature
 #endif // TEMPERATURE
 
 #ifdef SUBGRID

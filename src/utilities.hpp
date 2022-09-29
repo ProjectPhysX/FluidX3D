@@ -4144,6 +4144,101 @@ inline void write_png(const string& filename, const Image* image) {
 }
 #endif // UTILITIES_PNG
 
+struct Mesh { // triangle mesh
+	uint triangle_number = 0u;
+	float3 center, pmin, pmax;
+	float3* p0;
+	float3* p1;
+	float3* p2;
+	inline Mesh(const uint triangle_number, const float3& center) {
+		this->triangle_number = triangle_number;
+		this->center = this->pmin = this->pmax = center;
+		this->p0 = new float3[triangle_number];
+		this->p1 = new float3[triangle_number];
+		this->p2 = new float3[triangle_number];
+	}
+	inline ~Mesh() {
+		delete[] p0;
+		delete[] p1;
+		delete[] p2;
+	}
+	inline void find_bounds() {
+		pmin = pmax = p0[0];
+		for(uint i=1u; i<triangle_number; i++) {
+			const float3 p0i=p0[i], p1i=p1[i], p2i=p2[i];
+			pmin.x = fmin(fmin(fmin(p0i.x, p1i.x), p2i.x), pmin.x);
+			pmin.y = fmin(fmin(fmin(p0i.y, p1i.y), p2i.y), pmin.y);
+			pmin.z = fmin(fmin(fmin(p0i.z, p1i.z), p2i.z), pmin.z);
+			pmax.x = fmax(fmax(fmax(p0i.x, p1i.x), p2i.x), pmax.x);
+			pmax.y = fmax(fmax(fmax(p0i.y, p1i.y), p2i.y), pmax.y);
+			pmax.z = fmax(fmax(fmax(p0i.z, p1i.z), p2i.z), pmax.z);
+		}
+	}
+	inline void scale(const float scale) {
+		for(uint i=0u; i<triangle_number; i++) {
+			p0[i] = scale*(p0[i]-center)+center;
+			p1[i] = scale*(p1[i]-center)+center;
+			p2[i] = scale*(p2[i]-center)+center;
+		}
+		find_bounds();
+	}
+	inline void rotate(const float3x3& rotation) {
+		for(uint i=0u; i<triangle_number; i++) {
+			p0[i] = rotation*(p0[i]-center)+center;
+			p1[i] = rotation*(p1[i]-center)+center;
+			p2[i] = rotation*(p2[i]-center)+center;
+		}
+		find_bounds();
+	}
+};
+inline Mesh* read_stl(const string& path, const float3& box_size, const float3& center, const float3x3& rotation, const float size) { // read binary .stl file
+	const string filename = create_file_extension(path, ".stl");
+	std::ifstream file(filename, std::ios::in|std::ios::binary);
+	if(file.fail()) println("\rError: File \""+filename+"\" does not exist!");
+	file.seekg(0, std::ios::end);
+	const uint filesize = (uint)file.tellg();
+	file.seekg(0, std::ios::beg);
+	uchar* data = new uchar[filesize];
+	file.read((char*)data, filesize);
+	file.close();
+	if(filesize==0u) println("\rError: File \""+filename+"\" is corrupt!");
+	const uint triangle_number = ((uint*)data)[20];
+	uint counter = 84u;
+	if(triangle_number>0u&&filesize==84u+50u*triangle_number) println("Loading \""+filename+"\" with "+to_string(triangle_number)+" triangles.");
+	else println("\rError: File \""+filename+"\" is corrupt or unsupported! Only binary .stl files are supported.");
+	Mesh* mesh = new Mesh(triangle_number, center);
+	mesh->p0[0] = float3(0.0f); // to fix warning C6001
+	for(uint i=0u; i<triangle_number; i++) {
+		const float* triangle_data = (float*)(data+counter);
+		counter += 50u;
+		mesh->p0[i] = rotation*float3(triangle_data[ 3], triangle_data[ 4], triangle_data[ 5]); // read positions of triangle vertices and rotate them
+		mesh->p1[i] = rotation*float3(triangle_data[ 6], triangle_data[ 7], triangle_data[ 8]);
+		mesh->p2[i] = rotation*float3(triangle_data[ 9], triangle_data[10], triangle_data[11]);
+	}
+	delete[] data;
+	mesh->find_bounds();
+	const float3 offset = -0.5f*(mesh->pmin+mesh->pmax); // auto-rescale mesh
+	float scale = 1.0f;
+	if(size>0) { // rescale to specified size
+		scale = size/fmax(fmax(mesh->pmax.x-mesh->pmin.x, mesh->pmax.y-mesh->pmin.y), mesh->pmax.z-mesh->pmin.z);
+	} else { // auto-rescale to largest possible size
+		const float scale_x = box_size.x/(mesh->pmax.x-mesh->pmin.x);
+		const float scale_y = box_size.y/(mesh->pmax.y-mesh->pmin.y);
+		const float scale_z = box_size.z/(mesh->pmax.z-mesh->pmin.z);
+		scale = fmin(fmin(scale_x, scale_y), scale_z);
+	}
+	for(uint i=0u; i<triangle_number; i++) { // rescale mesh
+		mesh->p0[i] = center+scale*(offset+mesh->p0[i]);
+		mesh->p1[i] = center+scale*(offset+mesh->p1[i]);
+		mesh->p2[i] = center+scale*(offset+mesh->p2[i]);
+	}
+	mesh->find_bounds();
+	return mesh;
+}
+inline Mesh* read_stl(const string& path, const float3& box_size, const float3& center, const float size) { // read binary .stl file (no rotation)
+	return read_stl(path, box_size, center, float3x3(1.0f), size);
+}
+
 class Configuration_File {
 private:
 	string filename;
