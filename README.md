@@ -1,5 +1,7 @@
 # FluidX3D
 
+<img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/ProjectPhysX/FluidX3D"> <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/ProjectPhysX/FluidX3D/total"> <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/ProjectPhysX/FluidX3D">
+
 The fastest and most memory efficient lattice Boltzmann CFD software, running on any GPU via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper").
 
 <a href="https://youtu.be/5AzxwQpng0M"><img src="https://img.youtube.com/vi/5AzxwQpng0M/maxresdefault.jpg" alt="10 billion voxel Space Shuttle simulation" width="50%"></img></a><a href="https://youtu.be/VadLwt9OqMo"><img src="https://img.youtube.com/vi/VadLwt9OqMo/maxresdefault.jpg" alt="1 billion voxel raindrop simulation" width="50%"></img></a><br>
