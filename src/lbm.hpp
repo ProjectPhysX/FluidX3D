@@ -151,6 +151,9 @@ public:
 
 #ifdef FORCE_FIELD
 	void calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S nodes
+	float3 calculate_force_on_object(const uchar flag_marker=TYPE_S); // add up force for all nodes flagged with flag_marker
+	float3 calculate_torque_on_object(const uchar flag_marker=TYPE_S); // add up torque around center of mass for all nodes flagged with flag_marker
+	float3 calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all nodes flagged with flag_marker
 #endif // FORCE_FIELD
 
 #ifdef MOVING_BOUNDARIES

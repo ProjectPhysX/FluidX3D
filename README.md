@@ -138,6 +138,7 @@ Q = &Sigma;<sub><i>&alpha;&beta;</i></sub> <i>&Pi;<sub>&alpha;&beta;</sub></i><s
    - <kbd>V</kbd>: toggle stereoscopic rendering for VR
    - <kbd>B</kbd>: toggle VR-goggles/3D-TV mode for stereoscopic rendering
    - <kbd>N</kbd>/<kbd>M</kbd>: adjust eye distance for stereoscopic rendering
+   - <kbd>H</kbd>: print current camera position/rotation in console as copy/paste command
    - <kbd>Esc</kbd>/<kbd>Alt</kbd>+<kbd>F4</kbd>: quit
 
 
@@ -181,13 +182,19 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia Tesla K40m             |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 | Nvidia Tesla K80  (1 GPU)     |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 | Nvidia Tesla K20c             |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
+| AMD Radeon RX 6900 XT         |              20.63 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
+| AMD Radeon RX 5700 XT         |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
 | AMD Radeon RX Vega 64         |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
+| AMD Radeon RX 580 4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
 | Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | Nvidia GeForce RTX 3080 10GB  |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
+| Nvidia GeForce RTX 3060       |              13.17 |          12 |          360 |             2108 (90%) |              4070 (87%) |              3566 (76%) |
+| Nvidia GeForce RTX 3060M      |              10.94 |           6 |          336 |             2019 (92%) |              4012 (92%) |              3572 (82%) |
 | Nvidia Quadro RTX 8000 Server |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
 | Nvidia GeForce RTX 2080 Ti    |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
+| Nvidia GeForce RTX 2080 Super |              11.34 |           8 |          496 |             2434 (75%) |              5284 (82%) |              5087 (79%) |
 | Nvidia GeForce RTX 2060 Super |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
-| Nvidia Tesla T4               |               8.14 |          16 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
+| Nvidia Tesla T4               |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
 | Nvidia GeForce GTX 1660 Ti    |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
 | Nvidia Titan Xp               |              12.15 |          12 |          548 |             2919 (82%) |              5495 (77%) |              5375 (76%) |
 | Nvidia GeForce GTX 1080       |               9.78 |           8 |          320 |             1623 (78%) |              3100 (75%) |              3182 (77%) |
@@ -200,7 +207,8 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia Quadro K2000           |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | Nvidia GeForce GT 630 (OEM)   |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | Apple M1 Pro GPU 16C 16GB     |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
-| AMD Radeon Vega 8 Graphics    |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
+| AMD Radeon Vega 8 (4750G)     |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |
+| AMD Radeon Vega 8 (3500U)     |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
 | Intel UHD Graphics 630        |               0.46 |           7 |           51 |              151 (45%) |               301 (45%) |               187 (28%) |
 | Intel HD Graphics 5500        |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
 | Intel HD Graphics 4600        |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |

@@ -81,7 +81,9 @@ void LBM::sanity_checks_constructor() { // sanity checks on grid resolution and 
 #ifndef VOLUME_FORCE
 	if(fx!=0.0f||fy!=0.0f||fz!=0.0f) print_error("Volume force is set in LBM constructor in main_setup(), but VOLUME_FORCE is not enabled. Uncomment \"#define VOLUME_FORCE\" in defines.hpp.");
 #else // VOLUME_FORCE
+#ifndef FORCE_FIELD
 	if(fx==0.0f&&fy==0.0f&&fz==0.0f) print_warning("The VOLUME_FORCE extension is enabled but the volume force in LBM constructor is set to zero. You may disable the extension by commenting out \"#define VOLUME_FORCE\" in defines.hpp.");
+#endif // FORCE_FIELD
 #endif // VOLUME_FORCE
 #ifndef SURFACE
 	if(sigma!=0.0f) print_error("Surface tension is set in LBM constructor in main_setup(), but SURFACE is not enabled. Uncomment \"#define SURFACE\" in defines.hpp.");
@@ -242,6 +244,44 @@ void LBM::reset() { // reset simulation (takes effect in following run() call)
 #ifdef FORCE_FIELD
 void LBM::calculate_force_on_boundaries() { // calculate forces from fluid on TYPE_S nodes
 	kernel_calculate_force_on_boundaries.set_parameters(2u, t).run();
+}
+float3 LBM::calculate_force_on_object(const uchar flag_marker) { // add up force for all nodes flagged with flag_marker
+	double3 force(0.0, 0.0, 0.0);
+	for(uint n=0u; n<get_N(); n++) {
+		if(flags[n]==flag_marker) {
+			force.x += (double)F.x[n];
+			force.y += (double)F.y[n];
+			force.z += (double)F.z[n];
+		}
+	}
+	return float3(force.x, force.y, force.z);
+}
+float3 LBM::calculate_torque_on_object(const uchar flag_marker) { // add up torque around center of mass for all nodes flagged with flag_marker
+	double3 center_of_mass(0.0, 0.0, 0.0);
+	uint counter = 0u;
+	for(uint n=0u; n<get_N(); n++) {
+		if(flags[n]==flag_marker) {
+			const float3 p = position(n);
+			center_of_mass.x += (double)p.x;
+			center_of_mass.y += (double)p.y;
+			center_of_mass.z += (double)p.z;
+			counter++;
+		}
+	}
+	return calculate_torque_on_object(float3(center_of_mass.x/(double)counter, center_of_mass.y/(double)counter, center_of_mass.z/(double)counter)+center(), flag_marker);
+}
+float3 LBM::calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker) { // add up torque around specified rotation center for all nodes flagged with flag_marker
+	double3 torque(0.0, 0.0, 0.0);
+	const float3 rotation_center_in_box = rotation_center-center();
+	for(uint n=0u; n<get_N(); n++) {
+		if(flags[n]==flag_marker) {
+			const float3 t = cross(position(n)-rotation_center_in_box, float3(F.x[n], F.y[n], F.z[n]));
+			torque.x += (double)t.x;
+			torque.y += (double)t.y;
+			torque.z += (double)t.z;
+		}
+	}
+	return float3(torque.x, torque.y, torque.z);
 }
 #endif // FORCE_FIELD
 
@@ -417,7 +457,7 @@ string LBM::device_defines() const { return
 	"\n	#define def_Nx "+to_string(Nx)+"u"
 	"\n	#define def_Ny "+to_string(Ny)+"u"
 	"\n	#define def_Nz "+to_string(Nz)+"u"
-	"\n	#define def_N " +to_string(get_N())+"ul"
+	"\n	#define def_N "+to_string(get_N())+"ul"
 
 	"\n	#define D"+to_string(dimensions)+"Q"+to_string(velocity_set)+"" // D2Q9/D3Q15/D3Q19/D3Q27
 	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)

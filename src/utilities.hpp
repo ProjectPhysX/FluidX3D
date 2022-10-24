@@ -4182,6 +4182,16 @@ struct Mesh { // triangle mesh
 		}
 		find_bounds();
 	}
+	inline void translate(const float3& translation) {
+		for(uint i=0u; i<triangle_number; i++) {
+			p0[i] += translation;
+			p1[i] += translation;
+			p2[i] += translation;
+		}
+		center += translation;
+		pmin += translation;
+		pmax += translation;
+	}
 	inline void rotate(const float3x3& rotation) {
 		for(uint i=0u; i<triangle_number; i++) {
 			p0[i] = rotation*(p0[i]-center)+center;
@@ -4189,6 +4199,9 @@ struct Mesh { // triangle mesh
 			p2[i] = rotation*(p2[i]-center)+center;
 		}
 		find_bounds();
+	}
+	inline const float3& get_center() const {
+		return center;
 	}
 };
 inline Mesh* read_stl(const string& path, const float3& box_size, const float3& center, const float3x3& rotation, const float size) { // read binary .stl file
