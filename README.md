@@ -201,6 +201,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia Tesla T4               |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
 | Nvidia GeForce GTX 1660 Ti    |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
 | Nvidia Titan Xp               |              12.15 |          12 |          548 |             2919 (82%) |              5495 (77%) |              5375 (76%) |
+| Nvidia GeForce GTX 1080 Ti    |              12.06 |          11 |          484 |             2631 (83%) |              4837 (77%) |              4877 (78%) |
 | Nvidia GeForce GTX 1080       |               9.78 |           8 |          320 |             1623 (78%) |              3100 (75%) |              3182 (77%) |
 | Nvidia GeForce GTX 1060M      |               4.44 |           6 |          192 |              983 (78%) |              1882 (75%) |              1803 (72%) |
 | Nvidia GeForce GTX 1050M Ti   |               2.49 |           4 |          112 |              631 (86%) |              1224 (84%) |              1115 (77%) |
