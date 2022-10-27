@@ -198,6 +198,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia GeForce RTX 2060 Super |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
 | Nvidia Quadro RTX 4000        |               7.12 |           8 |          416 |             2284 (84%) |              4584 (85%) |              4062 (75%) |
 | Nvidia GeForce RTX 2060 KO    |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
+| Nvidia GeForce GTX 1660 Super |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
 | Nvidia Tesla T4               |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
 | Nvidia GeForce GTX 1660 Ti    |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
 | Nvidia Titan Xp               |              12.15 |          12 |          548 |             2919 (82%) |              5495 (77%) |              5375 (76%) |
