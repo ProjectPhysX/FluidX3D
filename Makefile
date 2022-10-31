@@ -4,23 +4,31 @@ help:
 
 linux:
 	@echo "Compile for Linux!"
+	@rm -rf bin
+	@mkdir bin
 	@g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL -O3 -march=native 
 
 
 mac:
 	@echo "Compile for Mac!"
+	@rm -rf bin
+	@mkdir bin
 	@g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -framework OpenCL # compile on macOS
 
 
 android:
 	@echo "Compile for Android!"
+	@rm -rf bin
+	@mkdir bin
 	@g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L/system/vendor/lib64 -lOpenCL # compile on Android
 
 
 clean:
 	@echo 'Clean up and remove the old binary; prevent execution of old version if compiling fails'
-	@rm ./bin/FluidX3D
+	@rm -rf bin
+	@mkdir bin
 
 benchmark:
 	@echo "Running benchmark:"
+	@echo "\nRemember to change '/src/defines.hpp' to whatever simulation type you're testing for.\nYou can also pass 'device=[OpenCL Device ID number]' as an argument to select a specific device.\nSee 'make help' for more."
 	@./bin/FluidX3D $(device)
