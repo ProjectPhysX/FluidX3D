@@ -6,7 +6,7 @@ Moritz Lehmann <moritz.lehmann@uni-bayreuth.de>
 ###Contributors: 
 
 
-##V1.1 2022/09/19
+##V1.1 2022/09/29
 
 ###Primary Maintainer:
 Moritz Lehmann <moritz.lehmann@uni-bayreuth.de>
@@ -14,7 +14,7 @@ Moritz Lehmann <moritz.lehmann@uni-bayreuth.de>
 ###Contributors: 
 
 
-##V1.2 2022/09/19
+##V1.2 2022/10/27
 
 ###Primary Maintainer:
 Moritz Lehmann <moritz.lehmann@uni-bayreuth.de>
