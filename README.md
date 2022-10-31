@@ -186,6 +186,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | AMD Radeon RX 5700 XT         |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
 | AMD Radeon RX Vega 64         |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
 | AMD Radeon RX 580 4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
+| Nvidia GeForce RTX 3090 Ti    |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | Nvidia GeForce RTX 3080 Ti    |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
 | Nvidia GeForce RTX 3080 10GB  |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
