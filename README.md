@@ -191,6 +191,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | Nvidia GeForce RTX 3080 Ti    |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
 | Nvidia GeForce RTX 3080       |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
+| Nvidia GeForce RTX 3070       |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
 | Nvidia GeForce RTX 3060 Ti    |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
 | Nvidia GeForce RTX 3060       |              13.17 |          12 |          360 |             2108 (90%) |              4070 (87%) |              3566 (76%) |
 | Nvidia GeForce RTX 3060M      |              10.94 |           6 |          336 |             2019 (92%) |              4012 (92%) |              3572 (82%) |
@@ -202,9 +203,11 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia GeForce RTX 2060 Sup.  |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
 | Nvidia Quadro RTX 4000        |               7.12 |           8 |          416 |             2284 (84%) |              4584 (85%) |              4062 (75%) |
 | Nvidia GeForce RTX 2060 KO    |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
+| Nvidia GeForce RTX 2060       |               6.74 |           6 |          336 |             1681 (77%) |              3604 (83%) |              3571 (82%) |
 | Nvidia GeForce GTX 1660 Sup.  |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
 | Nvidia Tesla T4               |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
 | Nvidia GeForce GTX 1660 Ti    |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
+| Nvidia GeForce GTX 1660       |               5.07 |           6 |          192 |             1016 (81%) |              1924 (77%) |              1992 (80%) |
 | Nvidia GeForce GTX 1650M      |               3.20 |           4 |          128 |              706 (84%) |              1214 (73%) |              1400 (84%) |
 | Nvidia Titan Xp               |              12.15 |          12 |          548 |             2919 (82%) |              5495 (77%) |              5375 (76%) |
 | Nvidia GeForce GTX 1080 Ti    |              12.06 |          11 |          484 |             2631 (83%) |              4837 (77%) |              4877 (78%) |
