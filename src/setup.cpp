@@ -204,10 +204,10 @@
 
 /*void main_setup() { // lid-driven cavity
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 96u;
+	const uint L = 128u;
 	const float Re = 1000.0f;
-	const float u = 0.4f;
-	LBM lbm(L, L, L, units.nu_from_Re(Re, (float)L, u));
+	const float u = 0.1f;
+	LBM lbm(L, L, L, units.nu_from_Re(Re, (float)(L-2u), u));
 	// #############################################################################################################################################################################################
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################

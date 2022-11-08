@@ -16,7 +16,7 @@
 #define BENCHMARK // disable all extensions and setups and run benchmark setup instead
 
 //#define VOLUME_FORCE // enables global force per volume in one direction, specified in the LBM class constructor; the force can be changed on-the-fly between time steps at no performance cost
-//#define FORCE_FIELD // enables a force per volume for each lattice point independently; allocates an extra 12 Bytes/node; enables computing the forces from the fluid on solid boundaries with lbm.calculate_force_on_boundaries();
+//#define FORCE_FIELD // enables computing the forces on solid boundaries with lbm.calculate_force_on_boundaries(); and enables setting the force for each lattice point independently (enable VOLUME_FORCE too); allocates an extra 12 Bytes/node
 //#define MOVING_BOUNDARIES // enables moving solids: set solid nodes to TYPE_S and set their velocity u unequal to zero
 //#define EQUILIBRIUM_BOUNDARIES // enables fixing the velocity/density by marking nodes with TYPE_E; can be used for inflow/outflow; does not reflect shock waves
 //#define SURFACE // enables free surface LBM: mark fluid nodes with TYPE_F; at initialization the TYPE_I interface and TYPE_G gas domains will automatically be completed; allocates an extra 12 Bytes/node
@@ -68,10 +68,6 @@
 #undef CONSOLE_GRAPHICS
 #undef GRAPHICS
 #endif // BENCHMARK
-
-#ifdef FORCE_FIELD
-#define VOLUME_FORCE
-#endif // FORCE_FIELD
 
 #ifdef SURFACE // (rho, u) need to be updated exactly every LBM step
 #define UPDATE_FIELDS // update (rho, u, T) in every LBM step

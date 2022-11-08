@@ -490,21 +490,21 @@ string LBM::device_defines() const { return
 	"\n	#define TRT"
 #endif // TRT
 
-	"\n	#define TYPE_S 0b00000001" // (stationary or moving) solid boundary
-	"\n	#define TYPE_E 0b00000010" // equilibrium boundary (inflow/outflow)
-	"\n	#define TYPE_T 0b00000100" // temperature boundary
-	"\n	#define TYPE_F 0b00001000" // fluid
-	"\n	#define TYPE_I 0b00010000" // interface
-	"\n	#define TYPE_G 0b00100000" // gas
-	"\n	#define TYPE_X 0b01000000" // reserved type X
-	"\n	#define TYPE_Y 0b10000000" // reserved type Y
+	"\n	#define TYPE_S 0x01" // 0b00000001 // (stationary or moving) solid boundary
+	"\n	#define TYPE_E 0x02" // 0b00000010 // equilibrium boundary (inflow/outflow)
+	"\n	#define TYPE_T 0x04" // 0b00000100 // temperature boundary
+	"\n	#define TYPE_F 0x08" // 0b00001000 // fluid
+	"\n	#define TYPE_I 0x10" // 0b00010000 // interface
+	"\n	#define TYPE_G 0x20" // 0b00100000 // gas
+	"\n	#define TYPE_X 0x40" // 0b01000000 // reserved type X
+	"\n	#define TYPE_Y 0x80" // 0b10000000 // reserved type Y
 
-	"\n	#define TYPE_MS 0b00000011" // node next to moving solid boundary
-	"\n	#define TYPE_BO 0b00000011" // any flag bit used for boundaries (temperature excluded)
-	"\n	#define TYPE_IF 0b00011000" // change from interface to fluid
-	"\n	#define TYPE_IG 0b00110000" // change from interface to gas
-	"\n	#define TYPE_GI 0b00111000" // change from gas to interface
-	"\n	#define TYPE_SU 0b00111000" // any flag bit used for SURFACE
+	"\n	#define TYPE_MS 0x03" // 0b00000011 // node next to moving solid boundary
+	"\n	#define TYPE_BO 0x03" // 0b00000011 // any flag bit used for boundaries (temperature excluded)
+	"\n	#define TYPE_IF 0x18" // 0b00011000 // change from interface to fluid
+	"\n	#define TYPE_IG 0x30" // 0b00110000 // change from interface to gas
+	"\n	#define TYPE_GI 0x38" // 0b00111000 // change from gas to interface
+	"\n	#define TYPE_SU 0x38" // 0b00111000 // any flag bit used for SURFACE
 
 #if defined(FP16S)
 	"\n	#define fpxx half" // switchable data type (scaled IEEE-754 16-bit floating-point format: 1-5-10, exp-30, +-1.99902344, +-1.86446416E-9, +-1.81898936E-12, 3.311 digits)
