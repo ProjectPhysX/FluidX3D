@@ -31,6 +31,8 @@ public:
 	float g(const float si_g) const { return si_g/m*sq(s); } // gravitational acceleration si_g = g*[m/s^2]
 	float f(const float si_f) const { return si_f*sq(m*s)/kg; } // force per volume si_f = f*[kg/(m*s)^2]
 	float f(const float si_rho, const float si_g) const { return si_rho*si_g*sq(m*s)/kg; } // force per volume f = rho*g = si_rho/[kg/m^3]*si_g/[m/s^2] = si_rho*si_g*[(m*s)^2/kg]
+	float F(const float si_F) const { return si_F*sq(s)/(kg*m); } // force si_F = F*[kg*m/s^2]
+	float T(const float si_T) const { return si_T*sq(s)/(kg*sq(m)); } // torque si_T = T*[kg*m^2/s^2]
 	float sigma(const float si_sigma) const { return si_sigma*sq(s)/kg; } // surface tension si_sigma = sigma*[kg/s^2]
 
 	// the following methods convert simulation units into SI units (have to be called after set_m_kg_s(...);)
@@ -48,6 +50,7 @@ public:
 	float si_g(const float g) const { return g*m/sq(s); } // gravitational acceleration si_g = g*[m/s^2]
 	float si_f(const float f) const { return f*kg/sq(m*s); } // force per volume si_f = f*[kg/(m*s)^2]
 	float si_F(const float F) const { return F*kg*m/sq(s); } // force si_F = F*[kg*m/s^2]
+	float si_T(const float T) const { return T*kg*sq(m)/sq(s); } // torque si_T = T*[kg*m^2/s^2]
 	float si_sigma(const float sigma) const { return sigma*kg/sq(s); } // surface tension si_sigma = sigma*[kg/s^2]
 
 	// other conversions in simulation units (can be called before set_m_kg_s(...);)
