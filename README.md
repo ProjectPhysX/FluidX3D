@@ -232,6 +232,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Intel HD Graphics 5500        |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
 | Intel HD Graphics 4600        |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
 | Samsung ARM Mali-G72 MP18     |               0.24 |           4 |           29 |               14 ( 7%) |                17 ( 5%) |                12 ( 3%) |
+| 2x AMD EPYC 9654              |              14.75 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
 | Intel Xeon Phi 7210           |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
 | 4x Intel Xeon E5-4620 v4      |               2.69 |         512 |          273 |              460 (26%) |               275 ( 8%) |               239 ( 7%) |
 | 2x Intel Xeon E5-2630 v4      |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
