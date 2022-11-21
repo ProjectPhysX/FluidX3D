@@ -190,6 +190,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | AMD Radeon RX 580 4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
 | AMD Radeon HD 7850            |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | Intel Arc A770 LE             |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
+| Intel Arc A750 LE             |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
 | Nvidia GeForce RTX 4090       |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
 | Nvidia GeForce RTX 3090 Ti    |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
@@ -197,6 +198,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia GeForce RTX 3080       |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
 | Nvidia GeForce RTX 3070       |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
 | Nvidia GeForce RTX 3060 Ti    |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
+| Nvidia RTX A5000M             |              16.59 |          16 |          448 |             2228 (76%) |              4461 (77%) |              3662 (63%) |
 | Nvidia GeForce RTX 3060       |              13.17 |          12 |          360 |             2108 (90%) |              4070 (87%) |              3566 (76%) |
 | Nvidia GeForce RTX 3060M      |              10.94 |           6 |          336 |             2019 (92%) |              4012 (92%) |              3572 (82%) |
 | Nvidia GeForce RTX 3050M      |               7.13 |           4 |          192 |             1180 (94%) |              2339 (94%) |              2016 (81%) |
