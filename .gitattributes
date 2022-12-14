@@ -1,4 +1,5 @@
 src/OpenCL/** linguist-vendored
+src/X11/** linguist-vendored
 src/lodepng.* linguist-vendored
 src/kernel.cpp linguist-language=OpenCL
 src/setup.cpp linguist-documentation

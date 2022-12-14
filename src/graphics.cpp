@@ -12,24 +12,382 @@ Camera camera;
 bool key_E=false, key_G=false, key_H=false, key_O=false, key_P=false, key_Q=false, key_T=false, key_Z=false;
 bool key_1=false, key_2=false, key_3=false, key_4=false, key_5=false, key_6=false, key_7=false, key_8=false, key_9=false, key_0=false;
 
-const uint max_light_sources = 100u; // maximal number of light sources
+const uint light_sources_N = 100u; // maximal number of light sources
+float3 light_sources[light_sources_N]; // coordinates of light sources
 uint light_sources_n = 0u; // number of light sources
-float3 light_sources[max_light_sources]; // coordinates of light sources
-bool lockmouse = false; // mouse movement won't change camera view when this is true
-bool autorotation = false; // autorotation
-double mx=0.0, my=0.0, dmx=0.0, dmy=0.0; // mouse position
-float zo=0.0f, dzo=0.0f; // zoom and perspective
-float fl=0.0f, fvel=0.05f; // free camera speed
 
-void update_rotation(const double arx, const double ary) {
-#ifdef WINDOWS_GRAPHICS
-	SetCursorPos(camera.width/2, camera.height/2);
-#endif // WINDOWS_GRAPHICS
-	camera.rx += arx*pi/180.0;
-	camera.ry += ary*pi/180.0;
-	camera.rx = fmod(camera.rx, 2.0*pi);
-	camera.ry = clamp(camera.ry, 0.5*pi, 1.5*pi);
-	camera.update_matrix();
+bool convert(int& rx, int& ry, float& rz, const float3& p, const int stereo) { // 3D -> 2D
+	float3 t, r;
+	t.x = p.x-(camera.free ? camera.pos.x : 0.0f)-(float)stereo*camera.eye_distance/camera.zoom*camera.R.xx; // transformation
+	t.y = p.y-(camera.free ? camera.pos.y : 0.0f)-(float)stereo*camera.eye_distance/camera.zoom*camera.R.xy;
+	t.z = p.z-(camera.free ? camera.pos.z : 0.0f);
+	r.z = camera.R.zx*t.x+camera.R.zy*t.y+camera.R.zz*t.z; // z-position for z-buffer
+	const float rs = camera.zoom*camera.dis/(camera.dis-r.z*camera.zoom); // perspective (reciprocal is more efficient)
+	if(rs<=0.0f) return false; // point is behins camera
+	const float tv = camera.tv&&stereo!=0 ? 0.5f : 1.0f;
+	r.x = ((camera.R.xx*t.x+camera.R.xy*t.y+camera.R.xz*t.z)*rs+(float)stereo*camera.eye_distance)*tv+(0.5f+(float)stereo*0.25f)*(float)camera.width; // x position on screen
+	r.y =  (camera.R.yx*t.x+camera.R.yy*t.y+camera.R.yz*t.z)*rs+0.5f*(float)camera.height; // y position on screen
+	rx = (int)(r.x+0.5f);
+	ry = (int)(r.y+0.5f);
+	rz = r.z;
+	return true;
+}
+bool is_off_screen(const int x, const int y) { // check if point is off screen
+	return x<0||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // entire screen
+}
+bool is_off_screen(const int x, const int y, const int stereo) { // check if point is off screen
+	switch(stereo) {
+		default: return x<                  0||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // entire screen
+		case -1: return x<                  0||x>=(int)camera.width/2||y<0||y>=(int)camera.height; // left half
+		case +1: return x<(int)camera.width/2||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // right half
+	}
+}
+bool intersect_lines(const int x0, const int y0, const int x1, const int y1, const int xA, const int yA, const int xB, const int yB) { // check if two lines intersect
+	const float d = (float)((yB-yA)*(x1-x0)-(xB-xA)*(y1-y0));
+	if(d==0.0f) return false; // lines are parallel
+	const float ua = ((xB-xA)*(y0-yA)-(yB-yA)*(x0-xA))/d;
+	const float ub = ((x1-x0)*(y0-yA)-(y1-y0)*(x0-xA))/d;
+	return ua>=0.0f && ua<=1.0f && ub>=0.0f && ub<=1.0f;
+}
+bool intersect_line_rectangle(const int x0, const int y0, const int x1, const int y1, const int xA, const int yA, const int xB, const int yB) { // check if line intersects rectangle
+	return intersect_lines(x0, y0, x1, y1, xA, yA, xB, yA) || intersect_lines(x0, y0, x1, y1, xA, yB, xB, yB) || intersect_lines(x0, y0, x1, y1, xA, yA, xA, yB) || intersect_lines(x0, y0, x1, y1, xB, yA, xB, yB);
+}
+bool intersects_screen(const int x0, const int y0, const int x1, const int y1, const int stereo) {
+	switch(stereo) {
+		case  0: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, camera.width  , camera.height);
+		case -1: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, camera.width/2, camera.height);
+		case +1: return intersect_line_rectangle(x0, y0, x1, y1, camera.width/2, 0, camera.width  , camera.height);
+	}
+	return false;
+}
+void set_light(const uint i, const float3& position) {
+	if(i<light_sources_N) {
+		light_sources[i] = position;
+		light_sources_n = max(light_sources_n, i+1u);
+	}
+}
+int lighting(const int color, const float3& p, const float3& normal, const bool translucent=false) {
+	const float snb = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one sqrt instead of two
+	float br = 0.0f;
+	for(uint i=0u; i<light_sources_n; i++) {
+		const float3 d = light_sources[i]-p; // direction of light source
+		const float sdb = sq(d.x)+sq(d.y)+sq(d.z);
+		const float nbr = dot(d, normal)/sqrt(snb*sdb);
+		br = fmax(br, translucent ? abs(nbr) : nbr);
+	}
+	br = fmax(0.2f, br);
+	return ::color((int)(br*(float)red(color)), (int)(br*(float)green(color)), (int)(br*(float)blue(color)));
+}
+int color_mix_3(const int c0, const int c1, const int c2, const float w0, const float w1, const float w2) { // w0+w1+w2 = 1
+	const int r0=red(c0), g0=green(c0), b0=blue(c0);
+	const int r1=red(c1), g1=green(c1), b1=blue(c1);
+	const int r2=red(c2), g2=green(c2), b2=blue(c2);
+	const float3 fc0=float3((float)r0, (float)g0, (float)b0),  fc1=float3((float)r1, (float)g1, (float)b1), fc2=float3((float)r2, (float)g2, (float)b2);
+	const float3 fcm = w0*fc0+(w1*fc1+(w2*fc2+float3(0.5f, 0.5f, 0.5f)));
+	return ::color((int)fcm.x, (int)fcm.y, (int)fcm.z);
+}
+ulong get_font_pixels(const int character) {
+	ulong pixels[224] = { // font data (my own 6x11 monospace font)
+		0x0000000000000000ull, 0x2082082080082000ull, 0x5145000000000000ull, 0x514F94514F945000ull, 0x21CAA870AA9C2000ull, 0x4AA50421052A9000ull, 0x2145085628A27400ull, 0x2082000000000000ull,
+		0x0842082082040800ull, 0x4081041041084000ull, 0xA9C72A0000000000ull, 0x000208F882000000ull, 0x0000000000041080ull, 0x000000F800000000ull, 0x00000000000C3000ull, 0x0821042104208000ull,
+		0x7228A28A28A27000ull, 0x0862928820820800ull, 0x722882108420F800ull, 0x7228823028A27000ull, 0x10C51493E1041000ull, 0xFA083C082082F000ull, 0x722820F228A27000ull, 0xF821042084104000ull,
+		0x7228A27228A27000ull, 0x7228A27820A27000ull, 0x00030C00030C0000ull, 0x00030C00030C1080ull, 0x0021084081020000ull, 0x00003E03E0000000ull, 0x0204081084200000ull, 0x7228842080082000ull,
+		0x7A1B75D75D6E81E0ull, 0x20851453E8A28800ull, 0xF228A2F228A2F000ull, 0x7228208208227000ull, 0xF228A28A28A2F000ull, 0xFA0820F20820F800ull, 0xFA0820F208208000ull, 0x722820B228A27000ull,
+		0x8A28A2FA28A28800ull, 0xF88208208208F800ull, 0xF820820820A27000ull, 0x8A4928C289248800ull, 0x820820820820F800ull, 0x8B6DAAAA28A28800ull, 0x8B2CAAAAA9A68800ull, 0xFA28A28A28A2F800ull,
+		0xF228A2F208208000ull, 0x7228A28A28A46800ull, 0xF228A2F289228800ull, 0x7228207020A27000ull, 0xF882082082082000ull, 0x8A28A28A28A27000ull, 0x8A28A25145082000ull, 0x8A28A28AAA945000ull,
+		0x8A25142145228800ull, 0x8A25142082082000ull, 0xF82104210420F800ull, 0x3882082082083800ull, 0x8204102041020800ull, 0xE08208208208E000ull, 0x2148800000000000ull, 0x000000000000F800ull,
+		0x2040000000000000ull, 0x0000007027A27000ull, 0x820820F228A2F000ull, 0x0000007A08207800ull, 0x0820827A28A27800ull, 0x000000722FA07000ull, 0x1882087082082000ull, 0x0000007A28A27827ull,
+		0x820820F228A28800ull, 0x0002002082082000ull, 0x0002002082082284ull, 0x4104104946144800ull, 0x4104104104103000ull, 0x000000F2AAAAA800ull, 0x000000F228A28800ull, 0x0000007228A27000ull,
+		0x0000007124927104ull, 0x0000007249247041ull, 0x0000007124104000ull, 0x0000003907827000ull, 0x2082087082081800ull, 0x0000008A28A27800ull, 0x0000008A25142000ull, 0x0000008AA7145000ull,
+		0x0000008942148800ull, 0x0000008A25142084ull, 0x000000F84210F800ull, 0x0841042041040800ull, 0x2082082082082000ull, 0x8104102104108000ull, 0x000010A840000000ull, 0x0000000000000000ull,
+		0x7228208208227084ull, 0x0005008A28A27800ull, 0x004200722FA07000ull, 0x0085007027A27000ull, 0x0005007027A27000ull, 0x0102007027A27000ull, 0x2142007027A27000ull, 0x0000007A08207884ull,
+		0x008500722FA07000ull, 0x000500722FA07000ull, 0x010200722FA07000ull, 0x0005002082082000ull, 0x0085002082082000ull, 0x0102002082082000ull, 0xA8851453E8A28800ull, 0x21421453E8A28800ull,
+		0x108FA083C820F800ull, 0x000000D89FE85C00ull, 0x5D4B2CFA49249C00ull, 0x0085007228A27000ull, 0x0005007228A27000ull, 0x0102007228A27000ull, 0x0085008A28A27800ull, 0x0102008A28A27800ull,
+		0x0005008A25142084ull, 0x500FA28A28A2F800ull, 0x5008A28A28A27000ull, 0x002726AB27200000ull, 0x390410F10410F800ull, 0x082726AB27208000ull, 0x0008942148800000ull, 0x188208708208C000ull,
+		0x0042007027A27000ull, 0x0042002082082000ull, 0x0042007228A27000ull, 0x0042008A28A27800ull, 0x42A1007124924800ull, 0x42A122CAAAA68800ull, 0x604624700F800000ull, 0x7228A2700F800000ull,
+		0x2080082108A27000ull, 0x01E86DAEDAE17800ull, 0x000000F820000000ull, 0x4B25142164A4B800ull, 0x4B25142125AF8800ull, 0x2080082082082000ull, 0x0002529122400000ull, 0x0009122529000000ull,
+		0x9004802409004800ull, 0xA95222568095A120ull, 0xA95A95A95A95A950ull, 0x2082082082082082ull, 0x2082082382082082ull, 0x108008514FA28800ull, 0x214008514FA28800ull, 0x408008514FA28800ull,
+		0x01E867A699E17800ull, 0x514514D04D145145ull, 0x5145145145145145ull, 0x000000F04D145145ull, 0x514514D04F000000ull, 0x08472AA2A7108000ull, 0x8A251421C21C2000ull, 0x0000000382082082ull,
+		0x20820820F0000000ull, 0x20820823F0000000ull, 0x00000003F2082082ull, 0x20820820F2082082ull, 0x00000003F0000000ull, 0x20820823F2082082ull, 0x42A1007027A27000ull, 0x42A108514FA28800ull,
+		0x5145145D07C00000ull, 0x0000007D05D45145ull, 0x514514DC0FC00000ull, 0x000000FC0DD45145ull, 0x5145145D05D45145ull, 0x000000FC0FC00000ull, 0x514514DC0DD45145ull, 0x0227228A27220000ull,
+		0xA10A047228A27000ull, 0x712492E924927000ull, 0x214FA083C820F800ull, 0x500FA083C820F800ull, 0x408FA083C820F800ull, 0x000000608208F800ull, 0x10803E208208F800ull, 0x21403E208208F800ull,
+		0x01403E208208F800ull, 0x2082082380000000ull, 0x00000000F2082082ull, 0xFFFFFFFFFFFFFFF0ull, 0x00000003FFFFFFF0ull, 0x2082080002082080ull, 0x40803E208208F800ull, 0xFFFFFFFC00000000ull,
+		0x10803E8A28A2F800ull, 0x3124944925104000ull, 0x21403E8A28A2F800ull, 0x40803E8A28A2F800ull, 0x42A1007228A27000ull, 0x42A13E8A28A2F800ull, 0x0000008A28A2FA08ull, 0x82082CCA28A2F208ull,
+		0x000820F228A2F208ull, 0x1088A28A28A2F800ull, 0x2140228A28A2F800ull, 0x4088A28A28A2F800ull, 0x0042008A25142084ull, 0x12A8945082082000ull, 0xF800000000000000ull, 0x1080000000000000ull,
+		0x0000007000000000ull, 0x00823E20803E0000ull, 0x00000000003E03E0ull, 0xC49C8AD0A3974800ull, 0x7BAEBA6820A27000ull, 0x31240C49230248C0ull, 0x000200F802000000ull, 0x0000000000002080ull,
+		0x7147000000000000ull, 0x0140000000000000ull, 0x0000002000000000ull, 0x2182087000000000ull, 0x6046046000000000ull, 0x6042107000000000ull, 0x000FFFFFFFC00000ull, 0x0000000000000000ull
+	};
+	return pixels[clamp(character+256*(character<0)-32, 0, 223)];
+}
+void draw(const int x, const int y, const float z, const int color, const int stereo) {
+	const int index=x+y*(int)camera.width, iz=(int)(z*(2147483647.0f/10000.0f));
+	if(!is_off_screen(x, y, stereo)&&iz>camera.zbuffer[index]) {
+		camera.zbuffer[index] = iz;
+		camera.bitmap[index] = color; // only draw if point is on screen and first in zbuffer
+	}
+}
+void convert_pixel(const float3& p, const int color, const int stereo) {
+	int rx, ry; float rz;
+	if(convert(rx, ry, rz, p, stereo) && !is_off_screen(rx, ry, stereo)) {
+		draw(rx, ry, rz, color, stereo);
+	}
+}
+void convert_circle(const float3& p, const float r, const int color, const int stereo) {
+	int rx, ry; float rz;
+	if(convert(rx, ry, rz, p, stereo)) {
+		const float rs = camera.zoom*camera.dis/(camera.dis-rz*camera.zoom);
+		const int radius = (int)(rs*r+0.5f);
+		switch(stereo) {
+			default: if(rx<                   -radius||rx>=(int)camera.width  +radius || ry<-radius||ry>=(int)camera.height+radius) return; break; // cancel drawing if circle is off screen
+			case -1: if(rx<                   -radius||rx>=(int)camera.width/2+radius || ry<-radius||ry>=(int)camera.height+radius) return; break;
+			case +1: if(rx<(int)camera.width/2-radius||rx>=(int)camera.width  +radius || ry<-radius||ry>=(int)camera.height+radius) return; break;
+		}
+		int d=-radius, x=radius, y=0; // Bresenham algorithm for circle
+		while(x>=y) {
+			draw(rx+x, ry+y, rz, color, stereo);
+			draw(rx-x, ry+y, rz, color, stereo);
+			draw(rx+x, ry-y, rz, color, stereo);
+			draw(rx-x, ry-y, rz, color, stereo);
+			draw(rx+y, ry+x, rz, color, stereo);
+			draw(rx-y, ry+x, rz, color, stereo);
+			draw(rx+y, ry-x, rz, color, stereo);
+			draw(rx-y, ry-x, rz, color, stereo);
+			d += 2*y+1;
+			y++;
+			if(d>0) d-=2*(--x);
+		}
+	}
+}
+void convert_line(const float3& p0, const float3& p1, const int color, const int stereo) {
+	int r0x, r0y, r1x, r1y; float r0z, r1z;
+	if(convert(r0x, r0y, r0z, p0, stereo) && convert(r1x, r1y, r1z, p1, stereo)
+		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && !intersects_screen(r0x, r0y, r1x, r1y, stereo))) {
+		int x=r0x, y=r0y; // Bresenham algorithm
+		const float z = 0.5f*(r0z+r1z); // approximate line z position for each pixel to be equal
+		const int dx= abs(r1x-r0x), sx=2*(r0x<r1x)-1;
+		const int dy=-abs(r1y-r0y), sy=2*(r0y<r1y)-1;
+		int err = dx+dy;
+		while(x!=r1x||y!=r1y) {
+			draw(x, y, z, color, stereo);
+			const int e2 = 2*err;
+			if(e2>dy) { err+=dy; x+=sx; }
+			if(e2<dx) { err+=dx; y+=sy; }
+		}
+	}
+}
+void convert_triangle(const float3& p0, const float3& p1, const float3& p2, const int color, const int stereo) {
+	int r0x, r0y, r1x, r1y, r2x, r2y; float r0z, r1z, r2z;
+	if(convert(r0x, r0y, r0z, p0, stereo) && convert(r1x, r1y, r1z, p1, stereo) && convert(r2x, r2y, r2z, p2, stereo)
+		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && is_off_screen(r2x, r2y, stereo)
+		&& !intersects_screen(r0x, r0y, r1x, r1y, stereo) && !intersects_screen(r1x, r1y, r2x, r2y, stereo) && !intersects_screen(r2x, r2y, r0x, r0y, stereo))) {
+		if(r0y==r1y&&r0y==r2y) return; // return for degenerate triangles
+		if(r0y>r1y) { std::swap(r0x, r1x); std::swap(r0y, r1y); } // sort vertices ascending by y
+		if(r0y>r2y) { std::swap(r0x, r2x); std::swap(r0y, r2y); }
+		if(r1y>r2y) { std::swap(r1x, r2x); std::swap(r1y, r2y); }
+		const float z = (r0z+r1z+r2z)/3.0f; // approximate triangle z position for each pixel to be equal
+		for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
+			const int xA = r0x+(r2x-r0x)*(y-r0y)/(r2y-r0y);
+			const int xB = r0x+(r1x-r0x)*(y-r0y)/(r1y-r0y);
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
+				draw(x, y, z, color, stereo);
+			}
+		}
+		for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
+			const int xA = r0x+(r2x-r0x)*(y-r0y)/(r2y-r0y);
+			const int xB = r1x+(r2x-r1x)*(y-r1y)/(r2y-r1y);
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
+				draw(x, y, z, color, stereo);
+			}
+		}
+	}
+}
+void convert_triangle_interpolated(const float3& p0, const float3& p1, const float3& p2, int c0, int c1, int c2, const int stereo) {
+	int r0x, r0y, r1x, r1y, r2x, r2y; float r0z, r1z, r2z;
+	if(convert(r0x, r0y, r0z, p0, stereo) && convert(r1x, r1y, r1z, p1, stereo) && convert(r2x, r2y, r2z, p2, stereo)
+		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && is_off_screen(r2x, r2y, stereo)
+		&& !intersects_screen(r0x, r0y, r1x, r1y, stereo) && !intersects_screen(r1x, r1y, r2x, r2y, stereo) && !intersects_screen(r2x, r2y, r0x, r0y, stereo))) {
+		if(r0y==r1y&&r0y==r2y) return; // return for degenerate triangles
+		if(r0y>r1y) { std::swap(r0x, r1x); std::swap(r0y, r1y); std::swap(c0, c1); } // sort vertices ascending by y
+		if(r0y>r2y) { std::swap(r0x, r2x); std::swap(r0y, r2y); std::swap(c0, c2); }
+		if(r1y>r2y) { std::swap(r1x, r2x); std::swap(r1y, r2y); std::swap(c1, c2); }
+		const float z = (r0z+r1z+r2z)/3.0f; // approximate triangle z position for each pixel to be equal
+		const float d = (float)((r1y-r2y)*(r0x-r2x)+(r2x-r1x)*(r0y-r2y));
+		for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
+			const int xA = r0x+(r2x-r0x)*(y-r0y)/(r2y-r0y);
+			const int xB = r0x+(r1x-r0x)*(y-r0y)/(r1y-r0y);
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
+				const float w0 = clamp((float)((r1y-r2y)*(x-r2x)+(r2x-r1x)*(y-r2y))/d, 0.0f, 1.0f); // barycentric coordinates
+				const float w1 = clamp((float)((r2y-r0y)*(x-r2x)+(r0x-r2x)*(y-r2y))/d, 0.0f, 1.0f);
+				const float w2 = clamp(1.0f-w0-w1, 0.0f, 1.0f);
+				const int color = color_mix_3(c0, c1, c2, w0, w1, w2); // interpolate color
+				draw(x, y, z, color, stereo);
+			}
+		}
+		for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
+			const int xA = r0x+(r2x-r0x)*(y-r0y)/(r2y-r0y);
+			const int xB = r1x+(r2x-r1x)*(y-r1y)/(r2y-r1y);
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
+				const float w0 = clamp((float)((r1y-r2y)*(x-r2x)+(r2x-r1x)*(y-r2y))/d, 0.0f, 1.0f); // barycentric coordinates
+				const float w1 = clamp((float)((r2y-r0y)*(x-r2x)+(r0x-r2x)*(y-r2y))/d, 0.0f, 1.0f);
+				const float w2 = clamp(1.0f-w0-w1, 0.0f, 1.0f);
+				const int color = color_mix_3(c0, c1, c2, w0, w1, w2); // interpolate color
+				draw(x, y, z, color, stereo);
+			}
+		}
+	}
+}
+void convert_text(const float3& p, const string& s, const float r, const int color, const int stereo) {
+	int rx, ry; float rz;
+	if(convert(rx, ry, rz, p, stereo)) {
+		const float rs = camera.zoom*camera.dis/(camera.dis-rz*camera.zoom);
+		const int radius = (int)(rs*r+0.5f);
+		const float tr = fmax(0.85f*radius, 2.0f);
+		rx += 4+(int)tr;
+		ry += 3+(int)tr;
+		for(int i=0u; i<(int)length(s); i++) {
+			const int character = (int)s[i];
+			const ulong pixels = get_font_pixels(character);
+			for(int k=0; k<64; k++) {
+				if((pixels>>(63-k))&1) draw(rx+i*6+k%6+(character==113), ry+k/6, rz, color, stereo);
+			}
+		}
+	}
+}
+
+void draw_pixel(const int x, const int y, const int color) {
+	if(!is_off_screen(x, y)) camera.bitmap[x+y*(int)camera.width] = color; // only draw if point is on screen
+}
+void draw_circle(const int x, const int y, const int r, const int color) {
+	int d=-r, dx=r, dy=0; // Bresenham algorithm for circle
+	while(dx>=dy) {
+		draw_pixel(x+dx, y+dy, color);
+		draw_pixel(x-dx, y+dy, color);
+		draw_pixel(x+dx, y-dy, color);
+		draw_pixel(x-dx, y-dy, color);
+		draw_pixel(x+dy, y+dx, color);
+		draw_pixel(x-dy, y+dx, color);
+		draw_pixel(x+dy, y-dx, color);
+		draw_pixel(x-dy, y-dx, color);
+		d += 2*dy+1;
+		dy++;
+		if(d>0) d-=2*(--dx);
+	}
+}
+void draw_line(const int x0, const int y0, const int x1, const int y1, const int color) {
+	int x=x0, y=y0; // Bresenham algorithm
+	const int dx= abs(x1-x0), sx=2*(x0<x1)-1;
+	const int dy=-abs(y1-y0), sy=2*(y0<y1)-1;
+	int err = dx+dy;
+	while(x!=x1||y!=y1) {
+		draw_pixel(x, y, color);
+		const int e2 = 2*err;
+		if(e2>dy) { err+=dy; x+=sx; }
+		if(e2<dx) { err+=dx; y+=sy; }
+	}
+}
+void draw_triangle(const int x0, const int y0, const int x1, const int y1, const int x2, const int y2, const int color) {
+	int r0x=x0, r0y=y0, r1x=x1, r1y=y1, r2x=x2, r2y=y2;
+	if(r0y==r1y&&r0y==r2y) return; // return for degenerate triangles
+	if(r0y>r1y) { std::swap(r0x, r1x); std::swap(r0y, r1y); } // sort vertices ascending by y
+	if(r0y>r2y) { std::swap(r0x, r2x); std::swap(r0y, r2y); }
+	if(r1y>r2y) { std::swap(r1x, r2x); std::swap(r1y, r2y); }
+	for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
+		const int xA = r0x+(r2x-r0x)*(y-r0y)/(r2y-r0y);
+		const int xB = r0x+(r1x-r0x)*(y-r0y)/(r1y-r0y);
+		for(int x=min(xA, xB); x<max(xA, xB); x++) {
+			draw_pixel(x, y, color);
+		}
+	}
+	for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
+		const int xA = r0x+(r2x-r0x)*(y-r0y)/(r2y-r0y);
+		const int xB = r1x+(r2x-r1x)*(y-r1y)/(r2y-r1y);
+		for(int x=min(xA, xB); x<max(xA, xB); x++) {
+			draw_pixel(x, y, color);
+		}
+	}
+}
+void draw_rectangle(const int x0, const int y0, const int x1, const int y1, const int color) {
+	for(int dy=y0; dy<y1; dy++) { // Bresenham algorithm
+		for(int dx=x0; dx<x1; dx++) {
+			draw_pixel(dx, dy, color);
+		}
+	}
+}
+void draw_text(const int x, const int y, const string& s, const int color) {
+	for(int i=0; i<(int)length(s); i++) {
+		const int character = (int)s[i];
+		const ulong pixels = get_font_pixels(character);
+		for(int k=0; k<64; k++) {
+			if((pixels>>(63-k))&1) draw_pixel(x+i*6+k%6+(character==113), y+k/6, color);
+		}
+	}
+}
+void draw_label(const int x, const int y, const string& s, const int color) {
+	draw_text(x, y, s, color);
+	if(camera.vr) {
+		if(x-camera.width/2>0) {
+			draw_text(x-(int)camera.width/2, y, s, color);
+		} else if(x+(int)camera.width/2<(int)camera.width) {
+			draw_text(x+(int)camera.width/2, y, s, color);
+		}
+	}
+}
+void draw_bitmap(const int* bitmap) {
+	std::copy(bitmap, bitmap+(int)camera.width*(int)camera.height, camera.bitmap);
+}
+
+void draw_pixel(const float3& p, const int color) {
+	if(!camera.vr) {
+		convert_pixel(p, color,  0);
+	} else {
+		convert_pixel(p, color, -1);
+		convert_pixel(p, color, +1);
+	}
+}
+void draw_circle(const float3& p, const float r, const int color) {
+	if(!camera.vr) {
+		convert_circle(p, r, color,  0);
+	} else {
+		convert_circle(p, r, color, -1);
+		convert_circle(p, r, color, +1);
+	}
+}
+void draw_line(const float3& p0, const float3& p1, const int color) {
+	if(!camera.vr) {
+		convert_line(p0, p1, color,  0);
+	} else {
+		convert_line(p0, p1, color, -1);
+		convert_line(p0, p1, color, +1);
+	}
+}
+void draw_triangle(const float3& p0, const float3& p1, const float3& p2, const int color, const bool translucent) { // points clockwise from above
+	const int cl = lighting(color, (p0+p1+p2)/3.0f, cross(p1-p0, p2-p0), translucent);
+	if(!camera.vr) {
+		convert_triangle(p0, p1, p2, cl,  0);
+	} else {
+		convert_triangle(p0, p1, p2, cl, -1);
+		convert_triangle(p0, p1, p2, cl, +1);
+	}
+}
+void draw_triangle(const float3& p0, const float3& p1, const float3& p2, const int c0, const int c1, const int c2, const bool translucent) { // points clockwise from above
+	const float3 normal = cross(p1-p0, p2-p0);
+	const int cl0 = lighting(c0, p0, normal, translucent);
+	const int cl1 = lighting(c1, p1, normal, translucent);
+	const int cl2 = lighting(c2, p2, normal, translucent);
+	if(!camera.vr) {
+		convert_triangle_interpolated(p0, p1, p2, cl0, cl1, cl2,  0);
+	} else {
+		convert_triangle_interpolated(p0, p1, p2, cl0, cl1, cl2, -1);
+		convert_triangle_interpolated(p0, p1, p2, cl0, cl1, cl2, +1);
+	}
+}
+void draw_text(const float3& p, const float r, const string& s, const int color) {
+	if(!camera.vr) {
+		convert_text(p, s, r, color,  0);
+	} else {
+		convert_text(p, s, r, color, -1);
+		convert_text(p, s, r, color, +1);
+	}
 }
 
 void key_bindings(const int key) {
@@ -62,7 +420,6 @@ void key_bindings(const int key) {
 		//case 'X': key_X = !key_X; break;
 		//case 'Y': key_Y = !key_Y; break;
 		case 'Z': key_Z = !key_Z; break;
-
 		case '1': key_1 = !key_1; break;
 		case '2': key_2 = !key_2; break;
 		case '3': key_3 = !key_3; break;
@@ -73,805 +430,297 @@ void key_bindings(const int key) {
 		case '8': key_8 = !key_8; break;
 		case '9': key_9 = !key_9; break;
 		case '0': key_0 = !key_0; break;
-
-		case 'R': autorotation = !autorotation; break;
-		case 'U': lockmouse = !lockmouse; break;
-		case 'I':
-			if(lockmouse) {
-				double d = (camera.ry*18.0/pi)-(double)((int)(camera.ry*18.0f/pi));
-				d = d<1E-6 ? 1.0 : 1.0-d;
-				update_rotation(0.0, 10.0*d);
-			}
-			break;
-		case 'J':
-			if(lockmouse) {
-				double d = (camera.rx*18.0/pi)-(double)((int)(camera.rx*18.0/pi));
-				d = d<1E-6 ? 1.0 : 1.0-d;
-				update_rotation(10.0*d, 0.0);
-			}
-			break;
-		case 'K':
-			if(lockmouse) {
-				double d = (camera.ry*18.0/pi)-(double)((int)(camera.ry*18.0/pi));
-				d = d<1E-6 ? 1.0f : d;
-				update_rotation(0.0, -10.0*d);
-			}
-			break;
-		case 'L':
-			if(lockmouse) {
-				double d = (camera.rx*18.0/pi)-(double)((int)(camera.rx*18.0/pi));
-				d = d<1E-6 ? 1.0 : d;
-				update_rotation(-10.0*d, 0.0);
-			}
-			break;
-		case 'V': camera.vr = !camera.vr; break;
-		case 'B': camera.tv = !camera.tv; break;
-		case ',': case 0xBC: // 0xBC is Windows Virtual-Key Code for ','
-			if(!camera.free) { // centered camera zoom
-				dzo -= 1.0f;
-			} else if(!lockmouse) { // free camera speed
-				fl -= 1.0f;
-				fvel = 0.05f*exp(fl*0.25f);
-			}
-			break;
-		case '.': case 0xBE: // 0xBE is Windows Virtual-Key Code for '.'
-			if(!camera.free) { // centered camera zoom
-				dzo += 1.0f;
-			} else if(!lockmouse) { // free camera speed
-				fl += 1.0f;
-				fvel = 0.05f*exp(fl*0.25f);
-			}
-			break;
-		case 'F':
-			camera.free = !camera.free;
-			if(!camera.free) {
-				camera.zoom = exp(zo*0.25f);
-			} else {
-				camera.zoom = 1E16f;
-			}
-			break;
-		case 27:
-			running = false;
-			exit(0);
-	}
-
-#ifndef WINDOWS_GRAPHICS
-	if(camera.free) { // move free camera
-		if(key=='W') {
-			camera.pos.x += camera.R.xy*camera.R.yz*fvel;
-			camera.pos.y -= camera.R.xx*camera.R.yz*fvel;
-			camera.pos.z -= camera.R.zz*fvel;
-		}
-		if(key=='A') {
-			camera.pos.x -= camera.R.xx*fvel;
-			camera.pos.y -= camera.R.xy*fvel;
-		}
-		if(key=='S') {
-			camera.pos.x -= camera.R.xy*camera.R.yz*fvel;
-			camera.pos.y += camera.R.xx*camera.R.yz*fvel;
-			camera.pos.z += camera.R.zz*fvel;
-		}
-		if(key=='D') {
-			camera.pos.x += camera.R.xx*fvel;
-			camera.pos.y += camera.R.xy*fvel;
-		}
-		if(key==' ') {
-			camera.pos.x -= camera.R.xy*camera.R.zz*fvel;
-			camera.pos.y += camera.R.xx*camera.R.zz*fvel;
-			camera.pos.z -= camera.R.yz*fvel;
-		}
-		if(key=='C') {
-			camera.pos.x += camera.R.xy*camera.R.zz*fvel;
-			camera.pos.y -= camera.R.xx*camera.R.zz*fvel;
-			camera.pos.z += camera.R.yz*fvel;
-		}
-	}
-	if(!lockmouse) {
-		if(key=='I') dmy += camera.ms; // rotating camera with keys
-		if(key=='J') dmx += camera.ms;
-		if(key=='K') dmy -= camera.ms;
-		if(key=='L') dmx -= camera.ms;
-	}
-	if(key=='Y') { // adjusting field of view
-		camera.fov = fmin(camera.fov<1.0f ? 1.0f : camera.fov+1.0f, 179.0f);
-		camera.dis = 0.5f*(float)camera.width/tan(camera.fov*pif/360.0f);
-	}
-	if(key=='X') {
-		camera.fov = fmax(camera.fov-1.0f, 1.0f);
-		camera.dis = 0.5f*(float)camera.width/tan(camera.fov*pif/360.0f);
-	}
-	if(key=='N') { // adjust camera.vr eye distance
-		camera.eye_distance -= 0.2f;
-		if(camera.eye_distance<0.0f) camera.eye_distance = 0.0f;
-	}
-	if(key=='M') {
-		camera.eye_distance += 0.2f;
-	}
-#endif // WINDOWS_GRAPHICS
-}
-
-void set_zoom(const float rad) {
-	camera.zoom = 0.5f*(float)min(camera.width, camera.height)/rad;
-	zo = 4.0f*log(camera.zoom);
-	dzo = zo;
-}
-void set_light(const uint i, const float3& position) {
-	if(i<max_light_sources) {
-		light_sources[i] = position;
-		light_sources_n = max(light_sources_n, i+1u);
+		default: camera.input_key(key);
 	}
 }
 
-bool convert(int& rx, int& ry, float& rz, const float3& p, const int stereo) { // 3D -> 2D
-	float3 t, r;
-	t.x = p.x-(camera.free ? camera.pos.x : 0.0f)-(float)stereo*camera.eye_distance/camera.zoom*camera.R.xx; // transformation
-	t.y = p.y-(camera.free ? camera.pos.y : 0.0f)-(float)stereo*camera.eye_distance/camera.zoom*camera.R.xy;
-	t.z = p.z-(camera.free ? camera.pos.z : 0.0f);
-	r.z = camera.R.zx*t.x+camera.R.zy*t.y+camera.R.zz*t.z; // z-position for z-buffer
-	const float rs = camera.zoom*camera.dis/(camera.dis-r.z*camera.zoom); // perspective (reciprocal is more efficient)
-	if(rs<=0.0f) return false; // point is behins camera
-	const float tv = camera.tv&&stereo!=0 ? 0.5f : 1.0f;
-	r.x = ((camera.R.xx*t.x+camera.R.xy*t.y+camera.R.xz*t.z)*rs+(float)stereo*camera.eye_distance)*tv+(0.5f+(float)stereo*0.25f)*(float)camera.width; // x position on screen
-	r.y =  (camera.R.yx*t.x+camera.R.yy*t.y+camera.R.yz*t.z)*rs+0.5f*(float)camera.height; // y position on screen
-	rx = (int)(r.x+0.5f);
-	ry = (int)(r.y+0.5f);
-	rz = r.z;
-	return true;
-}
-bool is_off_screen(const int x, const int y, const int stereo) { // check if point is off screen
-	switch(stereo) {
-		default: return x<                  0||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // entire screen
-		case -1: return x<                  0||x>=(int)camera.width/2||y<0||y>=(int)camera.height; // left half
-		case +1: return x<(int)camera.width/2||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // right half
-	}
-}
-bool intersect_lines(const int x0, const int y0, const int x1, const int y1, const int xA, const int yA, const int xB, const int yB) { // check if two lines intersect
-	const float d = (float)((yB-yA)*(x1-x0)-(xB-xA)*(y1-y0));
-	if(d==0.0f) return false; // lines are parallel
-	const float ua = ((xB-xA)*(y0-yA)-(yB-yA)*(x0-xA))/d;
-	const float ub = ((x1-x0)*(y0-yA)-(y1-y0)*(x0-xA))/d;
-	return ua>=0.0f && ua<=1.0f && ub>=0.0f && ub<=1.0f;
-}
-bool intersect_line_rectangle(const int x0, const int y0, const int x1, const int y1, const int xA, const int yA, const int xB, const int yB) { // check if line intersects rectangle
-	return intersect_lines(x0, y0, x1, y1, xA, yA, xB, yA) || intersect_lines(x0, y0, x1, y1, xA, yB, xB, yB) || intersect_lines(x0, y0, x1, y1, xA, yA, xA, yB) || intersect_lines(x0, y0, x1, y1, xB, yA, xB, yB);
-}
-bool intersects_screen(const int x0, const int y0, const int x1, const int y1, const int stereo) {
-	switch(stereo) {
-		case  0: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, camera.width  , camera.height);
-		case -1: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, camera.width/2, camera.height);
-		case +1: return intersect_line_rectangle(x0, y0, x1, y1, camera.width/2, 0, camera.width  , camera.height);
-	}
-	return false;
-}
-Color lighting(const Color& c, const float3& p, const float3& normal, const bool translucent=false) {
-	const float snb = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one sqrt instead of two
-	float br = 0.0f;
-	for(uint i=0u; i<light_sources_n; i++) {
-		const float3 d = light_sources[i]-p; // direction of light source
-		const float sdb = sq(d.x)+sq(d.y)+sq(d.z);
-		const float nbr = dot(d, normal)/sqrt(snb*sdb);
-		br = fmax(br, translucent ? abs(nbr) : nbr);
-	}
-	br = fmax(0.2f, br);
-	return Color((int)(br*c.r), (int)(br*c.g), (int)(br*c.b));
-}
-
-#if defined(WINDOWS_GRAPHICS)
+#if defined(INTERACTIVE_GRAPHICS)
+#if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
 #define VC_EXTRALEAN
 #include <windows.h>
-#ifndef UTILITIES_REGEX
-#include <algorithm> // included in <regex> in "utilities.hpp"
-#endif // UTILITIES_REGEX
-HWND hWnd;
-HDC frontDC, backDC;
-HBITMAP frame;
+HWND window;
+HDC displayDC, memDC;
+HBITMAP frameDC;
 
-void key_hold() {
-	if(!camera.free) {
-		zo = 0.8f*zo+0.2f*dzo; // continuous camera.zoom
-		camera.zoom = exp(zo*0.25f);
-	} else { // move free camera
-		if(GetAsyncKeyState('W')<0) {
-			camera.pos.x += camera.R.xy*camera.R.yz*fvel;
-			camera.pos.y -= camera.R.xx*camera.R.yz*fvel;
-			camera.pos.z -= camera.R.zz*fvel;
-		}
-		if(GetAsyncKeyState('A')<0) {
-			camera.pos.x -= camera.R.xx*fvel;
-			camera.pos.y -= camera.R.xy*fvel;
-		}
-		if(GetAsyncKeyState('S')<0) {
-			camera.pos.x -= camera.R.xy*camera.R.yz*fvel;
-			camera.pos.y += camera.R.xx*camera.R.yz*fvel;
-			camera.pos.z += camera.R.zz*fvel;
-		}
-		if(GetAsyncKeyState('D')<0) {
-			camera.pos.x += camera.R.xx*fvel;
-			camera.pos.y += camera.R.xy*fvel;
-		}
-		if(GetAsyncKeyState(VK_SPACE)<0) {
-			camera.pos.x -= camera.R.xy*camera.R.zz*fvel;
-			camera.pos.y += camera.R.xx*camera.R.zz*fvel;
-			camera.pos.z -= camera.R.yz*fvel;
-		}
-		if(GetAsyncKeyState('C')<0) {
-			camera.pos.x += camera.R.xy*camera.R.zz*fvel;
-			camera.pos.y -= camera.R.xx*camera.R.zz*fvel;
-			camera.pos.z += camera.R.yz*fvel;
-		}
-	}
-	if(!lockmouse) {
-		if(GetAsyncKeyState('I')<0) dmy += camera.ms; // rotate camera with keys
-		if(GetAsyncKeyState('J')<0) dmx += camera.ms;
-		if(GetAsyncKeyState('K')<0) dmy -= camera.ms;
-		if(GetAsyncKeyState('L')<0) dmx -= camera.ms;
-	}
-	if(autorotation) update_rotation(-1, 0);
-	if(GetAsyncKeyState('Y')<0) { // adjust field of view
-		camera.fov = fmin(camera.fov<1.0f ? 1.0f : camera.fov+1.0f, 179.0f);
-		camera.dis = 0.5f*(float)camera.width/tan(camera.fov*pif/360.0f);
-	}
-	if(GetAsyncKeyState('X')<0) {
-		camera.fov = fmax(camera.fov-1.0f, 1.0f);
-		camera.dis = 0.5f*(float)camera.width/tan(camera.fov*pif/360.0f);
-	}
-	if(GetAsyncKeyState('N')<0) { // adjust camera.vr eye distance
-		camera.eye_distance = fmax(camera.eye_distance-0.2f, 0.0f);
-	}
-	if(GetAsyncKeyState('M')<0) {
-		camera.eye_distance += 0.2f;
-	}
-	mx = 0.8*mx+0.2*dmx; // continuous mouse movement
-	my = 0.8*my+0.2*dmy;
-	dmx = 0.0;
-	dmy = 0.0;
-	if(!lockmouse) update_rotation(mx, my);
-}
-
-void draw_bitmap(const void* buffer) {
-	SetBitmapBits(frame, 4*camera.width*camera.height, buffer);
-}
-void draw_label(const Color& c, const string& s, const int x, const int y) {
-	SetTextColor(backDC, RGB(c.r, c.g, c.b));
-	TextOut(backDC, x, y, s.c_str(), (int)s.length());
-	if(camera.vr) {
-		if(x-camera.width/2>0) {
-			TextOut(backDC, x-camera.width/2, y, s.c_str(), (int)s.length());
-		} else if(x+camera.width/2<camera.width) {
-			TextOut(backDC, x+camera.width/2, y, s.c_str(), (int)s.length());
-		}
+int key_windows(const int keycode) {
+	switch(keycode) {
+		case VK_SPACE     : return ' '; // space
+		case VK_ESCAPE    : return  27; // escape
+		case VK_UP        : return -38; // up arrow
+		case VK_DOWN      : return  40; // down arrow
+		case VK_LEFT      : return -37; // left arrow
+		case VK_RIGHT     : return -39; // right arrow
+		case VK_PRIOR     : return -33; // page up
+		case VK_NEXT      : return -34; // page down
+		case VK_HOME      : return -36; // pos1
+		case VK_OEM_COMMA : return ','; // ,
+		case VK_OEM_PERIOD: return '.'; // .
+		default: return keycode;
 	}
 }
-
-void draw_pixel(const Color& c, const int x, const int y) {
-	SetPixel(backDC, x, y, RGB(c.r, c.g, c.b));
-}
-void draw_circle(const Color& c, const int x, const int y, const int r) {
-	if(r<2) {
-		SetPixel(backDC, x, y, RGB(c.r, c.g, c.b));
-	} else {
-		SelectObject(backDC, GetStockObject(NULL_BRUSH));
-		SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-		if(camera.vr&&camera.tv) Ellipse(backDC, x-r/2, y-r, x+r/2, y+r);
-		else Ellipse(backDC, x-r, y-r, x+r, y+r);
-		SelectObject(backDC, GetStockObject(DC_BRUSH));
-	}
-}
-void draw_line(const Color& c, const int x0, const int y0, const int x1, const int y1) {
-	SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-	MoveToEx(backDC, x0, y0, NULL);
-	LineTo(backDC, x1, y1);
-}
-void draw_triangle(const Color& c, const int x0, const int y0, const int x1, const int y1, const int x2, const int y2) {
-	POINT p[3];
-	p[0].x = x0; p[0].y = y0;
-	p[1].x = x1; p[1].y = y1;
-	p[2].x = x2; p[2].y = y2;
-	SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-	SetDCBrushColor(backDC, RGB(c.r, c.g, c.b));
-	Polygon(backDC, p, 3);
-}
-void draw_rectangle(const Color& c, const int x0, const int y0, const int x1, const int y1) {
-	SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-	SetDCBrushColor(backDC, RGB(c.r, c.g, c.b));
-	Rectangle(backDC, x0, y0, x1, y1);
-}
-void draw_polygon(const Color& c, const int* const x, const int* const y, const int n) {
-	POINT* p = new POINT[n];
-	for(int i=0; i<n; i++) {
-		p[i].x = x[i];
-		p[i].y = y[i];
-	}
-	SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-	SetDCBrushColor(backDC, RGB(c.r, c.g, c.b));
-	Polygon(backDC, p, n);
-	delete[] p;
-}
-void draw_text(const Color& c, const string& s, const int x, const int y) {
-	SetTextColor(backDC, RGB(c.r, c.g, c.b));
-	TextOut(backDC, x, y, s.c_str(), (int)s.length());
-}
-
-class Shape {
-public:
-	Color c = Color(0, 0, 0);
-	float z = 0.0f;
-	virtual void draw() const = 0;
-};
-class Pixel: public Shape {
-private:
-	int x, y;
-public:
-	Pixel(const Color& c, const float z, const int x, const int y) {
-		this->c = c;
-		this->z = z;
-		this->x = x+1;
-		this->y = y+1;
-	}
-	void draw() const override {
-		draw_pixel(c, x, y);
-	}
-};
-class Circle: public Shape {
-private:
-	int x, y, r;
-public:
-	Circle(const Color& c, const float z, const int x, const int y, const int r) {
-		this->c = c;
-		this->z = z;
-		this->x = x;
-		this->y = y;
-		this->r = r;
-	}
-	void draw() const override {
-		draw_circle(c, x, y, r);
-	}
-};
-class Line: public Shape {
-private:
-	int x0, y0, x1, y1;
-public:
-	Line(const Color& c, float z, const int x0, const int y0, const int x1, const int y1) {
-		this->c = c;
-		this->z = z;
-		this->x0 = x0;
-		this->y0 = y0;
-		this->x1 = x1;
-		this->y1 = y1;
-	}
-	void draw() const override {
-		draw_line(c, x0, y0, x1, y1);
-	}
-};
-class Triangle: public Shape {
-private:
-	POINT p[3];
-public:
-	Triangle(const Color& c, const float z, const int x[3], const int y[3]) {
-		this->c = c;
-		this->z = z;
-		p[0].x = x[0]; p[0].y = y[0];
-		p[1].x = x[1]; p[1].y = y[1];
-		p[2].x = x[2]; p[2].y = y[2];
-	}
-	void draw() const override {
-		SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-		SetDCBrushColor(backDC, RGB(c.r, c.g, c.b));
-		Polygon(backDC, p, 3);
-	}
-};
-class Quadrangle: public Shape {
-private:
-	POINT p[4];
-public:
-	Quadrangle(const Color& c, const float z, const int x[4], const int y[4]) {
-		this->c = c;
-		this->z = z;
-		p[0].x = x[0]; p[0].y = y[0];
-		p[1].x = x[1]; p[1].y = y[1];
-		p[2].x = x[2]; p[2].y = y[2];
-		p[3].x = x[3]; p[3].y = y[3];
-	}
-	void draw() const override {
-		SetDCPenColor(backDC, RGB(c.r, c.g, c.b));
-		SetDCBrushColor(backDC, RGB(c.r, c.g, c.b));
-		Polygon(backDC, p, 4);
-	}
-};
-class Text: public Shape {
-private:
-	int x, y;
-	string s;
-public:
-	Text(const Color& c, const float z, const string& s, const int x, const int y) {
-		this->c = c;
-		this->z = z;
-		this->s = s;
-		this->x = x;
-		this->y = y;
-	}
-	void draw() const override {
-		draw_text(c, s, x, y);
-	}
-};
-
-const uint maxNum = 10000u; // maximum number of 3D shapes (lines, circles, triangles) that can be drawn per frame
-uint nums=0u, numr=0u;
-Shape* shapes[maxNum]; // shapes for main or left screen
-Shape* rights[maxNum]; // shapes for right screen
-
-void convert_pixel(const Color& c, const float3& p, const int stereo) {
-	int rx, ry; float rz;
-	if(nums<maxNum&&numr<maxNum && convert(rx, ry, rz, p, stereo) && !is_off_screen(rx, ry, stereo)) {
-		switch(stereo) {
-			default: shapes[nums++] = new Pixel(c, rz, rx, ry); break;
-			case +1: rights[numr++] = new Pixel(c, rz, rx, ry); break;
-		}
-	}
-}
-void convert_circle(const Color& c, const float3& p, const float r, const int stereo) {
-	int rx, ry; float rz;
-	if(nums<maxNum&&numr<maxNum && convert(rx, ry, rz, p, stereo)) {
-		const float rs = camera.zoom*camera.dis/(camera.dis-rz*camera.zoom);
-		const int radius = (int)(rs*r+0.5f);
-		switch(stereo) {
-			default: if((rx+radius>=                  0 && rx-radius<(int)camera.width   || ry+radius>=0 || ry-radius<(int)camera.height)) shapes[nums++] = new Circle(c, rz, rx, ry, radius); break; // cancel drawing if circle is off screen
-			case -1: if((rx+radius>=                  0 && rx-radius<(int)camera.width/2 || ry+radius>=0 || ry-radius<(int)camera.height)) shapes[nums++] = new Circle(c, rz, rx, ry, radius); break;
-			case +1: if((rx+radius>=(int)camera.width/2 && rx-radius<(int)camera.width   || ry+radius>=0 || ry-radius<(int)camera.height)) rights[numr++] = new Circle(c, rz, rx, ry, radius); break;
-		}
-	}
-}
-void convert_line(const Color& c, const float3& p0, const float3& p1, const int stereo) {
-	int r0x, r0y, r1x, r1y; float r0z, r1z;
-	if(nums<maxNum&&numr<maxNum && convert(r0x, r0y, r0z, p0, stereo) && convert(r1x, r1y, r1z, p1, stereo)
-		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && !intersects_screen(r0x, r0y, r1x, r1y, stereo))) {
-		const float z = (r0z+r1z)*0.5f;
-		switch(stereo) {
-			default: shapes[nums++] = new Line(c, z, r0x, r0y, r1x, r1y); break;
-			case +1: rights[numr++] = new Line(c, z, r0x, r0y, r1x, r1y); break;
-		}
-	}
-}
-void convert_triangle(const Color& c, const float3& p0, const float3& p1, const float3& p2, const int stereo) {
-	int r0x, r0y, r1x, r1y, r2x, r2y; float r0z, r1z, r2z;
-	if(nums<maxNum&&numr<maxNum && convert(r0x, r0y, r0z, p0, stereo) && convert(r1x, r1y, r1z, p1, stereo) && convert(r2x, r2y, r2z, p2, stereo)
-		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && is_off_screen(r2x, r2y, stereo)
-		&& !intersects_screen(r0x, r0y, r1x, r1y, stereo) && !intersects_screen(r1x, r1y, r2x, r2y, stereo) && !intersects_screen(r2x, r2y, r0x, r0y, stereo))) {
-		const int x[3] = { r0x, r1x, r2x };
-		const int y[3] = { r0y, r1y, r2y };
-		const float z = (r0z+r1z+r2z)/3.0f;
-		switch(stereo) {
-			default: shapes[nums++] = new Triangle(c, z, x, y); break;
-			case +1: rights[numr++] = new Triangle(c, z, x, y); break;
-		}
-	}
-}
-void convert_quadrangle(const Color& c, const float3& p0, const float3& p1, const float3& p2, const float3& p3, const int stereo) {
-	int r0x, r0y, r1x, r1y, r2x, r2y, r3x, r3y; float r0z, r1z, r2z, r3z;
-	if(nums<maxNum&&numr<maxNum && convert(r0x, r0y, r0z, p0, stereo) && convert(r1x, r1y, r1z, p1, stereo) && convert(r2x, r2y, r2z, p2, stereo) && convert(r3x, r3y, r3z, p3, stereo)
-		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && is_off_screen(r2x, r2y, stereo) && is_off_screen(r3x, r3y, stereo)
-		&& !intersects_screen(r0x, r0y, r1x, r1y, stereo) && !intersects_screen(r1x, r1y, r2x, r2y, stereo) && !intersects_screen(r2x, r2y, r3x, r3y, stereo) && !intersects_screen(r3x, r3y, r0x, r0y, stereo))) {
-		const int x[4] = { r0x, r1x, r2x, r3x} ;
-		const int y[4] = { r0y, r1y, r2y, r3y} ;
-		const float z = (r0z+r1z+r2z+r3z)*0.25f;
-		switch(stereo) {
-			default: shapes[nums++] = new Quadrangle(c, z, x, y); break;
-			case +1: rights[numr++] = new Quadrangle(c, z, x, y); break;
-		}
-	}
-}
-void convert_text(const Color& c, const float3& p, const string& s, const float r, const int stereo) {
-	int rx, ry; float rz;
-	if(nums<maxNum&&numr<maxNum && convert(rx, ry, rz, p, stereo)) {
-		const float rs = camera.zoom*camera.dis/(camera.dis-rz*camera.zoom);
-		const int radius = (int)(rs*r+0.5f);
-		const float tr = fmax(0.85f*radius, 2.0f);
-		switch(stereo) {
-			default: if((rx+radius>=                  0 && rx-radius<(int)camera.width   || ry+radius>=0 || ry-radius<(int)camera.height)) shapes[nums++] = new Text(c, rz, s, (int)(rx+4.0f+tr), (int)(ry+3.0f+tr)); break; // cancel drawing if circle is off screen
-			case -1: if((rx+radius>=                  0 && rx-radius<(int)camera.width/2 || ry+radius>=0 || ry-radius<(int)camera.height)) shapes[nums++] = new Text(c, rz, s, (int)(rx+4.0f+tr), (int)(ry+3.0f+tr)); break;
-			case +1: if((rx+radius>=(int)camera.width/2 && rx-radius<(int)camera.width   || ry+radius>=0 || ry-radius<(int)camera.height)) rights[numr++] = new Text(c, rz, s, (int)(rx+4.0f+tr), (int)(ry+3.0f+tr)); break;
-		}
-	}
-}
-
-void draw_pixel(const Color& c, const float3& p) {
-	if(!camera.vr) {
-		convert_pixel(c, p,  0);
-	} else {
-		convert_pixel(c, p, -1);
-		convert_pixel(c, p, +1);
-	}
-}
-void draw_circle(const Color& c, const float3& p, const float r) {
-	if(!camera.vr) {
-		convert_circle(c, p, r,  0);
-	} else {
-		convert_circle(c, p, r, -1);
-		convert_circle(c, p, r, +1);
-	}
-}
-void draw_line(const Color& c, const float3& p0, const float3& p1) {
-	if(!camera.vr) {
-		convert_line(c, p0, p1,  0);
-	} else {
-		convert_line(c, p0, p1, -1);
-		convert_line(c, p0, p1, +1);
-	}
-}
-void draw_triangle(const Color& c, const float3& p0, const float3& p1, const float3& p2, const bool translucent) { // points clockwise from above
-	const Color cl = lighting(c, (p0+p1+p2)/3.0f, cross(p1-p0, p2-p0), translucent);
-	if(!camera.vr) {
-		convert_triangle(cl, p0, p1, p2,  0);
-	} else {
-		convert_triangle(cl, p0, p1, p2, -1);
-		convert_triangle(cl, p0, p1, p2, +1);
-	}
-}
-void draw_quadrangle(const Color& c, const float3& p0, const float3& p1, const float3& p2, const float3& p3, const bool translucent) { // points clockwise from above, only planar points
-	const Color cl = lighting(c, (p0+p1+p2+p3)*0.25f, cross(p1-p0, p2-p0), translucent);
-	if(!camera.vr) {
-		convert_quadrangle(cl, p0, p1, p2, p3,  0);
-	} else {
-		convert_quadrangle(cl, p0, p1, p2, p3, -1);
-		convert_quadrangle(cl, p0, p1, p2, p3, +1);
-	}
-}
-void draw_text(const Color& c, const float3& p, const string& s, const float r) {
-	if(!camera.vr) {
-		convert_text(c, p, s, r,  0);
-	} else {
-		convert_text(c, p, s, r, -1);
-		convert_text(c, p, s, r, +1);
-	}
-}
-
-void set_mouse(const int x, const int y) {
-	SetCursorPos(x, y);
-}
-void set_clip(const int x, const int y, const int w, const int h) {
-	SelectClipRgn(backDC, CreateRectRgn(x, y, x+w, y+h));
-}
-inline bool z_order(const Shape* const lhs, const Shape* const rhs) {
-	return lhs->z<rhs->z;
-}
-void draw_frame() {
-#ifndef SKIP_VISIBILITY_CHECKS
-	if(!camera.vr) {
-		std::sort(shapes, shapes+nums, z_order); // sort data array (--> visibility <--)
-	} else if(numr>0u) {
-		std::sort(shapes, shapes+nums, z_order);
-		std::sort(rights, rights+numr, z_order);
-	}
-#endif // SKIP_VISIBILITY_CHECKS
-	if(!camera.vr) {
-		for(uint i=0u; i<nums; i++) {
-			shapes[i]->draw(); // draw in right order on frame
-			delete shapes[i];
-			shapes[i] = nullptr;
-		}
-		nums = 0u;
-	} else {
-		set_clip(0, 0, camera.width/2, camera.height); // draw on left image only
-		for(uint i=0u; i<nums; i++) {
-			shapes[i]->draw();
-			delete shapes[i];
-			shapes[i] = nullptr;
-		}
-		nums = 0u;
-		set_clip(camera.width/2, 0, camera.width/2, camera.height); // draw on right image only
-		for(uint i=0u; i<numr; i++) {
-			rights[i]->draw();
-			delete rights[i];
-			rights[i] = nullptr;
-		}
-		numr = 0u;
-		set_clip(0, 0, camera.width, camera.height); // enable full drawing area again
-	}
-}
-
 void update_frame(const double frametime) {
 	main_label(frametime);
-	BitBlt(frontDC, 0, 0, camera.width, camera.height, backDC, 0, 0, SRCCOPY); // copy back buffer to front buffer
-	HPEN   oldPen   = (HPEN  )SelectObject(backDC, GetStockObject(BLACK_PEN  ));
-	HBRUSH oldBrush = (HBRUSH)SelectObject(backDC, GetStockObject(BLACK_BRUSH));
-	Rectangle(backDC, 0, 0, camera.width, camera.height); // clear back buffer
-	SelectObject(backDC, oldPen);
-	SelectObject(backDC, oldBrush);
+	SetBitmapBits(frameDC, 4*(int)camera.width*(int)camera.height, camera.bitmap);
+	BitBlt(displayDC, 0, 0, (int)camera.width, (int)camera.height, memDC, 0, 0, SRCCOPY); // copy back buffer to front buffer
+	camera.clear_frame(); // clear frame
 }
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-	switch(message) {
-		case WM_DESTROY:
-			running = false;
-			PostQuitMessage(0);
-			exit(0);
-			return 0;
-		case WM_MOUSEMOVE:
-			if(!lockmouse) {
-				dmx = camera.ms*(double)((int)camera.width/2 -(int)LOWORD(lParam));
-				dmy = camera.ms*(double)((int)camera.height/2-(int)HIWORD(lParam));
-			}
-			break;
-		case WM_MOUSEWHEEL:
-			if(!camera.free) { // camera.zoom
-				if((short)HIWORD(wParam)<0) dzo += 1.0f;
-				else                        dzo -= 1.0f;
-			} else if(!lockmouse) {
-				if((short)HIWORD(wParam)<0) fl -= 1.0f;
-				else                        fl += 1.0f;
-				fvel = 0.05f*exp(fl*0.25f);
-			}
-			break;
-		case WM_KEYDOWN:
-			int key = (int)wParam;
-			switch(key) {
-				case VK_ESCAPE: key =  27; break; // escape
-				case VK_UP    : key = -38; break; // up arrow
-				case VK_DOWN  : key =  40; break; // down arrow
-				case VK_LEFT  : key = -37; break; // left arrow
-				case VK_RIGHT : key = -39; break; // right arrow
-				case VK_PRIOR : key = -33; break; // page up
-				case VK_NEXT  : key = -34; break; // page down
-				case VK_HOME  : key = -36; break; // pos1
-				case VK_END   : key = -35; break; // end
-			}
-			if(key=='U') {
-				if(!lockmouse) {
-					ShowCursor(true); // show cursor
-				} else {
-					ShowCursor(false); // hide cursor
-					set_mouse(camera.width/2, camera.height/2); // reset mouse
-				}
-			}
-			key_bindings(key);
-			break;
+LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+	if(message==WM_DESTROY) {
+		running = false;
+		PostQuitMessage(0);
+		exit(0);
+	} else if(message==WM_MOUSEMOVE) {
+		camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));
+	} else if(message==WM_MOUSEWHEEL) {
+		if((short)HIWORD(wParam)>0) camera.input_scroll_up(); else camera.input_scroll_down();
+	} else if(message==WM_KEYDOWN) {
+		int key = key_windows((int)wParam);
+		camera.set_key_state(key, true);
+		key_bindings(key);
+	} else if(message==WM_KEYUP) {
+		int key = key_windows((int)wParam);
+		camera.set_key_state(key, false);
 	}
-	return DefWindowProc(hWnd, message, wParam, lParam);
+	return DefWindowProc(window, message, wParam, lParam);
 }
 #ifdef GRAPHICS_CONSOLE
 int main(int argc, char* argv[]) { // call WinMain from dummy main function in order to have an additional console window
 	main_arguments = get_main_arguments(argc, argv);
-	return WinMain(GetModuleHandle(NULL), NULL, GetCommandLineA(), SW_SHOWMINIMIZED);
+	return WinMain(GetModuleHandle(0), 0, GetCommandLineA(), SW_SHOWMINIMIZED);
 }
 #endif // GRAPHICS_CONSOLE
 INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_ INT) {
-	WNDCLASS wndClass;
-	wndClass.style = CS_HREDRAW|CS_VREDRAW;
-	wndClass.lpfnWndProc = WndProc;
-	wndClass.cbClsExtra = 0;
-	wndClass.cbWndExtra = 0;
-	wndClass.hInstance = hInstance;
-	wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	wndClass.lpszMenuName = NULL;
-	wndClass.lpszClassName = TEXT("WindowClass");
+	WNDCLASS wndClass = { 0, WndProc, 0, 0, hInstance, LoadIcon(0, IDI_APPLICATION), LoadCursor(0, IDC_ARROW), (HBRUSH)GetStockObject(BLACK_BRUSH), 0, TEXT("WindowClass") };
 	RegisterClass(&wndClass);
-	HMONITOR hMon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-	MONITORINFO mi = {sizeof(mi)};
-	if(!GetMonitorInfo(hMon, &mi)) return 1;
-
-	DEVMODE lpDevMode; // get monitor fps
-	memset(&lpDevMode, 0, sizeof(DEVMODE));
-	camera.fps_limit = (uint)EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &lpDevMode)!=0 ? (uint)lpDevMode.dmDisplayFrequency : 60u; // find out screen refresh rate
-	camera.width  = (uint)(mi.rcMonitor.right-mi.rcMonitor.left); // get screen size, initialize variables
-	camera.height = (uint)(mi.rcMonitor.bottom-mi.rcMonitor.top);
-	camera.fov = 100.0f;
-	set_zoom(1.0f); // set initial zoom (weird 1.0f/1.296875f value required for backwards compatibility with previous work)
+	MONITORINFO mi = { sizeof(mi) };
+	if(!GetMonitorInfo(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &mi)) return 1;
+	const uint width  = (uint)(mi.rcMonitor.right-mi.rcMonitor.left); // get screen size, initialize variables
+	const uint height = (uint)(mi.rcMonitor.bottom-mi.rcMonitor.top);
 	ShowCursor(false); // hide cursor
-	set_mouse(camera.width/2, camera.height/2);
-	camera.update_matrix();
+	SetCursorPos(width/2, height/2);
+	DEVMODE lpDevMode = { 0 }; // get monitor fps
+	const uint fps_limit = (uint)EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &lpDevMode)!=0 ? (uint)lpDevMode.dmDisplayFrequency : 60u; // find out screen refresh rate
+	window = CreateWindow("WindowClass", WINDOW_NAME, WS_POPUP|WS_VISIBLE, mi.rcMonitor.left, mi.rcMonitor.top, width, height, 0, 0, hInstance, 0); // create fullscreen window
+	displayDC = GetDC(window);
+	memDC = CreateCompatibleDC(displayDC);
+	frameDC = CreateCompatibleBitmap(displayDC, width, height); // initialize back buffer
+	SelectObject(memDC, frameDC);
 
-	hWnd = CreateWindow("WindowClass", WINDOW_NAME, WS_POPUP|WS_VISIBLE, mi.rcMonitor.left, mi.rcMonitor.top, camera.width, camera.height, NULL, NULL, hInstance, 0); // create fullscreen window
-	frontDC = GetDC(hWnd);
-	frame = CreateCompatibleBitmap(frontDC, camera.width, camera.height); // initialize back buffer
-	backDC = CreateCompatibleDC(frontDC);
-	HBITMAP oldBMP = (HBITMAP)SelectObject(backDC, frame);
-	DeleteObject(oldBMP);
-	SelectObject(backDC, GetStockObject(DC_PEN  ));
-	SelectObject(backDC, GetStockObject(DC_BRUSH));
-	//SelectObject(backDC, GetStockObject(NULL_BRUSH)); for no filling of circles and polygons
-	SetDCPenColor(backDC, RGB(255, 255, 255)); // define drawing properties
-	SetDCBrushColor(backDC, RGB(0, 0, 0));
-	SetTextAlign(backDC, TA_TOP);
-	SetBkMode(backDC, TRANSPARENT);
-	SetPolyFillMode(backDC, ALTERNATE);
-	HFONT hFont = CreateFont(FONT_HEIGHT+5, FONT_WIDTH+1, 0, 0, 500, 0, 0, 0, ANSI_CHARSET, 0, 0, 0, 0, "Courier New"); // (HFONT)GetStockObject(ANSI_FIXED_FONT);
-	SelectObject(backDC, hFont);
-
+	camera = Camera(width, height, fps_limit);
 	thread compute_thread(main_physics); // start main_physics() in a new thread
 
-	MSG msg = {0};
 	Clock clock;
 	double frametime = 1.0;
+	MSG msg = { 0 };
 	while(msg.message!=WM_QUIT) {
-		while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		while(PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
 			if(msg.message==WM_QUIT) break;
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
 		// main loop ################################################################
-		key_hold();
+		camera.update_state();
 		main_graphics();
-		draw_frame();
 		update_frame(frametime);
 		frametime = clock.stop();
 		sleep(1.0/(double)camera.fps_limit-frametime);
 		clock.start();
 		// ##########################################################################
 	}
-	ReleaseDC(hWnd, frontDC);
+
+	ReleaseDC(window, displayDC);
 	compute_thread.join();
 	return 0;
 }
 
-#elif defined(CONSOLE_GRAPHICS)
+#elif defined(__linux__)||defined(__APPLE__)
 
-Image* frame = nullptr;
+#include "X11/include/X11/Xlib.h" // source: libx11-dev
 
-void draw_bitmap(const void* buffer) {
-	std::copy((int*)buffer, (int*)buffer+camera.width*camera.height, frame->data());
+Display* x11_display;
+Window x11_window;
+GC x11_gc;
+XImage* x11_image;
+std::atomic_bool updating_frame = true;
+
+int key_linux(const int keycode) {
+	switch(keycode) {
+		case  38: return  'A'; case 42: return 'G'; case 58: return 'M'; case 39: return 'S'; case 52: return 'Y'; case 15: return '6';
+		case  56: return  'B'; case 43: return 'H'; case 57: return 'N'; case 28: return 'T'; case 29: return 'Z'; case 16: return '7';
+		case  54: return  'C'; case 31: return 'I'; case 32: return 'O'; case 30: return 'U'; case 10: return '1'; case 17: return '8';
+		case  40: return  'D'; case 44: return 'J'; case 33: return 'P'; case 55: return 'V'; case 11: return '2'; case 18: return '9';
+		case  26: return  'E'; case 45: return 'K'; case 24: return 'Q'; case 25: return 'W'; case 12: return '3'; case 14: return '5';
+		case  41: return  'F'; case 46: return 'L'; case 27: return 'R'; case 53: return 'X'; case 13: return '4'; case 19: return '0';
+		case  51: return  '#'; case 94: return '<'; case 35: return '+'; case 61: return '-'; case 59: return ','; case 60: return '.';
+		case  65: return  ' '; // space
+		case  36: return   10; // enter
+		case  22: return    8; // backspace
+		case   9: return   27; // escape
+		case 107: return  127; // delete
+		case  48: return  142; // Ä
+		case  47: return  153; // Ö
+		case  34: return  154; // Ü
+		case  20: return  225; // ß
+		case  49: return  248; // ^
+		case  21: return  239; // ´
+		case 106: return  -45; // insert
+		case  77: return -144; // num lock
+		case  66: return  -20; // caps lock
+		case 115: return  -91; // windows key
+		case 117: return  -93; // kontext menu key
+		case  87: return  '1'; case  85: return  '6'; // numpad
+		case  88: return  '2'; case  79: return  '7'; // numpad
+		case  89: return  '3'; case  80: return  '8'; // numpad
+		case  83: return  '4'; case  81: return  '9'; // numpad
+		case  84: return  '5'; case  90: return  '0'; // numpad
+		case  63: return  '*'; case 112: return  '/'; // numpad
+		case  86: return  '+'; case  82: return  '-'; // numpad
+		case  91: return  ','; case 108: return   10; // numpad
+		case  98: return  -38; case 104: return  -40; // up/down arrow
+		case 100: return  -37; case 102: return  -39; // left/right arrow
+		case  99: return  -33; case 105: return  -34; // page up/down
+		case  97: return  -36; case 103: return  -35; // pos1/end
+		case  67: return -112; case  73: return -118; // F1/F7
+		case  68: return -113; case  74: return -119; // F2/F8
+		case  69: return -114; case  75: return -120; // F3/F9
+		case  70: return -115; case  76: return -121; // F4/F10
+		case  71: return -116; case  95: return -122; // F5/F11
+		case  72: return -117; case  96: return -123; // F6/F12
+		default: return 0;
+	}
 }
-void draw_label(const Color& c, const string& s, const int x, const int y) {}
+void update_frame(const double frametime) {
+	main_label(frametime);
+	updating_frame = true;
+	XPutImage(x11_display, x11_window, x11_gc, x11_image, 0, 0, 0, 0, camera.width, camera.height);
+	updating_frame = false;
+	camera.clear_frame(); // clear frame
+}
+void input_detection() {
+	int last_x=camera.width/2, last_y=camera.height/2;
+	bool mouse_pressed = false;
+	XEvent x11_event;
+	while(running) {
+		if(!updating_frame) {
+			XNextEvent(x11_display, &x11_event);
+			if(x11_event.type==KeyPress) {
+				const int key = key_linux((int)x11_event.xkey.keycode);
+				camera.set_key_state(key, true);
+				key_bindings(key);
+			} else if(x11_event.type==KeyRelease) {
+				const int key = key_linux((int)x11_event.xkey.keycode);
+				camera.set_key_state(key, false);
+			} else if(x11_event.type==ButtonPress) {
+				const int x11_button = x11_event.xbutton.button;
+				if(x11_button==Button4) { // scroll up
+					camera.input_scroll_up();
+				} else if(x11_button==Button5) { // scroll down
+					camera.input_scroll_down();
+				} else {
+					mouse_pressed = true;
+					last_x = (int)x11_event.xmotion.x;
+					last_y = (int)x11_event.xmotion.y;
+				}
+			} else if(x11_event.type==ButtonRelease) {
+				mouse_pressed = false;
+			} else if(x11_event.type==MotionNotify) {
+				int new_x = (int)x11_event.xmotion.x;
+				int new_y = (int)x11_event.xmotion.y;
+				if(mouse_pressed) {
+					camera.input_mouse_dragged(new_x-last_x, new_y-last_y);
+					last_x = new_x;
+					last_y = new_y;
+				}
+			}
+		} else {
+			sleep(0.01);
+		}
+	}
+}
+int main(int argc, char* argv[]) {
+	main_arguments = get_main_arguments(argc, argv);
 
-uint ltw=0u, lth=0u;
+	x11_display = XOpenDisplay(0);
+	if(!x11_display) print_error("No X11 display available.");
+
+	const uint height = 720u; // (uint)DisplayHeight(x11_display, 0);
+	const uint width = height*16u/9u; // (uint)DisplayWidth(x11_display, 0);
+	camera = Camera(width, height, 60u);
+
+	x11_window = XCreateWindow(x11_display, DefaultRootWindow(x11_display), 0, 0, width, height, 0, CopyFromParent, CopyFromParent, CopyFromParent, 0, 0);
+	XStoreName(x11_display, x11_window, WINDOW_NAME);
+	struct Hints { long flags=2l, functions=0l, decorations=0b0111010l, input_mode=0l, status=0l; } x11_hints; // decorations=maximize|minimize|menu|title|resize|border|all
+	Atom x11_property = XInternAtom(x11_display, "_MOTIF_WM_HINTS", 0);
+	XChangeProperty(x11_display, x11_window, x11_property, x11_property, 32, PropModeReplace, (unsigned char*)&x11_hints, 5);
+	XMapRaised(x11_display, x11_window);
+	x11_gc = XCreateGC(x11_display, x11_window, 0, 0);
+	x11_image = XCreateImage(x11_display, CopyFromParent, DefaultDepth(x11_display, DefaultScreen(x11_display)), ZPixmap, 0, (char*)camera.bitmap, width, height, 32, 0);
+	XSelectInput(x11_display, x11_window, KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask);
+
+	thread compute_thread(main_physics); // start main_physics() in a new thread
+	thread input_thread(input_detection);
+
+	Clock clock;
+	double frametime = 1.0;
+	while(running) {
+		// main loop ################################################################
+		camera.update_state();
+		main_graphics();
+		update_frame(frametime);
+		frametime = clock.stop();
+		sleep(1.0/(double)camera.fps_limit-frametime);
+		clock.start();
+		// ##########################################################################
+	}
+
+	XFreeGC(x11_display, x11_gc);
+	XDestroyWindow(x11_display, x11_window);
+	XCloseDisplay(x11_display);
+	compute_thread.join();
+	input_thread.join();
+	return 0;
+}
+#endif // Linux
+#endif // INTERACTIVE_GRAPHICS
+
+#ifdef INTERACTIVE_GRAPHICS_ASCII
+uint last_textwidth=0u, last_textheight=0u;
 uint fontwidth=8u, fontheight=16u;
 void update_frame(const double frametime) {
-	if(ltw==0u&&lth==0u) get_console_font_size(fontwidth, fontheight);
+	if(last_textwidth==0u&&last_textheight==0u) get_console_font_size(fontwidth, fontheight);
 	uint textwidth=0u, textheight=0u;
 	get_console_size(textwidth, textheight);
 	textwidth = max(textwidth, 2u)-1u;
-	textwidth = min(textwidth, textheight*frame->width()*fontheight/(frame->height()*fontwidth));
-	textheight = min(textheight, textwidth*frame->height()*fontwidth/(frame->width()*fontheight));
+	textwidth = min(textwidth, textheight*camera.width*fontheight/(camera.height*fontwidth));
+	textheight = min(textheight, textwidth*camera.height*fontwidth/(camera.width*fontheight));
 	textwidth = max(textwidth, 1u);
 	textheight = max(textheight, 1u);
-	if(textwidth!=ltw||textheight!=lth) {
+	if(textwidth!=last_textwidth||textheight!=last_textheight) {
 		clear_console();
-		ltw = textwidth;
-		lth = textheight;
+		last_textwidth = textwidth;
+		last_textheight = textheight;
 	}
 	show_console_cursor(false);
-	print_video_dither(frame, textwidth, textheight);
+	const Image image(camera.width, camera.height, camera.bitmap);
+	print_video_dither(&image, textwidth, textheight);
 	print(alignr(textwidth, to_string(textwidth)+"x"+to_string(textheight)+" "+alignr(4, to_int(1.0/frametime))+"fps"));
 	show_console_cursor(true);
+	camera.clear_frame(); // clear frame
 }
-
-void key_detection() {
+void input_detection() {
 	while(running) {
 		int key = key_press();
 		key -= (key>96&&key<123)*32; // convert lower case to upper case
 		key_bindings(key);
 	}
 }
-
-void key_hold() {
-	if(autorotation) update_rotation(-1, 0);
-	if(!camera.free) {
-		zo = 0.8f*zo+0.2f*dzo; // continuous camera.zoom
-		camera.zoom = exp(zo*0.25f);
-	}
-	mx = 0.8*mx+0.2*dmx; // continuous mouse movement
-	my = 0.8*my+0.2*dmy; // continuous mouse movement
-	dmx = 0.0;
-	dmy = 0.0;
-	if(!lockmouse) update_rotation(mx, my);
-}
-
 int main(int argc, char* argv[]) {
 	main_arguments = get_main_arguments(argc, argv);
-	camera.fps_limit = 60u; // find out screen refresh rate
-	camera.width  = 384u; // must be divisible by 8
-	camera.height = 216u; // must be divisible by 8
-	camera.fov = 100.0f;
-	set_zoom(1.0f); // set initial zoom
-	camera.update_matrix();
-
-	frame = new Image(camera.width, camera.height);
-
+	camera = Camera(384u, 216u, 60u); // width and height must be divisible by 8
 	thread compute_thread(main_physics); // start main_physics() in a new thread
-	thread key_thread(key_detection);
-
+	thread input_thread(input_detection);
 	Clock clock;
 	double frametime = 1.0;
 #ifdef UTILITIES_CONSOLE_DITHER_LOOKUP
@@ -880,7 +729,7 @@ int main(int argc, char* argv[]) {
 	clear_console();
 	while(running) {
 		// main loop ################################################################
-		key_hold();
+		camera.update_state();
 		main_graphics();
 		update_frame(frametime);
 		frametime = clock.stop();
@@ -889,26 +738,16 @@ int main(int argc, char* argv[]) {
 		// ##########################################################################
 	}
 	compute_thread.join();
-	key_thread.join();
+	input_thread.join();
 	return 0;
 }
+#endif // INTERACTIVE_GRAPHICS_ASCII
 
-#else // GRAPHICS
-
-void draw_bitmap(const void* buffer) {}
-void draw_label(const Color& c, const string& s, const int x, const int y) {}
-
+#if !defined(INTERACTIVE_GRAPHICS) && !defined(INTERACTIVE_GRAPHICS_ASCII)
 int main(int argc, char* argv[]) {
 	main_arguments = get_main_arguments(argc, argv);
-	camera.fps_limit = 60u; // find out screen refresh rate
-	camera.width  = GRAPHICS_FRAME_WIDTH; // must be divisible by 8
-	camera.height = GRAPHICS_FRAME_HEIGHT; // must be divisible by 8
-	camera.fov = 100.0f;
-	set_zoom(1.0f); // set initial zoom
-	camera.update_matrix();
-
+	camera = Camera(GRAPHICS_FRAME_WIDTH, GRAPHICS_FRAME_HEIGHT, 60u); // width and height must be divisible by 8
 	thread compute_thread(main_physics); // start main_physics() in a new thread
-
 	while(running) {
 		// main loop ################################################################
 		main_label(1.0);
@@ -918,6 +757,5 @@ int main(int argc, char* argv[]) {
 	compute_thread.join();
 	return 0;
 }
-
-#endif // GRAPHICS
+#endif // no INTERACTIVE_GRAPHICS and no INTERACTIVE_GRAPHICS_ASCII
 #endif // GRAPHICS

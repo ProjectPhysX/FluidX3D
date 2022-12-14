@@ -94,7 +94,7 @@ Q = &Sigma;<sub><i>&alpha;&beta;</i></sub> <i>&Pi;<sub>&alpha;&beta;</sub></i><s
 
 ## Graphics Features
 
-- on Windows: real time [interactive rasterization and raytracing graphics](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL)
+- on Windows and Linux: real time [interactive rasterization and raytracing graphics](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL)
 - on Windows and Linux (even in WSL and/or in a remote console through SSH): real time interactive ASCII console graphics
 - with interactive graphics mode disabled, image resolution can be as large as VRAM allows for (132 Megapixel (16K) and above)
 - (interacitive) visualization modes:
@@ -116,8 +116,8 @@ Q = &Sigma;<sub><i>&alpha;&beta;</i></sub> <i>&Pi;<sub>&alpha;&beta;</sub></i><s
    - Set the initial condition in a loop that iterates over the entire lattice by writing to `lbm.rho[n]`/`lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]`/`lbm.flags[n]`.
    - Call `lbm.run()` to initialize and execute the setup (infinite time steps) or `lbm.run(time_steps)` to execute only a specific number of time steps.
    - As long as the `lbm` object is in scope, you can access the memory. As soon as it goes out of scope, all memory associated to the current simulation is freed again.
-3. When done with the setup, hit compile+run on Windows in Visual Studio Community or execute `./make.sh` on Linux; this will automatically select the fastest installed GPU. Alternatively, you can add the device ID as the first command-line argument, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D.exe 2` to run the executable on device 2. Compile time for the entire code is about 10 seconds.
-4. On Windows with `WINDOWS_GRAPHICS`/`CONSOLE_GRAPHICS` or on Linux with `CONSOLE_GRAPHICS`, press the <kbd>P</kbd> key to start/pause the simulation.
+3. When done with the setup, hit compile+run on Windows in Visual Studio Community or execute `./make.sh` on Linux; this will automatically select the fastest installed GPU. Alternatively, you can add the device ID as the first command-line argument, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D.exe 2` to run the executable on device 2. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
+4. With `INTERACTIVE_GRAPHICS`/`INTERACTIVE_GRAPHICS_ASCII` enabled, press the <kbd>P</kbd> key to start/pause the simulation.
 
    Toggle rendering modes with the keyboard:
    - <kbd>1</kbd>: flags (and force vectors on solid boundary nodes if the extension is used)
@@ -337,6 +337,8 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 ## External Code/Libraries/Images used in FluidX3D
 
 - [OpenCL-Headers](https://github.com/KhronosGroup/OpenCL-Headers) for GPU parallelization ([Khronos Group](https://www.khronos.org/opencl/))
+- [Win32 API](https://learn.microsoft.com/en-us/windows/win32/api/winbase/) for interactive graphics in Windows ([Microsoft](https://www.microsoft.com/))
+- [X11/Xlib](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html) for interactive graphics in Linux ([The Open Group](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html))
 - [marching-cubes tables](http://paulbourke.net/geometry/polygonise/) for isosurface generation on GPU ([Paul Bourke](http://paulbourke.net/geometry/))
 - [`src/lodepng.cpp`](https://github.com/lvandeve/lodepng/blob/master/lodepng.cpp) and [`src/lodepng.hpp`](https://github.com/lvandeve/lodepng/blob/master/lodepng.h) for `.png` encoding and decoding ([Lode Vandevenne](https://lodev.org/))
 - [SimplexNoise](https://weber.itn.liu.se/~stegu/simplexnoise/SimplexNoise.java) class in [`src/utilities.hpp`](https://github.com/ProjectPhysX/FluidX3D/blob/master/src/utilities.hpp) for generating continuous noise in 2D/3D/4D space ([Stefan Gustavson](https://github.com/stegu))

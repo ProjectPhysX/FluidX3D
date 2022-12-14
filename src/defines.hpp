@@ -23,8 +23,8 @@
 //#define TEMPERATURE // enables temperature extension; set fixed-temperature nodes with TYPE_T (similar to EQUILIBRIUM_BOUNDARIES); allocates an extra 32 (FP32) or 18 (FP16) Bytes/node
 //#define SUBGRID // enables Smagorinsky-Lilly subgrid turbulence model to keep simulations with very large Reynolds number stable
 
-//#define WINDOWS_GRAPHICS // enable interactive graphics in Windows; start/pause the simulation by pressing P
-//#define CONSOLE_GRAPHICS // enable interactive graphics in the console; start/pause the simulation by pressing P
+//#define INTERACTIVE_GRAPHICS // enable interactive graphics; start/pause the simulation by pressing P; either Windows or Linux X11 desktop must be available; on Linux: change to "compile on Linux with X11" command in make.sh
+//#define INTERACTIVE_GRAPHICS_ASCII // enable interactive graphics in ASCII mode the console; start/pause the simulation by pressing P
 //#define GRAPHICS // run FluidX3D in the console, but still enable graphics functionality for writing rendered frames to the hard drive
 
 #define GRAPHICS_FRAME_WIDTH 3840 // set frame width if only GRAPHICS is enabled
@@ -64,8 +64,8 @@
 #undef SURFACE
 #undef TEMPERATURE
 #undef SUBGRID
-#undef WINDOWS_GRAPHICS
-#undef CONSOLE_GRAPHICS
+#undef INTERACTIVE_GRAPHICS
+#undef INTERACTIVE_GRAPHICS_ASCII
 #undef GRAPHICS
 #endif // BENCHMARK
 
@@ -77,9 +77,6 @@
 #define VOLUME_FORCE
 #endif // TEMPERATURE
 
-#ifdef WINDOWS_GRAPHICS
+#if defined(INTERACTIVE_GRAPHICS) || defined(INTERACTIVE_GRAPHICS_ASCII)
 #define GRAPHICS
-#endif // WINDOWS_GRAPHICS
-#ifdef CONSOLE_GRAPHICS
-#define GRAPHICS
-#endif // CONSOLE_GRAPHICS
+#endif // INTERACTIVE_GRAPHICS || INTERACTIVE_GRAPHICS_ASCII

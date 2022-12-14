@@ -89,11 +89,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 // draw_circle(...)   : draw 3D circle
 // draw_line(...)     : draw 3D line
 // draw_triangle(...) : draw 3D triangle
-// iron_color(...)    : convert float in [0,255] to iron spectrum uint color
+// iron_color(...)    : convert float in [0,255] to iron spectrum int color
 // graphics_clear()   : kernel to reset bitmap and zbuffer
 
 )+"#ifdef GRAPHICS"+R(
-)+R(uint iron_color(float x) { // coloring scheme (float 0-255 -> uint color)
+)+R(int iron_color(float x) { // coloring scheme (float 0-255 -> int color)
 	x = clamp(360.0f-x*360.0f/255.0f, 0.0f, 360.0f);
 	float r=255.0f, g=0.0f, b=0.0f;
 	if(x<60.0f) { // white - yellow
@@ -108,9 +108,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 		r = 255.0f-255.0f*(x-180.0f)/180.0f;
 		b = 255.0f-255.0f*(x-270.0f)/90.0f;
 	}
-	return (((uint)r)<<16)|(((uint)g)<<8)|((uint)b);
+	return (((int)r)<<16)|(((int)g)<<8)|((int)b);
 }
-)+R(uint rainbow_color(float x) { // coloring scheme (float 0-255 -> uint color)
+)+R(int rainbow_color(float x) { // coloring scheme (float 0-255 -> int color)
 	x = clamp(360.0f-x*360.0f/255.0f, 0.0f, 360.0f);
 	float r=0.0f, g=0.0f, b=0.0f; // black
 	if(x<60.0f) { // red - yellow
@@ -132,27 +132,27 @@ string opencl_c_container() { return R( // ########################## begin of O
 		r = (255.0f-255.0f*(x-300.0f)/60.0f)/2.0f;
 		b = 255.0f-255.0f*(x-300.0f)/60.0f;
 	}
-	return (((uint)r)<<16)|(((uint)g)<<8)|((uint)b);
+	return (((int)r)<<16)|(((int)g)<<8)|((int)b);
 }
-)+R(uint color_dim(const uint c, const float x) {
-	const uint r = clamp((uint)fma((float)((c>>16)&255), x, 0.5f), 0u, 255u);
-	const uint g = clamp((uint)fma((float)((c>> 8)&255), x, 0.5f), 0u, 255u);
-	const uint b = clamp((uint)fma((float)( c     &255), x, 0.5f), 0u, 255u);
+)+R(int color_dim(const int c, const float x) {
+	const int r = clamp((int)fma((float)((c>>16)&255), x, 0.5f), 0, 255);
+	const int g = clamp((int)fma((float)((c>> 8)&255), x, 0.5f), 0, 255);
+	const int b = clamp((int)fma((float)( c     &255), x, 0.5f), 0, 255);
 	return (r&255)<<16|(g&255)<<8|(b&255);
 }
-)+R(uint color_mix(const uint c1, const uint c2, const float w) {
+)+R(int color_mix(const int c1, const int c2, const float w) {
 	const uchar4 cc1=as_uchar4(c1), cc2=as_uchar4(c2);
 	const float3 fc1=(float3)((float)cc1.x, (float)cc1.y, (float)cc1.z), fc2=(float3)((float)cc2.x, (float)cc2.y, (float)cc2.z);
 	const float3 fcm = fma(w, fc1, fma(1.0f-w, fc2, (float3)(0.5f, 0.5f, 0.5f)));
-	return as_uint((uchar4)((uchar)fcm.x, (uchar)fcm.y, (uchar)fcm.z, (uchar)0u));
+	return as_int((uchar4)((uchar)fcm.x, (uchar)fcm.y, (uchar)fcm.z, (uchar)0u));
 }
-)+R(uint color_mix_3(const uint c0, const uint c1, const uint c2, const float w0, const float w1, const float w2) { // w0+w1+w2 = 1
+)+R(int color_mix_3(const int c0, const int c1, const int c2, const float w0, const float w1, const float w2) { // w0+w1+w2 = 1
 	const uchar4 cc0=as_uchar4(c0), cc1=as_uchar4(c1), cc2=as_uchar4(c2);
 	const float3 fc0=(float3)((float)cc0.x, (float)cc0.y, (float)cc0.z),  fc1=(float3)((float)cc1.x, (float)cc1.y, (float)cc1.z), fc2=(float3)((float)cc2.x, (float)cc2.y, (float)cc2.z);
 	const float3 fcm = fma(w0, fc0, fma(w1, fc1, fma(w2, fc2, (float3)(0.5f, 0.5f, 0.5f))));
-	return as_uint((uchar4)((uchar)fcm.x, (uchar)fcm.y, (uchar)fcm.z, (uchar)0u));
+	return as_int((uchar4)((uchar)fcm.x, (uchar)fcm.y, (uchar)fcm.z, (uchar)0u));
 }
-)+R(uint hsv_to_rgb(const float h, const float s, const float v) {
+)+R(int hsv_to_rgb(const float h, const float s, const float v) {
 	const float c = v*s;
 	const float x = c*(1.0f-fabs(fmod(h/60.0f, 2.0f)-1.0f));
 	const float m = v-c;
@@ -163,9 +163,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 	else if(h<240.0f) { g = x; b = c; }
 	else if(h<300.0f) { r = x; b = c; }
 	else if(h<360.0f) { r = c; b = x; }
-	return (uint)((r+m)*255.0f)<<16|(uint)((g+m)*255.0f)<<8|(uint)((b+m)*255.0f);
+	return (int)((r+m)*255.0f)<<16|(int)((g+m)*255.0f)<<8|(int)((b+m)*255.0f);
 }
-)+R(uint lighting(const uint c, const float3 p, const float3 normal, const float* camera_cache) { // calculate lighting of triangle
+)+R(int lighting(const int c, const float3 p, const float3 normal, const float* camera_cache) { // calculate lighting of triangle
 	const float dis  = camera_cache[ 1]; // fetch camera parameters (rotation matrix, camera position, etc.)
 	const float posx = camera_cache[ 2];
 	const float posy = camera_cache[ 3];
@@ -179,8 +179,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float dy = p.y-fma(Rzy, dis, posy);
 	const float dz = p.z-fma(Rzz, dis, posz);
 	const float dl2 = sq(dx)+sq(dy)+sq(dz);
-	const float br = max(1.5f*fabs(normal.x*dx+normal.y*dy+normal.z*dz)/native_sqrt(nl2*dl2), 0.3f);
-	return min((uint)(br*cr), 255u)<<16|min((uint)(br*cg), 255u)<<8|min((uint)(br*cb), 255u);
+	const float br = max(1.5f*fabs(normal.x*dx+normal.y*dy+normal.z*dz)*rsqrt(nl2*dl2), 0.3f);
+	return min((int)(br*cr), 255)<<16|min((int)(br*cg), 255)<<8|min((int)(br*cb), 255);
 }
 )+R(bool is_off_screen(const int x, const int y, const int stereo) {
 	switch(stereo) {
@@ -189,7 +189,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		case +1: return x<def_screen_width/2||x>=def_screen_width  ||y<0||y>=def_screen_height; // right half
 	}
 }
-)+R(void draw(const int x, const int y, const float z, const uint color, global uint* bitmap, volatile global int* zbuffer, const int stereo) {
+)+R(void draw(const int x, const int y, const float z, const int color, global int* bitmap, volatile global int* zbuffer, const int stereo) {
 	const int index=x+y*def_screen_width, iz=(int)(z*(2147483647.0f/10000.0f)); // use int z-buffer and atomic_max to minimize noise in image
 	if(!is_off_screen(x, y, stereo)&&iz>atomic_max(&zbuffer[index], iz)) bitmap[index] = color; // only draw if point is on screen and first in zbuffer
 }
@@ -224,7 +224,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	*rz = r.z;
 	return true;
 }
-)+R(void convert_circle(float3 p, const float r, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
+)+R(void convert_circle(float3 p, const float r, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
 	int rx, ry; float rz;
 	if(convert(&rx, &ry, &rz, p, camera_cache, stereo)) {
 		const float zoom = camera_cache[0];
@@ -252,7 +252,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}
 }
-)+R(void convert_line(const float3 p0, const float3 p1, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
+)+R(void convert_line(const float3 p0, const float3 p1, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
 	int r0x, r0y, r1x, r1y; float r0z, r1z;
 	if(convert(&r0x, &r0y, &r0z, p0, camera_cache, stereo) && convert(&r1x, &r1y, &r1z, p1, camera_cache, stereo)
 		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo))) { // cancel drawing if both points are off screen
@@ -269,7 +269,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}
 }
-)+R(void convert_triangle(float3 p0, float3 p1, float3 p2, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
+)+R(void convert_triangle(float3 p0, float3 p1, float3 p2, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
 	int r0x, r0y, r1x, r1y, r2x, r2y; float r0z, r1z, r2z;
 	if(convert(&r0x, &r0y, &r0z, p0, camera_cache, stereo) && convert(&r1x, &r1y, &r1z, p1, camera_cache, stereo) && convert(&r2x, &r2y, &r2z, p2, camera_cache, stereo)
 		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && is_off_screen(r2x, r2y, stereo))) { // cancel drawing if all points are off screen
@@ -294,14 +294,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}
 }
-)+R(void convert_triangle_interpolated(float3 p0, float3 p1, float3 p2, uint c0, uint c1, uint c2, const float* camera_cache, global uint* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
+)+R(void convert_triangle_interpolated(float3 p0, float3 p1, float3 p2, int c0, int c1, int c2, const float* camera_cache, global int* bitmap, global int* zbuffer, const int stereo) { // 3D -> 2D
 	int r0x, r0y, r1x, r1y, r2x, r2y; float r0z, r1z, r2z;
 	if(convert(&r0x, &r0y, &r0z, p0, camera_cache, stereo) && convert(&r1x, &r1y, &r1z, p1, camera_cache, stereo) && convert(&r2x, &r2y, &r2z, p2, camera_cache, stereo)
 		&& !(is_off_screen(r0x, r0y, stereo) && is_off_screen(r1x, r1y, stereo) && is_off_screen(r2x, r2y, stereo))) { // cancel drawing if all points are off screen
 		if(r0x*(r1y-r2y)+r1x*(r2y-r0y)+r2x*(r0y-r1y)>100000 || (r0y==r1y&&r0y==r2y)) return; // return for large triangle area or degenerate triangles
-		if(r0y>r1y) { const int xt = r0x; const int yt = r0y; r0x = r1x; r0y = r1y; r1x = xt; r1y = yt; const uint ct = c0; c0 = c1; c1 = ct; } // sort vertices ascending by y
-		if(r0y>r2y) { const int xt = r0x; const int yt = r0y; r0x = r2x; r0y = r2y; r2x = xt; r2y = yt; const uint ct = c0; c0 = c2; c2 = ct; }
-		if(r1y>r2y) { const int xt = r1x; const int yt = r1y; r1x = r2x; r1y = r2y; r2x = xt; r2y = yt; const uint ct = c1; c1 = c2; c2 = ct; }
+		if(r0y>r1y) { const int xt = r0x; const int yt = r0y; r0x = r1x; r0y = r1y; r1x = xt; r1y = yt; const int ct = c0; c0 = c1; c1 = ct; } // sort vertices ascending by y
+		if(r0y>r2y) { const int xt = r0x; const int yt = r0y; r0x = r2x; r0y = r2y; r2x = xt; r2y = yt; const int ct = c0; c0 = c2; c2 = ct; }
+		if(r1y>r2y) { const int xt = r1x; const int yt = r1y; r1x = r2x; r1y = r2y; r2x = xt; r2y = yt; const int ct = c1; c1 = c2; c2 = ct; }
 		const float z = (r0z+r1z+r2z)/3.0f; // approximate triangle z position for each pixel to be equal
 		const float d = (float)((r1y-r2y)*(r0x-r2x)+(r2x-r1x)*(r0y-r2y));
 		for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
@@ -311,7 +311,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 				const float w0 = (float)((r1y-r2y)*(x-r2x)+(r2x-r1x)*(y-r2y))/d; // barycentric coordinates
 				const float w1 = (float)((r2y-r0y)*(x-r2x)+(r0x-r2x)*(y-r2y))/d;
 				const float w2 = 1.0f-w0-w1;
-				const uint color = color_mix_3(c0, c1, c2, w0, w1, w2); // interpolate color
+				const int color = color_mix_3(c0, c1, c2, w0, w1, w2); // interpolate color
 				draw(x, y, z, color, bitmap, zbuffer, stereo);
 			}
 		}
@@ -322,13 +322,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 				const float w0 = (float)((r1y-r2y)*(x-r2x)+(r2x-r1x)*(y-r2y))/d; // barycentric coordinates
 				const float w1 = (float)((r2y-r0y)*(x-r2x)+(r0x-r2x)*(y-r2y))/d;
 				const float w2 = 1.0f-w0-w1;
-				const uint color = color_mix_3(c0, c1, c2, w0, w1, w2); // interpolate color
+				const int color = color_mix_3(c0, c1, c2, w0, w1, w2); // interpolate color
 				draw(x, y, z, color, bitmap, zbuffer, stereo);
 			}
 		}
 	}
 }
-)+R(void draw_point(const float3 p, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer) { // 3D -> 2D
+)+R(void draw_point(const float3 p, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
 	const bool vr = (as_int(camera_cache[14])>>31)&0x1;
 	int rx, ry; float rz;
 	if(!vr) {
@@ -338,7 +338,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		if(convert(&rx, &ry, &rz, p, camera_cache, +1)) draw(rx, ry, rz, color, bitmap, zbuffer, +1); // right eye
 	}
 }
-)+R(void draw_circle(const float3 p, const float r, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer) { // 3D -> 2D
+)+R(void draw_circle(const float3 p, const float r, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
 	const bool vr = (as_int(camera_cache[14])>>31)&0x1;
 	if(!vr) {
 		convert_circle(p, r, color, camera_cache, bitmap, zbuffer,  0);
@@ -347,7 +347,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		convert_circle(p, r, color, camera_cache, bitmap, zbuffer, +1); // right eye
 	}
 }
-)+R(void draw_line(const float3 p0, const float3 p1, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer) { // 3D -> 2D
+)+R(void draw_line(const float3 p0, const float3 p1, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
 	const bool vr = (as_int(camera_cache[14])>>31)&0x1;
 	if(!vr) {
 		convert_line(p0, p1, color, camera_cache, bitmap, zbuffer,  0);
@@ -356,7 +356,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		convert_line(p0, p1, color, camera_cache, bitmap, zbuffer, +1); // right eye
 	}
 }
-)+R(void draw_triangle(const float3 p0, const float3 p1, const float3 p2, const uint color, const float* camera_cache, global uint* bitmap, global int* zbuffer) { // 3D -> 2D
+)+R(void draw_triangle(const float3 p0, const float3 p1, const float3 p2, const int color, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
 	const bool vr = (as_int(camera_cache[14])>>31)&0x1;
 	if(!vr) {
 		convert_triangle(p0, p1, p2, color, camera_cache, bitmap, zbuffer,  0);
@@ -365,7 +365,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		convert_triangle(p0, p1, p2, color, camera_cache, bitmap, zbuffer, +1); // right eye
 	}
 }
-)+R(void draw_triangle_interpolated(const float3 p0, const float3 p1, const float3 p2, const uint c0, const uint c1, const uint c2, const float* camera_cache, global uint* bitmap, global int* zbuffer) { // 3D -> 2D
+)+R(void draw_triangle_interpolated(const float3 p0, const float3 p1, const float3 p2, const int c0, const int c1, const int c2, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
 	const bool vr = (as_int(camera_cache[14])>>31)&0x1;
 	if(!vr) {
 		convert_triangle_interpolated(p0, p1, p2, c0, c1, c2, camera_cache, bitmap, zbuffer,  0);
@@ -374,9 +374,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 		convert_triangle_interpolated(p0, p1, p2, c0, c1, c2, camera_cache, bitmap, zbuffer, +1); // right eye
 	}
 }
-)+R(kernel void graphics_clear(global uint* bitmap, global int* zbuffer) {
+)+R(kernel void graphics_clear(global int* bitmap, global int* zbuffer) {
 	const uint n = get_global_id(0);
-	bitmap[n] = def_background_color; // black background = 0x000000u, use 0xFFFFFFu for white background
+	bitmap[n] = def_background_color; // black background = 0x000000, use 0xFFFFFF for white background
 	zbuffer[n] = -2147483648;
 }
 )+R(constant ushort edge_table_data[128] = { // source: Paul Bourke, http://paulbourke.net/geometry/polygonise/, mirror symmetry applied, makes marching-cubes 31% faster
@@ -631,7 +631,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	int b = (int)(18.0f*y);
 	return 0xFFFFFF*(a%2==b%2);
 }
-)+R(uint skybox_color(const ray r, const global uint* skybox) {
+)+R(uint skybox_color(const ray r, const global int* skybox) {
 	//const float x = fma(atan2(r.direction.x, r.direction.y),  0.5f/3.1415927f, 0.5f);
 	//const float y = fma(asin (r.direction.z               ), -1.0f/3.1415927f, 0.5f);
 	//return color_mix(skybox_color_hsv(x, y), skybox_color_grid(x, y), 0.95f-0.33f*(2.0f*(0.5f-fabs(y-0.5))));
@@ -643,7 +643,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float u1=fu-(float)ua, v1=fv-(float)va, u0=1.0f-u1, v0=1.0f-v1; // interpolation factors
 	return color_mix(color_mix(s00, s01, v0), color_mix(s10, s11, v0), u0); // perform bilinear interpolation
 }
-)+R(uint last_ray_reflectivity(const ray reflection, const ray transmission, const uint last_color, const float reflectivity, const global uint* skybox) {
+)+R(uint last_ray_reflectivity(const ray reflection, const ray transmission, const uint last_color, const float reflectivity, const global int* skybox) {
 	return color_mix(skybox_color(reflection, skybox), skybox_color(transmission, skybox), reflectivity);
 }
 )+R(float ray_grid_traverse(const ray r, const global float* phi, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
@@ -731,7 +731,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 	return -1.0f; // no intersection found
 }
-)+R(bool raytrace_phi_mirror(const ray ray_in, ray* ray_reflect, const global float* phi, const global uchar* flags, const global uint* skybox, const uint Nx, const uint Ny, const uint Nz) { // only reflection
+)+R(bool raytrace_phi_mirror(const ray ray_in, ray* ray_reflect, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) { // only reflection
 	float3 normal;
 	float d = ray_grid_traverse(ray_in, phi, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
 	if(d==-1.0f) return false; // no intersection found
@@ -739,7 +739,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	ray_reflect->direction = reflect(ray_in.direction, normal);
 	return true;
 }
-)+R(bool raytrace_phi(const ray ray_in, ray* ray_reflect, ray* ray_transmit, float* reflectivity, const global float* phi, const global uchar* flags, const global uint* skybox, const uint Nx, const uint Ny, const uint Nz) {
+)+R(bool raytrace_phi(const ray ray_in, ray* ray_reflect, ray* ray_transmit, float* reflectivity, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) {
 	float3 normal;
 	float d = ray_grid_traverse(ray_in, phi, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
 	if(d==-1.0f) return false; // no intersection found
@@ -1915,9 +1915,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef GRAPHICS"+R(
 
 )+"#ifndef FORCE_FIELD"+R(
-)+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global uint* bitmap, global int* zbuffer) {
+)+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global int* bitmap, global int* zbuffer) {
 )+"#else"+R( // FORCE_FIELD
-)+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global uint* bitmap, global int* zbuffer, const global float* F) {
+)+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global int* bitmap, global int* zbuffer, const global float* F) {
 )+"#endif"+R( // FORCE_FIELD
 	const uint n = get_global_id(0);
 	const uchar flagsn = flags[n]; // cache flags
@@ -1930,7 +1930,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
 	const uint3 xyz = coordinates(n);
 	const float3 p = position(xyz);
-	const uint c =  // coloring scheme
+	const int c =  // coloring scheme
 		flagsn_bo==TYPE_S ? COLOR_S : // solid boundary
 		((flagsn&TYPE_T)&&flagsn_bo==TYPE_E) ? color_mix(COLOR_T, COLOR_E, 0.5f) : // both temperature boundary and equilibrium boundary
 		((flagsn&TYPE_T)&&flagsn_bo==TYPE_MS) ? color_mix(COLOR_T, COLOR_M, 0.5f) : // both temperature boundary and moving boundary
@@ -1975,14 +1975,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float3 Fn = def_scale_F*(float3)(F[n], F[def_N+(ulong)n], F[2ul*def_N+(ulong)n]);
 		const float Fnl = length(Fn);
 		if(Fnl>0.0f) {
-			const uint c = iron_color(255.0f*Fnl); // color boundaries depending on the force on them
+			const int c = iron_color(255.0f*Fnl); // color boundaries depending on the force on them
 			draw_line(p, p+5.0f*Fn, c, camera_cache, bitmap, zbuffer); // draw colored force vectors
 		}
 	}
 )+"#endif"+R( // FORCE_FIELD
 }
 
-)+R(kernel void graphics_field(const global uchar* flags, const global float* u, const global float* camera, global uint* bitmap, global int* zbuffer) {
+)+R(kernel void graphics_field(const global uchar* flags, const global float* u, const global float* camera, global int* bitmap, global int* zbuffer) {
 	const uint n = get_global_id(0);
 )+"#ifndef MOVING_BOUNDARIES"+R(
 	if(flags[n]&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
@@ -1995,22 +1995,29 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float3 p = position(coordinates(n));
-	const uint c = iron_color(255.0f*def_scale_u*ul); // coloring by velocity
+	const int c = iron_color(255.0f*def_scale_u*ul); // coloring by velocity
 	draw_line(p-(0.5f/ul)*un, p+(0.5f/ul)*un, c, camera_cache, bitmap, zbuffer);
 }
 
 )+"#ifndef GRAPHICS_TEMPERATURE"+R(
-)+R(kernel void graphics_streamline(const global uchar* flags, const global float* u, const global float* camera, global uint* bitmap, global int* zbuffer) {
+)+R(kernel void graphics_streamline(const global uchar* flags, const global float* u, const global float* camera, global int* bitmap, global int* zbuffer) {
 )+"#else"+R( // GRAPHICS_TEMPERATURE
-)+R(kernel void graphics_streamline(const global uchar* flags, const global float* u, const global float* camera, global uint* bitmap, global int* zbuffer, const global float* T) {
+)+R(kernel void graphics_streamline(const global uchar* flags, const global float* u, const global float* camera, global int* bitmap, global int* zbuffer, const global float* T) {
 )+"#endif"+R( // GRAPHICS_TEMPERATURE
 	const uint n = get_global_id(0);
+)+"#ifndef D2Q9"+R(
 	if(n>=(uint)def_N/cb(def_streamline_sparse)) return;
 	const uint z = n/((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)); // disassemble 1D index to 3D coordinates
 	const uint t = n%((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse));
 	const uint y = t/(def_Nx/def_streamline_sparse);
 	const uint x = t%(def_Nx/def_streamline_sparse);
 	float3 p = (float)def_streamline_sparse*((float3)((float)x+0.5f, (float)y+0.5f, (float)z+0.5f))-0.5f*((float3)((float)def_Nx, (float)def_Ny, (float)def_Nz));
+)+"#else"+R( // D2Q9
+	if(n>=(uint)def_N/sq(def_streamline_sparse)) return;
+	const uint y = n/(def_Nx/def_streamline_sparse); // disassemble 1D index to 3D coordinates
+	const uint x = n%(def_Nx/def_streamline_sparse);
+	float3 p = ((float3)((float)def_streamline_sparse*((float)x+0.5f), (float)def_streamline_sparse*((float)y+0.5f), 0.5f))-0.5f*((float3)((float)def_Nx, (float)def_Ny, (float)def_Nz));
+)+"#endif"+R( // D2Q9
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	//draw_circle(p, 0.5f*def_streamline_sparse, 0xFFFFFF, camera_cache, bitmap, zbuffer);
@@ -2028,16 +2035,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 			p1 += (dt/ul)*un; // integrate forward in time
 			if(def_scale_u*ul<0.1f||p1.x<-0.5f*def_Nx||p1.x>0.5f*def_Nx||p1.y<-0.5f*def_Ny||p1.y>0.5f*def_Ny||p1.z<-0.5f*def_Nz||p1.z>0.5f*def_Nz) break;
 )+"#ifndef GRAPHICS_TEMPERATURE"+R(
-			const uint c = iron_color(255.0f*def_scale_u*ul);
+			const int c = iron_color(255.0f*def_scale_u*ul);
 )+"#else"+R( // GRAPHICS_TEMPERATURE
-			const uint c = iron_color(180.0f+250.0f*(T[n]-def_T_avg));
+			const int c = iron_color(180.0f+250.0f*(T[n]-def_T_avg));
 )+"#endif"+R( // GRAPHICS_TEMPERATURE
 			draw_line(p0, p1, c, camera_cache, bitmap, zbuffer);
 		}
 	}
 }
 
-)+R(kernel void graphics_q_field(const global uchar* flags, const global float* u, const global float* camera, global uint* bitmap, global int* zbuffer) {
+)+R(kernel void graphics_q_field(const global uchar* flags, const global float* u, const global float* camera, global int* bitmap, global int* zbuffer) {
 	const uint n = get_global_id(0);
 	if(flags[n]&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
 	float3 un = load_u(n, u); // cache velocity
@@ -2047,11 +2054,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float3 p = position(coordinates(n));
-	const uint c = rainbow_color(255.0f*2.0f*ul*def_scale_u); // coloring by velocity
+	const int c = rainbow_color(255.0f*2.0f*ul*def_scale_u); // coloring by velocity
 	draw_line(p-(0.5f/ul)*un, p+(0.5f/ul)*un, c, camera_cache, bitmap, zbuffer);
 }
 
-)+R(kernel void graphics_q(const global uchar* flags, const global float* u, const global float* camera, global uint* bitmap, global int* zbuffer) {
+)+R(kernel void graphics_q(const global uchar* flags, const global float* u, const global float* camera, global int* bitmap, global int* zbuffer) {
 	const uint n = get_global_id(0);
 	const uint3 xyz = coordinates(n);
 	if(xyz.x==def_Nx-1u || xyz.y==def_Ny-1u || xyz.z==def_Nz-1u) return;
@@ -2132,30 +2139,30 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float3 p0 = triangles[3u*i   ]; // triangle coordinates in [0,1] (local cell)
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 p = (p0+p1+p2)/3.0f+offset, normal=cross(p1-p0, p2-p0);
-		uint c0, c1, c2;
+		const float3 normal = cross(p1-p0, p2-p0);
+		int c0, c1, c2;
 		{
 			const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 			const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-			c0 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
+			c0 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p0+offset, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
 		} {
 			const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 			const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-			c1 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
+			c1 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p1+offset, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
 		} {
 			const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 			const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-			c2 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
+			c2 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p2+offset, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
 		}
 		draw_triangle_interpolated(p0+offset, p1+offset, p2+offset, c0, c1, c2, camera_cache, bitmap, zbuffer); // draw triangle with interpolated colors
 	}
 }
 
 )+"#ifdef SURFACE"+R(
-)+R(kernel void graphics_rasterize_phi(const global float* phi, const global float* camera, global uint* bitmap, global int* zbuffer) { // marching cubes
+)+R(kernel void graphics_rasterize_phi(const global float* phi, const global float* camera, global int* bitmap, global int* zbuffer) { // marching cubes
 	const uint n = get_global_id(0);
 	const uint3 xyz = coordinates(n);
-	if(xyz.x==def_Nx-1u || xyz.y==def_Ny-1u || xyz.z==def_Nz-1u) return;
+	if(xyz.x==def_Nx-1u||xyz.y==def_Ny-1u||xyz.z==def_Nz-1u) return;
 	uint j[8];
 	const uint x0 =  xyz.x; // cube stencil
 	const uint xp =  xyz.x+1u;
@@ -2184,7 +2191,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float3 p1 = triangles[3u*i+1u]+offset;
 		const float3 p2 = triangles[3u*i+2u]+offset;
 		const float3 p=(p0+p1+p2)/3.0f, normal=cross(p1-p0, p2-p0);
-		const uint c = lighting(55<<16|155<<8|255, p, normal, camera_cache);
+		const int c = lighting(55<<16|155<<8|255, p, normal, camera_cache);
 		draw_triangle(p0, p1, p2, c, camera_cache, bitmap, zbuffer);
 		//draw_line(p0, p1, c, camera_cache, bitmap, zbuffer); // wireframe rendering
 		//draw_line(p0, p2, c, camera_cache, bitmap, zbuffer);
@@ -2192,8 +2199,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 }
 
-)+R(uint raytrace_phi_next_ray(const ray reflection, const ray transmission, const uint pixelcolor, const float reflectivity, const global float* phi, const global uchar* flags, const global uint* skybox) {
-	uint color_reflect=pixelcolor, color_transmit=pixelcolor;
+)+R(int raytrace_phi_next_ray(const ray reflection, const ray transmission, const int pixelcolor, const float reflectivity, const global float* phi, const global uchar* flags, const global int* skybox) {
+	int color_reflect=pixelcolor, color_transmit=pixelcolor;
 	ray reflection_next, transmission_next;
 	float reflection_reflectivity, transmission_reflectivity;
 	if(raytrace_phi(reflection, &reflection_next, &transmission_next, &reflection_reflectivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
@@ -2209,8 +2216,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return color_mix(color_reflect, color_transmit, reflectivity);
 }
 
-)+R(uint raytrace_phi_next_ray_mirror(const ray reflection, const uint pixelcolor, const global float* phi, const global uchar* flags, const global uint* skybox) {
-	uint color_reflect = pixelcolor;
+)+R(int raytrace_phi_next_ray_mirror(const ray reflection, const int pixelcolor, const global float* phi, const global uchar* flags, const global int* skybox) {
+	int color_reflect = pixelcolor;
 	ray reflection_next;
 	if(raytrace_phi_mirror(reflection, &reflection_next, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
 		color_reflect = skybox_color(reflection_next, skybox);
@@ -2220,7 +2227,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return color_reflect;
 }
 
-)+R(kernel void graphics_raytrace_phi(const global float* phi, const global uchar* flags, const global uint* skybox, const global float* camera, global uint* bitmap) { // marching cubes
+)+R(kernel void graphics_raytrace_phi(const global float* phi, const global uchar* flags, const global int* skybox, const global float* camera, global int* bitmap) { // marching cubes
 	const uint gid = get_global_id(0); // workgroup size alignment is critical
 	const uint lid = get_local_id(0); // make workgropus not horizontal stripes of pixels, but 8x8 rectangular (close to square) tiles
 	const uint lsi = get_local_size(0); // (50% performance boost due to more coalesced memory access)
@@ -2232,7 +2239,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	ray camray = get_camray(x, y, camera_cache);
-	uint pixelcolor = 0u;
+	int pixelcolor = 0;
 	const float distance = intersect_cuboid(camray, (float3)(0.0f, 0.0f, 0.0f), (float)def_Nx, (float)def_Ny, (float)def_Nz);
 	camray.origin = camray.origin+fmax(distance, 0.0f)*camray.direction;
 	ray reflection, transmission; // reflection and transmission

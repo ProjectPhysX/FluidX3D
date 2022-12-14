@@ -103,12 +103,12 @@ void Info::print_initialize() {
 	println("| Thermal Diff.   | "+alignr(57u,                                                                    to_string(lbm->get_alpha(), 8u))+" |");
 	println("| Thermal Exp.    | "+alignr(57u,                                                                     to_string(lbm->get_beta(), 8u))+" |");
 #endif // TEMPERATURE
-#ifndef CONSOLE_GRAPHICS
+#ifndef INTERACTIVE_GRAPHICS_ASCII
 	println("|---------.-------'-----.-----------.-------------------.---------------------|");
 	println("| MLUPs   | Bandwidth   | Steps/s   | Current Step      | "+string(steps==max_ulong?"Elapsed Time  ":"Time Remaining")+"      |");
-#else // CONSOLE_GRAPHICS
+#else // INTERACTIVE_GRAPHICS_ASCII
 	println("'-----------------'-----------------------------------------------------------'");
-#endif // CONSOLE_GRAPHICS
+#endif // INTERACTIVE_GRAPHICS_ASCII
 	allow_rendering = true;
 }
 void Info::print_update() const {

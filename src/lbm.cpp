@@ -218,10 +218,10 @@ void LBM::run(const ulong steps) { // initializes the LBM simulation (copies dat
 	}
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i++) { // run LBM in loop, runs infinitely long if steps = max_ulong
-#if defined(CONSOLE_GRAPHICS)||defined(WINDOWS_GRAPHICS)
+#if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
 		while(!key_P&&running) sleep(0.016);
 		if(!running) break;
-#endif // CONSOLE_GRAPHICS || WINDOWS_GRAPHICS
+#endif // INTERACTIVE_GRAPHICS || INTERACTIVE_GRAPHICS_ASCII
 		clock.start();
 		do_time_step(); // execute one LBM time step
 		info.update(clock.stop());
@@ -563,26 +563,30 @@ void LBM::Graphics::default_settings() {
 }
 
 void LBM::Graphics::allocate(Device& device) {
-	bitmap = Memory<uint>(device, camera.width*camera.height);
+	bitmap = Memory<int>(device, camera.width*camera.height);
 	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, false);
 	camera_parameters = Memory<float>(device, 15u);
 	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
 
-	set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()));
+	camera.set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()));
 	default_settings();
 
-	kernel_graphics_flags = Kernel(device, lbm->flags.length(), "graphics_flags", lbm->flags, camera_parameters, bitmap, zbuffer);
-	kernel_graphics_field = Kernel(device, lbm->flags.length(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
-	kernel_graphics_streamline = Kernel(device, lbm->flags.length()/(cb(GRAPHICS_STREAMLINE_SPARSE)), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
-	kernel_graphics_q = Kernel(device, lbm->flags.length(), "graphics_q", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
+	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", lbm->flags, camera_parameters, bitmap, zbuffer);
+	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
+#ifndef D2Q9
+	kernel_graphics_streamline = Kernel(device, lbm->get_N()/(cb(GRAPHICS_STREAMLINE_SPARSE)), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 3D
+#else // D2Q9
+	kernel_graphics_streamline = Kernel(device, lbm->get_N()/(sq(GRAPHICS_STREAMLINE_SPARSE)), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 2D
+#endif // D2Q9
+	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
 
 #ifdef FORCE_FIELD
 	kernel_graphics_flags.add_parameters(lbm->F);
 #endif // FORCE_FIELD
 
 #ifdef SURFACE
-	skybox = Memory<uint>(device, skybox_image->width()*skybox_image->height(), 1u, (uint*)skybox_image->data());
-	kernel_graphics_rasterize_phi = Kernel(device, lbm->phi.length(), "graphics_rasterize_phi", lbm->phi, camera_parameters, bitmap, zbuffer);
+	skybox = Memory<int>(device, skybox_image->width()*skybox_image->height(), 1u, skybox_image->data());
+	kernel_graphics_rasterize_phi = Kernel(device, lbm->get_N(), "graphics_rasterize_phi", lbm->phi, camera_parameters, bitmap, zbuffer);
 	kernel_graphics_raytrace_phi = Kernel(device, bitmap.length(), "graphics_raytrace_phi", lbm->phi, lbm->flags, skybox, camera_parameters, bitmap);
 #endif // SURFACE
 
@@ -600,11 +604,11 @@ bool LBM::Graphics::update_camera() {
 	}
 	return change; // return false if camera parameters remain unchanged
 }
-void* LBM::Graphics::draw_frame() {
+int* LBM::Graphics::draw_frame() {
 	const bool camera_update = update_camera();
-#if defined(WINDOWS_GRAPHICS)||defined(CONSOLE_GRAPHICS)
-	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return (void*)bitmap.data(); // don't render a new frame if the scene hasn't changed since last frame
-#endif // WINDOWS_GRAPHICS or CONSOLE_GRAPHICS
+#if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
+	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return bitmap.data(); // don't render a new frame if the scene hasn't changed since last frame
+#endif // INTERACTIVE_GRAPHICS or INTERACTIVE_GRAPHICS_ASCII
 	t_last_frame = lbm->get_t();
 #ifndef UPDATE_FIELDS
 	if(key_2||key_3||key_4) lbm->update_fields(); // only call update_fields() if the time step has changed since the last rendered frame
@@ -623,11 +627,11 @@ void* LBM::Graphics::draw_frame() {
 	if(key_4) kernel_graphics_q.run();
 
 	bitmap.read_from_device();
-	return (void*)bitmap.data();
+	return bitmap.data();
 }
 string LBM::Graphics::device_defines() const { return
 	"\n	#define GRAPHICS"
-	"\n	#define def_background_color " +to_string(GRAPHICS_BACKGROUND_COLOR)+"u"
+	"\n	#define def_background_color " +to_string(GRAPHICS_BACKGROUND_COLOR)+""
 	"\n	#define def_screen_width "     +to_string(camera.width)+"u"
 	"\n	#define def_screen_height "    +to_string(camera.height)+"u"
 	"\n	#define def_n "                +to_string(1.333f)+"f" // refractive index of water
@@ -665,7 +669,7 @@ void LBM::Graphics::set_camera_centered(const float rx, const float ry, const fl
 	camera.rx = 0.5*pi+((double)rx*pi/180.0);
 	camera.ry = pi-((double)ry*pi/180.0);
 	camera.fov = clamp((float)fov, 1E-6f, 179.0f);
-	set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/zoom);
+	camera.set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/zoom);
 }
 void LBM::Graphics::set_camera_free(const float3& p, const float rx, const float ry, const float fov) {
 	camera.free = true;
@@ -676,15 +680,15 @@ void LBM::Graphics::set_camera_free(const float3& p, const float rx, const float
 	camera.pos = p;
 }
 void LBM::Graphics::print_frame() { // preview current frame in console
-#ifndef CONSOLE_GRAPHICS
+#ifndef INTERACTIVE_GRAPHICS_ASCII
 	info.allow_rendering = false; // temporarily disable interactive rendering
 	draw_frame(); // make sure the frame is fully rendered
-	Image* image = new Image(camera.width, camera.height, (int*)bitmap.data());
+	Image* image = new Image(camera.width, camera.height, bitmap.data());
 	println();
 	print_image(image);
 	delete image;
 	info.allow_rendering = true;
-#endif // CONSOLE_GRAPHICS
+#endif // INTERACTIVE_GRAPHICS_ASCII
 }
 void encode_image(Image* image, const string& filename, const string& extension, std::atomic_int* running_encoders) {
 	if(extension==".png") write_png(filename, image);
@@ -703,14 +707,14 @@ void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, con
 	const uint xa=max(min(x1, x2), 0u), xb=min(max(x1, x2), camera.width ); // sort coordinates if necessary
 	const uint ya=max(min(y1, y2), 0u), yb=min(max(y1, y2), camera.height);
 	Image* image = new Image(xb-xa, yb-ya); // create local copy of frame buffer
-	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, (int)bitmap[camera.width*(ya+y)+(xa+x)]);
-#ifndef CONSOLE_GRAPHICS
+	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, bitmap[camera.width*(ya+y)+(xa+x)]);
+#ifndef INTERACTIVE_GRAPHICS_ASCII
 	if(print_preview) {
 		println();
 		print_image(image);
 		print_info("Image \""+filename+"\" saved.");
 	}
-#endif // CONSOLE_GRAPHICS
+#endif // INTERACTIVE_GRAPHICS_ASCII
 	running_encoders++;
 	thread encoder(encode_image, image, filename, extension, &running_encoders); // the main bottleneck in rendering images to the hard disk is .png encoding, so encode image in new thread
 	encoder.detach(); // detatch thread so it can run concurrently

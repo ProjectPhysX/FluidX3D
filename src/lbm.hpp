@@ -191,7 +191,7 @@ public:
 	class Graphics {
 	private:
 		Kernel kernel_clear; // reset bitmap and zbuffer
-		Memory<uint> bitmap; // bitmap for rendering
+		Memory<int> bitmap; // bitmap for rendering
 		Memory<int> zbuffer; // z-buffer for rendering
 		Memory<float> camera_parameters; // contains camera position, rotation, field of view etc.
 
@@ -207,7 +207,7 @@ public:
 #ifdef SURFACE
 		const string path_skybox = get_exe_path()+"../skybox/skybox8k.png";
 		Image* skybox_image = nullptr;
-		Memory<uint> skybox; // skybox for free surface raytracing
+		Memory<int> skybox; // skybox for free surface raytracing
 		Kernel kernel_graphics_rasterize_phi; // rasterize free surface
 		Kernel kernel_graphics_raytrace_phi; // raytrace free surface
 #endif // SURFACE
@@ -246,7 +246,7 @@ public:
 #endif // SURFACE
 
 		void allocate(Device& device); // allocate memory for bitmap and zbuffer
-		void* draw_frame(); // main rendering function, calls rendering kernels
+		int* draw_frame(); // main rendering function, calls rendering kernels
 		string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
 
 		void set_camera_centered(const float rx=0.0f, const float ry=0.0f, const float fov=100.0f, const float zoom=1.0f); // set camera centered
