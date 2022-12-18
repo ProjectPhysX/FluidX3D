@@ -484,6 +484,7 @@ public:
 
 class Kernel {
 private:
+	ulong N = 0ull; // kernel range
 	uint number_of_parameters = 0u;
 	cl::Kernel cl_kernel;
 	cl::NDRange cl_range_global, cl_range_local;
@@ -501,26 +502,31 @@ private:
 		link_parameter(starting_position, parameter);
 		link_parameters(starting_position+1u, parameters...);
 	}
-	inline void initialize_ranges(const ulong N, const ulong workgroup_size=(ulong)WORKGROUP_SIZE) {
-		cl_range_global = cl::NDRange(((N+workgroup_size-1ull)/workgroup_size)*workgroup_size); // make global range a multiple of local range
-		cl_range_local = cl::NDRange(workgroup_size);
-	}
 public:
 	template<class... T> inline Kernel(const Device& device, const ulong N, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
 		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
 		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
-		initialize_ranges(N);
+		set_ranges(N);
 		cl_queue = device.get_cl_queue();
 	}
 	template<class... T> inline Kernel(const Device& device, const ulong N, const uint workgroup_size, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
 		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
 		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
-		initialize_ranges(N, (ulong)workgroup_size);
+		set_ranges(N, (ulong)workgroup_size);
 		cl_queue = device.get_cl_queue();
 	}
 	inline Kernel() {} // default constructor
+	inline Kernel& set_ranges(const ulong N, const ulong workgroup_size=(ulong)WORKGROUP_SIZE) {
+		this->N = N;
+		cl_range_global = cl::NDRange(((N+workgroup_size-1ull)/workgroup_size)*workgroup_size); // make global range a multiple of local range
+		cl_range_local = cl::NDRange(workgroup_size);
+		return *this;
+	}
+	inline const ulong range() const {
+		return N;
+	}
 	inline uint get_number_of_parameters() const {
 		return number_of_parameters;
 	}
