@@ -2006,14 +2006,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // GRAPHICS_TEMPERATURE
 	const uint n = get_global_id(0);
 )+"#ifndef D2Q9"+R(
-	if(n>=(uint)def_N/cb(def_streamline_sparse)) return;
+	if(n>=(def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)*(def_Nz/def_streamline_sparse)) return;
 	const uint z = n/((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)); // disassemble 1D index to 3D coordinates
 	const uint t = n%((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse));
 	const uint y = t/(def_Nx/def_streamline_sparse);
 	const uint x = t%(def_Nx/def_streamline_sparse);
 	float3 p = (float)def_streamline_sparse*((float3)((float)x+0.5f, (float)y+0.5f, (float)z+0.5f))-0.5f*((float3)((float)def_Nx, (float)def_Ny, (float)def_Nz));
 )+"#else"+R( // D2Q9
-	if(n>=(uint)def_N/sq(def_streamline_sparse)) return;
+	if(n>=(def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)) return;
 	const uint y = n/(def_Nx/def_streamline_sparse); // disassemble 1D index to 3D coordinates
 	const uint x = n%(def_Nx/def_streamline_sparse);
 	float3 p = ((float3)((float)def_streamline_sparse*((float)x+0.5f), (float)def_streamline_sparse*((float)y+0.5f), 0.5f))-0.5f*((float3)((float)def_Nx, (float)def_Ny, (float)def_Nz));

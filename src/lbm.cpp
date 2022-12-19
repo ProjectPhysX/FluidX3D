@@ -574,9 +574,9 @@ void LBM::Graphics::allocate(Device& device) {
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", lbm->flags, camera_parameters, bitmap, zbuffer);
 	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
 #ifndef D2Q9
-	kernel_graphics_streamline = Kernel(device, lbm->get_N()/(cb(GRAPHICS_STREAMLINE_SPARSE)), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 3D
+	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 3D
 #else // D2Q9
-	kernel_graphics_streamline = Kernel(device, lbm->get_N()/(sq(GRAPHICS_STREAMLINE_SPARSE)), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 2D
+	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 2D
 #endif // D2Q9
 	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
 
