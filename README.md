@@ -169,6 +169,8 @@ Here are [performance benchmarks](https://doi.org/10.3390/computation10060092) o
 
 In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP32) or 4.73 (FP32/FP16S) or 16.12 (FP32/FP16C) FLOPs/Byte. So performance is only limited by memory bandwidth.
 
+If your GPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
+
 | Device                        | FP32<br>[TFLOPs/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :---------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
 | AMD Instinct MI250 (1 GCD)    |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
@@ -184,7 +186,10 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 | Nvidia Tesla K40m             |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 | Nvidia Tesla K80  (1 GPU)     |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 | Nvidia Tesla K20c             |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
-| AMD Radeon RX 6900 XT         |              20.63 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
+| AMD Radeon RX 7900 XTX        |              61.44 |          24 |          960 |             3473 (55%) |              5800 (47%) |              5735 (46%) |
+| AMD Radeon RX 7900 XT         |              51.61 |          20 |          800 |             3051 (58%) |              5754 (55%) |              6001 (58%) |
+| AMD Radeon RX 6900 XT         |              23.04 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
+| AMD Radeon RX 6800 XT         |              20.74 |          16 |          512 |             2008 (60%) |              4241 (64%) |              4224 (64%) |
 | AMD Radeon RX 5700 XT         |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
 | AMD Radeon RX Vega 64         |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
 | AMD Radeon RX 580 4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
@@ -264,6 +269,7 @@ In consequence, the arithmetic intensity of this implementation is 2.13 (FP32/FP
 |  11 GB |      496³ |      592³ |
 |  12 GB |      512³ |      608³ |
 |  16 GB |      564³ |      672³ |
+|  20 GB |      608³ |      724³ |
 |  24 GB |      644³ |      768³ |
 |  32 GB |      708³ |      848³ |
 |  40 GB |      764³ |      912³ |
