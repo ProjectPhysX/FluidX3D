@@ -173,7 +173,7 @@ void voxelize_line(LBM& lbm, const float3& p0, const float3& p1, const uchar fla
 		}
 		if(tmx>1.000001f&&tmy>1.000001f&&tmz>1.000001f) return; // terminate at end of ray
 		if(xyz.x<0||xyz.y<0||xyz.z<0||xyz.x>=(int)lbm.get_Nx()||xyz.y>=(int)lbm.get_Ny()||xyz.z>=(int)lbm.get_Nz()) return; // terminate if out of box
-		const uint n = lbm.index((uint)xyz.x, (uint)xyz.y, (uint)xyz.z);
+		const ulong n = lbm.index((uint)xyz.x, (uint)xyz.y, (uint)xyz.z);
 		lbm.flags[n] = flag;
 	}
 }

@@ -35,8 +35,8 @@ void Info::initialize(LBM* lbm) {
 	device_allocation += 7u*sizeof(fpxx)+4u; // gi, T
 	device_transfer += 7u*2u*sizeof(fpxx)+4u; // 2*gi, T
 #endif // TEMPERATURE
-	cpu_mem_required = (uint)((ulong)lbm->get_N()*(ulong)host_allocation/1048576ull); // reset to get valid values for consecutive simulations
-	gpu_mem_required = (uint)((ulong)lbm->get_N()*(ulong)device_allocation/1048576ull);
+	cpu_mem_required = (uint)(lbm->get_N()*(ulong)host_allocation/1048576ull); // reset to get valid values for consecutive simulations
+	gpu_mem_required = (uint)(lbm->get_N()*(ulong)device_allocation/1048576ull);
 }
 void Info::append(const ulong steps, const ulong t) {
 	this->steps = steps; // has to be executed before info.print_initialize()
@@ -53,16 +53,7 @@ double Info::time() const { // returns either elapsed time or remaining time
 	//return steps==max_ulong ? runtime : ((double)steps-(double)(lbm->get_t()-steps_last))*dt_smooth; // instantaneous time estimation
 }
 void Info::print_logo() const {
-	const int a = color_light_blue;
-	const int b = color_orange;
-	const int c = color_pink;
-#if defined(_WIN32)
-	const string copyright = string("  ")+(char)184;
-#elif defined(__linux__)
-	const string copyright = "  \u00A9";
-#else // Windows/Linux
-	const string copyright = "(c)";
-#endif // Windows/Linux
+	const int a=color_light_blue, b=color_orange, c=color_pink;
 	print(".-----------------------------------------------------------------------------.\n");
 	print("|                       "); print("______________   ", a);               print("______________", b);      print("                       |\n");
 	print("|                       "); print("\\   ________  | ", a);               print("|  ________   /", b);     print("                       |\n");
@@ -79,29 +70,30 @@ void Info::print_logo() const {
 	print("|                                  ");                print("\\  \\ /  /", c);                 print("                                  |\n");
 	print("|                                   ");                print("\\  '  /", c);                  print("                                   |\n");
 	print("|                                    ");                print("\\   /", c);                  print("                                    |\n");
-	print("|                                     ");                print("\\ /", c);                  print("                                     |\n");
-	print("|                                      ");                 print("'", c);        print("                   "+copyright+" Moritz Lehmann |\n");
+	print("|                                     ");                print("\\ /", c);                  print("                FluidX3D Version 2.0 |\n");
+	print("|                                      ");                 print("'", c);                  print("         Copyright (c) Moritz Lehmann |\n");
 }
 void Info::print_initialize() {
 	const float Re = lbm->get_Re_max();
 	println("|-----------------.-----------------------------------------------------------|");
 	println("| Grid Resolution | "+alignr(57u, to_string(lbm->get_Nx())+" x "+to_string(lbm->get_Ny())+" x "+to_string(lbm->get_Nz())+" = "+to_string(lbm->get_N()))+" |");
-	println("| LBM Type        | "+alignr(57u, "D"+to_string(lbm->get_velocity_set()==9?2:3)+"Q"+to_string(lbm->get_velocity_set())+" "+collision)+" |");
-	println("| Memory Usage    | "+alignr(54u,                      "CPU "+to_string(cpu_mem_required)+" MB, GPU "+to_string(gpu_mem_required))+" MB |");
-	println("| Max Alloc Size  | "+alignr(54u,            (uint)((ulong)lbm->get_N()*(ulong)(lbm->get_velocity_set()*sizeof(fpxx))/1048576ull))+" MB |");
-	println("| Time Steps      | "+alignr(57u,                                                 (steps==max_ulong ? "infinite" : to_string(steps)))+" |");
-	println("| Kin. Viscosity  | "+alignr(57u,                                                                       to_string(lbm->get_nu(), 8u))+" |");
-	println("| Relaxation Time | "+alignr(57u,                                                                      to_string(lbm->get_tau(), 8u))+" |");
-	println("| Reynolds Number | "+alignr(57u,                            "Re < "+string(Re>=100.0f ? to_string(to_uint(Re)) : to_string(Re, 6u)))+" |");
+	println("| Grid Domains    | "+alignr(57u, to_string(lbm->get_Dx())+" x "+to_string(lbm->get_Dy())+" x "+to_string(lbm->get_Dz())+" = "+to_string(lbm->get_D()))+" |");
+	println("| LBM Type        | "+alignr(57u,                   "D"+to_string(lbm->get_velocity_set()==9?2:3)+"Q"+to_string(lbm->get_velocity_set())+" "+collision)+" |");
+	println("| Memory Usage    | "+alignr(54u,                                        "CPU "+to_string(cpu_mem_required)+" MB, GPU "+to_string(gpu_mem_required))+" MB |");
+	println("| Max Alloc Size  | "+alignr(54u,                 (uint)(lbm->get_N()/(ulong)lbm->get_D()*(ulong)(lbm->get_velocity_set()*sizeof(fpxx))/1048576ull))+" MB |");
+	println("| Time Steps      | "+alignr(57u,                                                                   (steps==max_ulong ? "infinite" : to_string(steps)))+" |");
+	println("| Kin. Viscosity  | "+alignr(57u,                                                                                         to_string(lbm->get_nu(), 8u))+" |");
+	println("| Relaxation Time | "+alignr(57u,                                                                                        to_string(lbm->get_tau(), 8u))+" |");
+	println("| Reynolds Number | "+alignr(57u,                                              "Re < "+string(Re>=100.0f ? to_string(to_uint(Re)) : to_string(Re, 6u)))+" |");
 #ifdef VOLUME_FORCE
 	println("| Volume Force    | "+alignr(57u, alignr(15u, to_string(lbm->get_fx(), 8u))+","+alignr(15u, to_string(lbm->get_fy(), 8u))+","+alignr(15u, to_string(lbm->get_fz(), 8u)))+" |");
 #endif // VOLUME_FORCE
 #ifdef SURFACE
-	println("| Surface Tension | "+alignr(57u,                                                                    to_string(lbm->get_sigma(), 8u))+" |");
+	println("| Surface Tension | "+alignr(57u,                                                                                      to_string(lbm->get_sigma(), 8u))+" |");
 #endif // SURFACE
 #ifdef TEMPERATURE
-	println("| Thermal Diff.   | "+alignr(57u,                                                                    to_string(lbm->get_alpha(), 8u))+" |");
-	println("| Thermal Exp.    | "+alignr(57u,                                                                     to_string(lbm->get_beta(), 8u))+" |");
+	println("| Thermal Diff.   | "+alignr(57u,                                                                                      to_string(lbm->get_alpha(), 8u))+" |");
+	println("| Thermal Exp.    | "+alignr(57u,                                                                                       to_string(lbm->get_beta(), 8u))+" |");
 #endif // TEMPERATURE
 #ifndef INTERACTIVE_GRAPHICS_ASCII
 	println("|---------.-------'-----.-----------.-------------------.---------------------|");

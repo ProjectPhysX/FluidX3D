@@ -1,18 +1,47 @@
 #include "lbm.hpp"
-#include "info.hpp"
 #include "graphics.hpp"
-#include "units.hpp"
+
+
 
 Units units; // for unit conversion
 
-LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta) { // compiles OpenCL C code and allocates memory
+#if defined(D2Q9)
+const uint velocity_set = 9u;
+const uint dimensions = 2u;
+const uint transfers = 3u;
+#elif defined(D3Q15)
+const uint velocity_set = 15u;
+const uint dimensions = 3u;
+const uint transfers = 5u;
+#elif defined(D3Q19)
+const uint velocity_set = 19u;
+const uint dimensions = 3u;
+const uint transfers = 5u;
+#elif defined(D3Q27)
+const uint velocity_set = 27u;
+const uint dimensions = 3u;
+const uint transfers = 9u;
+#endif // D3Q27
+
+string default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
+	string time = "00000000"+to_string(t);
+	time = substring(time, length(time)-9u, 9u);
+	return create_file_extension((path=="" ? get_exe_path()+"export/" : path)+(name=="" ? "file" : name)+"-"+time, extension);
+}
+string default_filename(const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp at exe_path/export/
+	return default_filename("", name, extension, t);
+}
+
+
+
+LBM_Domain::LBM_Domain(const int select_device, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const int Ox, const int Oy, const int Oz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta) { // constructor with manual device selection and domain offset
 	this->Nx = Nx; this->Ny = Ny; this->Nz = Nz;
+	this->Dx = Dx; this->Dy = Dy; this->Dz = Dz;
+	this->Ox = Ox; this->Oy = Oy; this->Oz = Oz;
 	this->nu = nu;
 	this->fx = fx; this->fy = fy; this->fz = fz;
 	this->sigma = sigma;
-	this->alpha = alpha;
-	this->beta = beta;
-	sanity_checks_constructor();
+	this->alpha = alpha; this->beta = beta;
 	string opencl_c_code;
 #ifdef GRAPHICS
 	graphics = Graphics(this);
@@ -20,122 +49,16 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const floa
 #else // GRAPHICS
 	opencl_c_code = device_defines()+get_opencl_c_code();
 #endif // GRAPHICS
-	int select_device = -1;
-	if((int)main_arguments.size()>0) select_device = to_int(main_arguments[0]);
-	const vector<Device_Info>& devices = get_devices();
+	const vector<Device_Info>& devices = get_devices(false);
 	this->device = Device(select_device<0 ? select_device_with_most_flops(devices) : select_device_with_id((uint)select_device, devices), opencl_c_code);
 	allocate(device); // lbm first
 #ifdef GRAPHICS
 	graphics.allocate(device); // graphics after lbm
 #endif // GRAPHICS
-	info.initialize(this);
-}
-LBM::~LBM() {
-	info.print_finalize();
 }
 
-void LBM::sanity_checks_constructor() { // sanity checks on grid resolution and parameters
-	if(Nx*Ny*Nz==0u || (Nx*Ny*Nz)%WORKGROUP_SIZE!=0u) { // sanity checks for simulation box size
-		int ws=WORKGROUP_SIZE;
-		string error = "";
-		if(Nx*Ny*Nz!=0u) {
-			error += "Lattice point number is not a multiple of \"WORKGROUP_SIZE\": ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+") % "+to_string(ws)+" = "+to_string((Nx*Ny*Nz)%ws)+". ";
-		} else {
-			error += "Lattice point number is 0: "+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+" = 0. ";
-		}
-		bool suggestion = false; // find the closest suitable box size based on minimum percentage correction for each component
-		Nx = max(Nx, 1u); // box dimensions need to be at least 1 for the algorithm to work
-		Ny = max(Ny, 1u);
-		Nz = max(Nz, 1u);
-		const int ix=(int)Nx, iy=(int)Ny, iz=(int)Nz, imax=max(max(ix,iy),iz); // integer variables for later arithmetic
-		while(ws>=32&&!suggestion) { // if search is unsuccessful, try again with threadblock size halved, until it is 32
-			for(int k=1; k<imax&&!suggestion; k++) { // slowly extend search range k
-				for(int kx=0; abs(kx)<=k*ix/imax&&!suggestion; kx=kx<=0?1-kx:-kx) { // 0  1 -1  2 -2  3 -3 ...
-					for(int ky=0; abs(ky)<=k*iy/imax&&!suggestion; ky=ky<=0?1-ky:-ky) { // 0  1 -1  2 -2  3 -3 ...
-						for(int kz=0; abs(kz)<=k*iz/imax&&!suggestion; kz=kz<=0?1-kz:-kz) { // 0  1 -1  2 -2  3 -3 ...
-							if(((ix+kx)*(iy+ky)*(iz+kz))%ws==0 && ix+kx>0 && iy+ky>0 && iz+kz>0) { // criteria for suitable box size
-								Nx = (uint)(ix+kx); // set new box size
-								Ny = (uint)(iy+ky);
-								Nz = (uint)(iz+kz);
-								suggestion = true; // possible box size found -> exit all loops
-							}
-						}
-					}
-				}
-			}
-			if(!suggestion) ws /= 2;
-		}
-		if(suggestion && ws==WORKGROUP_SIZE) {
-			error += "Change grid resolution in setup.cpp to ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+").";
-		} else {
-			if(suggestion&&ws!=WORKGROUP_SIZE) {
-				error += "Change \"WORKGROUP_SIZE\" to "+to_string(ws)+", then ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+") would be a suitable grid resolution.";
-			} else {
-				error += "Grid resolution in setup.cpp is too small.";
-			}
-		}
-		print_error(error);
-	}
-	if(nu==0.0f) print_error("Viscosity cannot be 0. Change it in setup.cpp."); // sanity checks for viscosity
-	else if(nu<0.0f) print_error("Viscosity cannot be negative. Remove the \"-\" in setup.cpp.");
-#ifndef VOLUME_FORCE
-	if(fx!=0.0f||fy!=0.0f||fz!=0.0f) print_error("Volume force is set in LBM constructor in main_setup(), but VOLUME_FORCE is not enabled. Uncomment \"#define VOLUME_FORCE\" in defines.hpp.");
-#else // VOLUME_FORCE
-#ifndef FORCE_FIELD
-	if(fx==0.0f&&fy==0.0f&&fz==0.0f) print_warning("The VOLUME_FORCE extension is enabled but the volume force in LBM constructor is set to zero. You may disable the extension by commenting out \"#define VOLUME_FORCE\" in defines.hpp.");
-#endif // FORCE_FIELD
-#endif // VOLUME_FORCE
-#ifndef SURFACE
-	if(sigma!=0.0f) print_error("Surface tension is set in LBM constructor in main_setup(), but SURFACE is not enabled. Uncomment \"#define SURFACE\" in defines.hpp.");
-#endif // SURFACE
-#ifndef TEMPERATURE
-	if(alpha!=0.0f||beta!=0.0f) print_error("Thermal diffusion/expansion coefficients are set in LBM constructor in main_setup(), but TEMPERATURE is not enabled. Uncomment \"#define TEMPERATURE\" in defines.hpp.");
-#else // TEMPERATURE
-	if(alpha==0.0f&&beta==0.0f) print_warning("The TEMPERATURE extension is enabled but the thermal diffusion/expansion coefficients alpha/beta in the LBM constructor are both set to zero. You may disable the extension by commenting out \"#define TEMPERATURE\" in defines.hpp.");
-#endif // TEMPERATURE
-}
-void LBM::sanity_checks_initialization() { // sanity checks during initialization on used extensions based on used flags
-	bool moving_boundaries_used=false, equilibrium_boundaries_used=false, surface_used=false, temperature_used=false; // identify used extensions based used flags
-	for(uint n=0u; n<get_N(); n++) {
-		const uchar flagsn = flags[n];
-		const uchar flagsn_bo = flagsn&(TYPE_S|TYPE_E);
-		const uchar flagsn_su = flagsn&(TYPE_F|TYPE_I|TYPE_G);
-		moving_boundaries_used = moving_boundaries_used || (((flagsn_bo==TYPE_S)&&(u.x[n]!=0.0f||u.y[n]!=0.0f||u.z[n]!=0.0f))||(flagsn_bo==(TYPE_S|TYPE_E)));
-		equilibrium_boundaries_used = equilibrium_boundaries_used || (flagsn_bo==TYPE_E);
-		surface_used = surface_used || flagsn_su;
-		temperature_used = temperature_used || (flagsn&TYPE_T);
-	}
-#ifndef MOVING_BOUNDARIES
-	if(moving_boundaries_used) print_warning("Some boundary nodes have non-zero velocity, but MOVING_BOUNDARIES is not enabled. If you intend to use moving boundaries, uncomment \"#define MOVING_BOUNDARIES\" in defines.hpp.");
-#else // MOVING_BOUNDARIES
-	if(!moving_boundaries_used) print_warning("The MOVING_BOUNDARIES extension is enabled but no moving boundary nodes (TYPE_S flag and velocity unequal to zero) are placed in the simulation box. You may disable the extension by commenting out \"#define MOVING_BOUNDARIES\" in defines.hpp.");
-#endif // MOVING_BOUNDARIES
-#ifndef EQUILIBRIUM_BOUNDARIES
-	if(equilibrium_boundaries_used) print_error("Some nodes are set as equilibrium boundaries with the TYPE_E flag, but EQUILIBRIUM_BOUNDARIES is not enabled. Uncomment \"#define EQUILIBRIUM_BOUNDARIES\" in defines.hpp.");
-#else // EQUILIBRIUM_BOUNDARIES
-	if(!equilibrium_boundaries_used) print_warning("The EQUILIBRIUM_BOUNDARIES extension is enabled but no equilibrium boundary nodes (TYPE_E flag) are placed in the simulation box. You may disable the extension by commenting out \"#define EQUILIBRIUM_BOUNDARIES\" in defines.hpp.");
-#endif // EQUILIBRIUM_BOUNDARIES
-#ifndef SURFACE
-	if(surface_used) print_error("Some nodes are set as fluid/interface/gas with the TYPE_F/TYPE_I/TYPE_G flags, but SURFACE is not enabled. Uncomment \"#define SURFACE\" in defines.hpp.");
-#else // SURFACE
-	if(!surface_used) print_error("The SURFACE extension is enabled but no fluid/interface/gas nodes (TYPE_F/TYPE_I/TYPE_G flags) are placed in the simulation box. Disable the extension by commenting out \"#define SURFACE\" in defines.hpp.");
-#endif // SURFACE
-#ifndef TEMPERATURE
-	if(temperature_used) print_error("Some nodes are set as temperature boundary with the TYPE_T flag, but TEMPERATURE is not enabled. Uncomment \"#define TEMPERATURE\" in defines.hpp.");
-#endif // TEMPERATURE
-}
-
-string LBM::default_filename(const string& path, const string& name, const string& extension) {
-	string time = "00000000"+to_string(t);
-	time = substring(time, length(time)-9u, 9u);
-	return create_file_extension((path=="" ? get_exe_path()+"export/" : path)+(name=="" ? "file" : name)+"-"+time, extension);
-}
-string LBM::default_filename(const string& name, const string& extension) {
-	return default_filename("", name, extension);
-}
-
-void LBM::allocate(Device& device) {
-	const uint N = Nx*Ny*Nz;
+void LBM_Domain::allocate(Device& device) {
+	const ulong N = get_N();
 	rho = Memory<float>(device, N, 1u, true, true, 1.0f);
 	u = Memory<float>(device, N, 3u);
 	flags = Memory<uchar>(device, N);
@@ -174,258 +97,74 @@ void LBM::allocate(Device& device) {
 	kernel_stream_collide.add_parameters(gi, T);
 	kernel_update_fields.add_parameters(gi, T);
 #endif // TEMPERATURE
+
+	if(get_D()>1u) allocate_transfer(device);
 }
 
-void LBM::initialize() {
-	sanity_checks_initialization();
-	rho.write_to_device();
-	u.write_to_device();
-	flags.write_to_device();
-#ifdef FORCE_FIELD
-	F.write_to_device();
-#endif // FORCE_FIELD
-#ifdef SURFACE
-	phi.write_to_device();
-#endif // SURFACE
-#ifdef TEMPERATURE
-	T.write_to_device();
-#endif // TEMPERATURE
-	kernel_initialize.run();
-	initialized = true;
+void LBM_Domain::enqueue_initialize() { // call kernel_initialize
+	kernel_initialize.enqueue_run();
 }
 
-void LBM::do_time_step() {
-#ifdef SURFACE
-	kernel_surface_0.set_parameters(7u, t, fx, fy, fz).run();
-#endif // SURFACE
-	kernel_stream_collide.set_parameters(4u, t, fx, fy, fz).run();
-#ifdef SURFACE
-	kernel_surface_1.run();
-	kernel_surface_2.set_parameters(4u, t).run();
-	kernel_surface_3.run();
-#endif // SURFACE
+void LBM_Domain::enqueue_stream_collide() { // call kernel_stream_collide to perform one LBM time step
+	kernel_stream_collide.set_parameters(4u, t, fx, fy, fz).enqueue_run();
+}
+void LBM_Domain::increment_time_step() {
 	t++; // increment time step
 #ifdef UPDATE_FIELDS
 	t_last_update_fields = t;
 #endif // UPDATE_FIELDS
 }
-
-void LBM::run(const ulong steps) { // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
-	info.append(steps, t);
-	if(!initialized) {
-		initialize(); // only initialize if run() was not called before
-		info.print_initialize(); // only print setup info if the setup is new (run() was not called before)
-	}
-	Clock clock;
-	for(ulong i=1ull; i<=steps; i++) { // run LBM in loop, runs infinitely long if steps = max_ulong
-#if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
-		while(!key_P&&running) sleep(0.016);
-		if(!running) break;
-#endif // INTERACTIVE_GRAPHICS || INTERACTIVE_GRAPHICS_ASCII
-		clock.start();
-		do_time_step(); // execute one LBM time step
-		info.update(clock.stop());
-	}
+void LBM_Domain::reset_time_step() {
+	t = 0ull; // increment time step
+#ifdef UPDATE_FIELDS
+	t_last_update_fields = t;
+#endif // UPDATE_FIELDS
 }
+#ifdef SURFACE
+void LBM_Domain::enqueue_surface_0() {
+	kernel_surface_0.set_parameters(7u, t, fx, fy, fz).enqueue_run();
+}
+void LBM_Domain::enqueue_surface_1() {
+	kernel_surface_1.enqueue_run();
+}
+void LBM_Domain::enqueue_surface_2() {
+	kernel_surface_2.set_parameters(4u, t).enqueue_run();
+}
+void LBM_Domain::enqueue_surface_3() {
+	kernel_surface_3.enqueue_run();
+}
+#endif // SURFACE
 
-void LBM::update_fields() { // update fields (rho, u, T) manually
+void LBM_Domain::enqueue_update_fields() { // update fields (rho, u, T) manually
 #ifndef UPDATE_FIELDS
-	if(t>t_last_update_fields) { // only run kernel_update_fields if the time step has changed since last update
-		kernel_update_fields.set_parameters(4u, t, fx, fy, fz).run();
+	if(t!=t_last_update_fields) { // only run kernel_update_fields if the time step has changed since last update
+		kernel_update_fields.set_parameters(4u, t, fx, fy, fz).enqueue_run();
 		t_last_update_fields = t;
 	}
 #endif // UPDATE_FIELDS
 }
 
-void LBM::reset() { // reset simulation (takes effect in following run() call)
-	initialized = false;
-}
-
 #ifdef FORCE_FIELD
-void LBM::calculate_force_on_boundaries() { // calculate forces from fluid on TYPE_S nodes
-	kernel_calculate_force_on_boundaries.set_parameters(2u, t).run();
-}
-float3 LBM::calculate_force_on_object(const uchar flag_marker) { // add up force for all nodes flagged with flag_marker
-	double3 force(0.0, 0.0, 0.0);
-	for(uint n=0u; n<get_N(); n++) {
-		if(flags[n]==flag_marker) {
-			force.x += (double)F.x[n];
-			force.y += (double)F.y[n];
-			force.z += (double)F.z[n];
-		}
-	}
-	return float3(force.x, force.y, force.z);
-}
-float3 LBM::calculate_torque_on_object(const uchar flag_marker) { // add up torque around center of mass for all nodes flagged with flag_marker
-	double3 center_of_mass(0.0, 0.0, 0.0);
-	uint counter = 0u;
-	for(uint n=0u; n<get_N(); n++) {
-		if(flags[n]==flag_marker) {
-			const float3 p = position(n);
-			center_of_mass.x += (double)p.x;
-			center_of_mass.y += (double)p.y;
-			center_of_mass.z += (double)p.z;
-			counter++;
-		}
-	}
-	return calculate_torque_on_object(float3(center_of_mass.x/(double)counter, center_of_mass.y/(double)counter, center_of_mass.z/(double)counter)+center(), flag_marker);
-}
-float3 LBM::calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker) { // add up torque around specified rotation center for all nodes flagged with flag_marker
-	double3 torque(0.0, 0.0, 0.0);
-	const float3 rotation_center_in_box = rotation_center-center();
-	for(uint n=0u; n<get_N(); n++) {
-		if(flags[n]==flag_marker) {
-			const float3 t = cross(position(n)-rotation_center_in_box, float3(F.x[n], F.y[n], F.z[n]));
-			torque.x += (double)t.x;
-			torque.y += (double)t.y;
-			torque.z += (double)t.z;
-		}
-	}
-	return float3(torque.x, torque.y, torque.z);
+void LBM_Domain::enqueue_calculate_force_on_boundaries() { // calculate forces from fluid on TYPE_S nodes
+	kernel_calculate_force_on_boundaries.set_parameters(2u, t).enqueue_run();
 }
 #endif // FORCE_FIELD
 
 #ifdef MOVING_BOUNDARIES
-void LBM::update_moving_boundaries() { // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
-	kernel_update_moving_boundaries.run();
+void LBM_Domain::enqueue_update_moving_boundaries() { // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+	kernel_update_moving_boundaries.enqueue_run();
 }
 #endif // MOVING_BOUNDARIES
 
-void LBM::write_status(const string& path) { // write LBM status report to a .txt file
-	string status = "";
-	status += "Grid Resolution = ("+to_string(Nx)+", "+to_string(Ny)+", "+to_string(Nz)+")\n";
-	status += "LBM type = D"+string(velocity_set==9 ? "2" : "3")+"Q"+to_string(velocity_set)+" "+info.collision+"\n";
-	status += "Memory Usage = "+to_string(info.cpu_mem_required)+" MB (CPU), "+to_string(info.gpu_mem_required)+" MB (GPU)\n";
-	status += "Maximum Allocation Size = "+to_string((uint)((ulong)get_N()*(ulong)(velocity_set*sizeof(fpxx))/1048576ull))+" MB\n";
-	status += "Time Step = "+to_string(t)+" / "+(info.steps==max_ulong ? "infinite" : to_string(info.steps))+"\n";
-	status += "Kinematic Viscosity = "+to_string(nu)+"\n";
-	status += "Relaxation Time = "+to_string(get_tau())+"\n";
-	status += "Maximum Reynolds Number = "+to_string(get_Re_max())+"\n";
-#ifdef VOLUME_FORCE
-	status += "Volume Force = ("+to_string(fx)+", "+to_string(fy)+", "+to_string(fz)+")\n";
-#endif // VOLUME_FORCE
-#ifdef SURFACE
-	status += "Surface Tension Coefficient = "+to_string(sigma)+"\n";
-#endif // SURFACE
-#ifdef TEMPERATURE
-	status += "Thermal Diffusion Coefficient = "+to_string(alpha)+"\n";
-	status += "Thermal Expansion Coefficient = "+to_string(beta)+"\n";
-#endif // TEMPERATURE
-	const string filename = default_filename(path, "status", ".txt");
-	write_file(filename, status);
+void LBM_Domain::finish_queue() {
+	device.finish_queue();
 }
 
-template<typename T> static string vtk_type() {
-	     if constexpr(std::is_same<T,  char >::value) return "char";
-	else if constexpr(std::is_same<T, uchar >::value) return "unsigned_char";
-	else if constexpr(std::is_same<T,  short>::value) return "short";
-	else if constexpr(std::is_same<T, ushort>::value) return "unsigned_short";
-	else if constexpr(std::is_same<T,  int  >::value) return "int";
-	else if constexpr(std::is_same<T, uint  >::value) return "unsigned_int";
-	else if constexpr(std::is_same<T, slong >::value) return "long";
-	else if constexpr(std::is_same<T, ulong >::value) return "unsigned_long";
-	else if constexpr(std::is_same<T, float >::value) return "float";
-	else if constexpr(std::is_same<T, double>::value) return "double";
-	else print_error("Error in vtk_type(): Type not supported.");
-	return "";
-}
-template<typename T> void write_vtk(const string& path, const Memory<T>& memory, const uint Nx, const uint Ny, const uint Nz) { // write binary .vtk file
-	const float spacing = units.si_x(1.0f);
-	const float3 origin = spacing*float3(0.5f-0.5f*(float)Nx, 0.5f-0.5f*(float)Ny, 0.5f-0.5f*(float)Nz);
-	const string header =
-		"# vtk DataFile Version 3.0\nData\nBINARY\nDATASET STRUCTURED_POINTS\n"
-		"DIMENSIONS "+to_string(Nx)+" "+to_string(Ny)+" "+to_string(Nz)+"\n"
-		"ORIGIN "+to_string(origin.x)+" "+to_string(origin.y)+" "+to_string(origin.z)+"\n"
-		"SPACING "+to_string(spacing)+" "+to_string(spacing)+" "+to_string(spacing)+"\n"
-		"POINT_DATA "+to_string(Nx*Ny*Nz)+"\nSCALARS data "+vtk_type<T>()+" "+to_string(memory.dimensions())+"\nLOOKUP_TABLE default\n"
-	;
-	T* data = new T[memory.range()];
-	for(uint d=0u; d<memory.dimensions(); d++) {
-		for(ulong i=0ull; i<memory.length(); i++) {
-			data[i*(ulong)memory.dimensions()+(ulong)d] = reverse_bytes(memory(i, d)); // SoA <- AoS
-		}
-	}
-	create_folder(path);
-	const string filename = create_file_extension(path, ".vtk");
-	std::ofstream file(filename, std::ios::out|std::ios::binary);
-	file.write(header.c_str(), header.length()); // write non-binary file header
-	file.write((char*)data, memory.capacity()); // write binary data
-	file.close();
-	delete[] data;
-	info.allow_rendering = false; // temporarily disable interactive rendering
-	print_info("File \""+path+"\" saved.");
-	info.allow_rendering = true;
+uint LBM_Domain::get_velocity_set() const {
+	return velocity_set;
 }
 
-void LBM::rho_write_host_to_vtk(const string& path) {
-	const string filename = default_filename(path, "rho", ".vtk");
-	write_vtk(filename, rho, Nx, Ny, Nz);
-}
-void LBM::rho_write_device_to_vtk(const string& path) {
-#ifndef UPDATE_FIELDS
-	update_fields();
-#endif // UPDATE_FIELDS
-	rho.read_from_device();
-	rho_write_host_to_vtk(path);
-}
-void LBM::u_write_host_to_vtk(const string& path) {
-	const string filename = default_filename(path, "u", ".vtk");
-	write_vtk(filename, u, Nx, Ny, Nz);
-}
-void LBM::u_write_device_to_vtk(const string& path) {
-#ifndef UPDATE_FIELDS
-	update_fields();
-#endif // UPDATE_FIELDS
-	u.read_from_device();
-	u_write_host_to_vtk(path);
-}
-void LBM::flags_write_host_to_vtk(const string& path) {
-	const string filename = default_filename(path, "flags", ".vtk");
-	write_vtk(filename, flags, Nx, Ny, Nz);
-}
-void LBM::flags_write_device_to_vtk(const string& path) {
-	flags.read_from_device();
-	flags_write_host_to_vtk(path);
-}
-
-#ifdef FORCE_FIELD
-void LBM::F_write_host_to_vtk(const string& path) {
-	const string filename = default_filename(path, "F", ".vtk");
-	write_vtk(filename, F, Nx, Ny, Nz);
-}
-void LBM::F_write_device_to_vtk(const string& path) {
-	F.read_from_device();
-	F_write_host_to_vtk(path);
-}
-#endif // FORCE_FIELD
-
-#ifdef SURFACE
-void LBM::phi_write_host_to_vtk(const string& path) {
-	const string filename = default_filename(path, "phi", ".vtk");
-	write_vtk(filename, phi, Nx, Ny, Nz);
-}
-void LBM::phi_write_device_to_vtk(const string& path) {
-	phi.read_from_device();
-	phi_write_host_to_vtk(path);
-}
-#endif // SURFACE
-
-#ifdef TEMPERATURE
-void LBM::T_write_host_to_vtk(const string& path) {
-	const string filename = default_filename(path, "T", ".vtk");
-	write_vtk(filename, T, Nx, Ny, Nz);
-}
-void LBM::T_write_device_to_vtk(const string& path) {
-#ifndef UPDATE_FIELDS
-	update_fields();
-#endif // UPDATE_FIELDS
-	T.read_from_device();
-	T_write_host_to_vtk(path);
-}
-#endif // TEMPERATURE
-
-void LBM::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
-	print_info("Voxelizing mesh. This may take a few minutes.");
+void LBM_Domain::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
 	Memory<float3> p0(device, mesh->triangle_number, 1u, mesh->p0);
 	Memory<float3> p1(device, mesh->triangle_number, 1u, mesh->p1);
 	Memory<float3> p2(device, mesh->triangle_number, 1u, mesh->p2);
@@ -438,30 +177,29 @@ void LBM::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triang
 	kernel_voxelize_mesh.run();
 	flags.read_from_device();
 }
-void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
-	const Mesh* mesh = read_stl(path, float3(get_Nx(), get_Ny(), get_Nz()), center, rotation, size);
-	voxelize_mesh(mesh, flag);
-	delete mesh;
-}
-void LBM::voxelize_stl(const string& path, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center)
-	voxelize_stl(path, center(), rotation, size, flag);
-}
-void LBM::voxelize_stl(const string& path, const float3& center, const float size, const uchar flag) { // read and voxelize binary .stl file (no rotation)
-	voxelize_stl(path, center, float3x3(1.0f), size, flag);
-}
-void LBM::voxelize_stl(const string& path, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center, no rotation)
-	voxelize_stl(path, center(), float3x3(1.0f), size, flag);
-}
 
-string LBM::device_defines() const { return
+string LBM_Domain::device_defines() const { return
 	"\n	#define def_Nx "+to_string(Nx)+"u"
 	"\n	#define def_Ny "+to_string(Ny)+"u"
 	"\n	#define def_Nz "+to_string(Nz)+"u"
 	"\n	#define def_N "+to_string(get_N())+"ul"
 
+	"\n	#define def_Dx "+to_string(Dx)+"u"
+	"\n	#define def_Dy "+to_string(Dy)+"u"
+	"\n	#define def_Dz "+to_string(Dz)+"u"
+
+	"\n	#define def_Ax "+to_string(Ny*Nz)+"u"
+	"\n	#define def_Ay "+to_string(Nz*Nx)+"u"
+	"\n	#define def_Az "+to_string(Nx*Ny)+"u"
+
+	"\n	#define def_domain_offset_x "+to_string((float)Ox+(float)(Dx>1u)-0.5f*(((float)Dx-1.0f)*(float)(Nx-2u*(Dx>1u))))+"f"
+	"\n	#define def_domain_offset_y "+to_string((float)Oy+(float)(Dy>1u)-0.5f*(((float)Dy-1.0f)*(float)(Ny-2u*(Dy>1u))))+"f"
+	"\n	#define def_domain_offset_z "+to_string((float)Oz+(float)(Dz>1u)-0.5f*(((float)Dz-1.0f)*(float)(Nz-2u*(Dz>1u))))+"f"
+
 	"\n	#define D"+to_string(dimensions)+"Q"+to_string(velocity_set)+"" // D2Q9/D3Q15/D3Q19/D3Q27
 	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)
 	"\n	#define def_dimensions "+to_string(dimensions)+"u" // number spatial dimensions (2D or 3D)
+	"\n	#define def_transfers "+to_string(transfers)+"u" // number of DDFs that are transferred between multiple domains
 
 	"\n	#define def_c 0.57735027f" // lattice speed of sound c = 1/sqrt(3)*dt
 	"\n	#define def_w " +to_string(1.0f/get_tau())+"f" // relaxation rate w = dt/tau = dt/(nu/c^2+dt/2) = 1/(3*nu+1/2)
@@ -508,14 +246,17 @@ string LBM::device_defines() const { return
 
 #if defined(FP16S)
 	"\n	#define fpxx half" // switchable data type (scaled IEEE-754 16-bit floating-point format: 1-5-10, exp-30, +-1.99902344, +-1.86446416E-9, +-1.81898936E-12, 3.311 digits)
+	"\n	#define fpxx_copy ushort" // switchable data type for direct copying (scaled IEEE-754 16-bit floating-point format: 1-5-10, exp-30, +-1.99902344, +-1.86446416E-9, +-1.81898936E-12, 3.311 digits)
 	"\n	#define load(p,o) vload_half(o,p)*3.0517578E-5f" // special function for loading half
 	"\n	#define store(p,o,x) vstore_half_rte((x)*32768.0f,o,p)" // special function for storing half
 #elif defined(FP16C)
 	"\n	#define fpxx ushort" // switchable data type (custom 16-bit floating-point format: 1-4-11, exp-15, +-1.99951168, +-6.10351562E-5, +-2.98023224E-8, 3.612 digits), 12.5% slower than IEEE-754 16-bit
+	"\n	#define fpxx_copy ushort" // switchable data type for direct copying (custom 16-bit floating-point format: 1-4-11, exp-15, +-1.99951168, +-6.10351562E-5, +-2.98023224E-8, 3.612 digits), 12.5% slower than IEEE-754 16-bit
 	"\n	#define load(p,o) half_to_float_custom(p[o])" // special function for loading half
 	"\n	#define store(p,o,x) p[o]=float_to_half_custom(x)" // special function for storing half
 #else // FP32
 	"\n	#define fpxx float" // switchable data type (regular 32-bit float)
+	"\n	#define fpxx_copy float" // switchable data type for direct copying (regular 32-bit float)
 	"\n	#define load(p,o) p[o]" // regular float read
 	"\n	#define store(p,o,x) p[o]=x" // regular float write
 #endif // FP32
@@ -558,18 +299,11 @@ string LBM::device_defines() const { return
 ;}
 
 #ifdef GRAPHICS
-void LBM::Graphics::default_settings() {
-	key_1 = true;
-}
-
-void LBM::Graphics::allocate(Device& device) {
+void LBM_Domain::Graphics::allocate(Device& device) {
 	bitmap = Memory<int>(device, camera.width*camera.height);
-	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, false);
+	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, lbm->get_D()>1u); // if there are multiple domains, allocate zbuffer also on host side
 	camera_parameters = Memory<float>(device, 15u);
 	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
-
-	camera.set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()));
-	default_settings();
 
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", lbm->flags, camera_parameters, bitmap, zbuffer);
 	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
@@ -594,7 +328,8 @@ void LBM::Graphics::allocate(Device& device) {
 	kernel_graphics_streamline.add_parameters(lbm->T);
 #endif // TEMPERATURE
 }
-bool LBM::Graphics::update_camera() {
+
+bool LBM_Domain::Graphics::update_camera() {
 	camera.update_matrix();
 	bool change = false;
 	for(uint i=0u; i<15u; i++) {
@@ -604,32 +339,34 @@ bool LBM::Graphics::update_camera() {
 	}
 	return change; // return false if camera parameters remain unchanged
 }
-int* LBM::Graphics::draw_frame() {
+void LBM_Domain::Graphics::enqueue_draw_frame() {
 	const bool camera_update = update_camera();
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
-	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return bitmap.data(); // don't render a new frame if the scene hasn't changed since last frame
+	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return; // don't render a new frame if the scene hasn't changed since last frame
 #endif // INTERACTIVE_GRAPHICS or INTERACTIVE_GRAPHICS_ASCII
 	t_last_frame = lbm->get_t();
-#ifndef UPDATE_FIELDS
-	if(key_2||key_3||key_4) lbm->update_fields(); // only call update_fields() if the time step has changed since the last rendered frame
-#endif // UPDATE_FIELDS
 	camera.key_update = false;
-
-	if(camera_update) camera_parameters.write_to_device(false); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
-	kernel_clear.run();
+	if(camera_update) camera_parameters.enqueue_write_to_device(); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
+	kernel_clear.enqueue_run();
 #ifdef SURFACE
-	if(key_6) kernel_graphics_raytrace_phi.run();
-	if(key_5) kernel_graphics_rasterize_phi.run();
+	if(key_6&&lbm->get_D()==1u) kernel_graphics_raytrace_phi.enqueue_run(); // disable raytracing for multi-GPU (domain decomposition rendering doesn't work for raytracing)
+	if(key_5) kernel_graphics_rasterize_phi.enqueue_run();
 #endif // SURFACE
-	if(key_1) kernel_graphics_flags.run();
-	if(key_2) kernel_graphics_field.run();
-	if(key_3) kernel_graphics_streamline.run();
-	if(key_4) kernel_graphics_q.run();
-
-	bitmap.read_from_device();
+	if(key_1) kernel_graphics_flags.enqueue_run();
+	if(key_2) kernel_graphics_field.enqueue_run();
+	if(key_3) kernel_graphics_streamline.enqueue_run();
+	if(key_4) kernel_graphics_q.enqueue_run();
+	bitmap.enqueue_read_from_device();
+	if(lbm->get_D()>1u) zbuffer.enqueue_read_from_device();
+}
+int* LBM_Domain::Graphics::get_bitmap() { // returns pointer to zbuffer
 	return bitmap.data();
 }
-string LBM::Graphics::device_defines() const { return
+int* LBM_Domain::Graphics::get_zbuffer() { // returns pointer to zbuffer
+	return zbuffer.data();
+}
+
+string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define GRAPHICS"
 	"\n	#define def_background_color " +to_string(GRAPHICS_BACKGROUND_COLOR)+""
 	"\n	#define def_screen_width "     +to_string(camera.width)+"u"
@@ -663,6 +400,385 @@ string LBM::Graphics::device_defines() const { return
 	"\n	#define GRAPHICS_TEMPERATURE"
 #endif // TEMPERATURE
 ;}
+#endif // GRAPHICS
+
+
+
+//{ thread* threads=new thread[N]; for(uint n=0u; n<N; n++) threads[n]=thread([=]() { ... }); for(uint n=0u; n<N; n++) threads[n].join(); delete[] threads; }
+//#include <ppl.h> // concurrency::parallel_for(0, N, [&](int n) { ... });
+//#include <omp.h> // #pragma omp parallel for \n for(int n=0; n<N; i++) { ... } // #pragma warning(disable:6993)
+
+vector<int> smart_device_selection(const int D) {
+	vector<int> select_devices(D);
+	const int user_specified_devices = (int)main_arguments.size();
+	if(user_specified_devices>0) { // user has selevted specific devices as command line arguments
+		if(user_specified_devices==D) { // as much specified devices as domains
+			for(int d=0; d<D; d++) select_devices[d] = to_int(main_arguments[d]); // use list of devices IDs specified by user
+		} else {
+			print_warning("Incorrect number of devices specified. Using single fastest device for all domains.");
+			for(int d=0; d<D; d++) select_devices[d] = -1;
+		}
+	} else { // device auto-selection
+		const vector<Device_Info>& devices = get_devices(); // a vector of all available OpenCL devices
+		vector<vector<int>> device_type_ids; // a vector of all different devices, containing vectors of their device IDs
+		for(int i=0; i<(int)devices.size(); i++) {
+			const string name_i = devices[i].name;
+			bool already_exists = false;
+			for(int j=0; j<(int)device_type_ids.size(); j++) {
+				const string name_j = devices[device_type_ids[j][0]].name;
+				if(name_i==name_j) {
+					device_type_ids[j].push_back(i);
+					already_exists = true;
+				}
+			}
+			if(!already_exists) device_type_ids.push_back(vector<int>(1, i));
+		}
+		float best_value = 0.0f;
+		int best_j = -1;
+		for(int j=0; j<(int)device_type_ids.size(); j++) {
+			const float value = devices[device_type_ids[j][0]].tflops;
+			if((int)device_type_ids[j].size()>=D && value>best_value) {
+				best_value = value;
+				best_j = j;
+			}
+		}
+		if(best_j>=0) { // select all devices of fastest device type with at least D devices of the same type
+			for(int d=0; d<D; d++) select_devices[d] = device_type_ids[best_j][d];
+		} else {
+			print_warning("Not enough devices of the same type available. Using single fastest device for all domains.");
+			for(int d=0; d<D; d++) select_devices[d] = -1;
+		}
+		//for(int j=0; j<(int)device_type_ids.size(); j++) print_info("Device Type "+to_string(j)+" ("+devices[device_type_ids[j][0]].name+"): "+to_string((int)device_type_ids[j].size())+"x");
+	}
+	return select_devices;
+}
+
+LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta)// single device
+	:LBM(Nx, Ny, Nz, 1u, 1u, 1u, nu, fx, fy, fz, sigma, alpha, beta) { // delegating constructor
+}
+LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta) { // multiple devices
+	sanity_checks_constructor(Nx, Ny, Nz, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta);
+	this->Nx = Nx; this->Ny = Ny; this->Nz = Nz;
+	this->Dx = Dx; this->Dy = Dy; this->Dz = Dz;
+	const uint D = Dx*Dy*Dz;
+	const uint Hx=Dx>1u, Hy=Dy>1u, Hz=Dz>1u; // halo offsets
+	lbm = new LBM_Domain*[D];
+	const vector<int>& devices = smart_device_selection(D);
+	for(uint d=0u; d<D; d++) { // { thread* threads=new thread[D]; for(uint d=0u; d<D; d++) threads[d]=thread([=]() {
+		const uint x=((uint)d%(Dx*Dy))%Dx, y=((uint)d%(Dx*Dy))/Dx, z=(uint)d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
+		lbm[d] = new LBM_Domain(devices[d], Nx/Dx+2u*Hx, Ny/Dy+2u*Hy, Nz/Dz+2u*Hz, Dx, Dy, Dz, (int)(x*Nx/Dx)-(int)Hx, (int)(y*Ny/Dy)-(int)Hy, (int)(z*Nz/Dz)-(int)Hz, nu, fx, fy, fz, sigma, alpha, beta);
+	} // }); for(uint d=0u; d<D; d++) threads[d].join(); delete[] threads; }
+	{
+		Memory<float>** buffers_rho = new Memory<float>*[D];
+		for(uint d=0u; d<D; d++) buffers_rho[d] = &lbm[d]->rho;
+		rho = Memory_Container(this, buffers_rho, "rho");
+	} {
+		Memory<float>** buffers_u = new Memory<float>*[D];
+		for(uint d=0u; d<D; d++) buffers_u[d] = &lbm[d]->u;
+		u = Memory_Container(this, buffers_u, "u");
+	} {
+		Memory<uchar>** buffers_flags = new Memory<uchar>*[D];
+		for(uint d=0u; d<D; d++) buffers_flags[d] = &lbm[d]->flags;
+		flags = Memory_Container(this, buffers_flags, "flags");
+	} {
+#ifdef FORCE_FIELD
+		Memory<float>** buffers_F = new Memory<float>*[D];
+		for(uint d=0u; d<D; d++) buffers_F[d] = &lbm[d]->F;
+		F = Memory_Container(this, buffers_F, "F");
+#endif // FORCE_FIELD
+	} {
+#ifdef SURFACE
+		Memory<float>** buffers_phi = new Memory<float>*[D];
+		for(uint d=0u; d<D; d++) buffers_phi[d] = &lbm[d]->phi;
+		phi = Memory_Container(this, buffers_phi, "phi");
+#endif // SURFACE
+	} {
+#ifdef TEMPERATURE
+		Memory<float>** buffers_T = new Memory<float>*[D];
+		for(uint d=0u; d<D; d++) buffers_T[d] = &lbm[d]->T;
+		T = Memory_Container(this, buffers_T, "T");
+#endif // TEMPERATURE
+	}
+#ifdef GRAPHICS
+	graphics = Graphics(this);
+#endif // GRAPHICS
+	info.initialize(this);
+}
+LBM::~LBM() {
+	info.print_finalize();
+	for(uint d=0u; d<get_D(); d++) delete lbm[d];
+	delete[] lbm;
+}
+
+void LBM::sanity_checks_constructor(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta) { // sanity checks on grid resolution and extension support
+	if((ulong)Nx*(ulong)Ny*(ulong)Nz==0ull) print_error("Grid point number is 0: "+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+" = 0.");
+	if(Nx%Dx!=0u || Ny%Dy!=0u || Nz%Dz!=0u) print_error("LBM grid ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+") is not equally divisible in domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+").");
+	if(Dx*Dy*Dz==0u) print_error("You specified 0 LBM grid domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+"). There has to be at least 1 domain in every direction. Check your input in LBM constructor.");
+	const uint local_Nx=Nx/Dx+2u*(Dx>1u), local_Ny=Ny/Dy+2u*(Dy>1u), local_Nz=Nz/Dz+2u*(Dz>1u);
+	if((ulong)local_Nx*(ulong)local_Ny*(ulong)local_Nz>=(ulong)max_uint) print_error("Single domain grid resolution is too large: "+to_string(local_Nx)+"x"+to_string(local_Ny)+"x"+to_string(local_Nz)+" > 2^32.");
+	if(nu==0.0f) print_error("Viscosity cannot be 0. Change it in setup.cpp."); // sanity checks for viscosity
+	else if(nu<0.0f) print_error("Viscosity cannot be negative. Remove the \"-\" in setup.cpp.");
+#if !defined(SRT)&&!defined(TRT)
+	print_error("No LBM collision operator selected. Uncomment either \"#define SRT\" or \"#define TRT\" in defines.hpp");
+#elif defined(SRT)&&defined(TRT)
+	print_error("Too many LBM collision operators selected. Comment out either \"#define SRT\" or \"#define TRT\" in defines.hpp");
+#endif // SRT && TRT
+#ifndef VOLUME_FORCE
+	if(fx!=0.0f||fy!=0.0f||fz!=0.0f) print_error("Volume force is set in LBM constructor in main_setup(), but VOLUME_FORCE is not enabled. Uncomment \"#define VOLUME_FORCE\" in defines.hpp.");
+#else // VOLUME_FORCE
+#ifndef FORCE_FIELD
+	if(fx==0.0f&&fy==0.0f&&fz==0.0f) print_warning("The VOLUME_FORCE extension is enabled but the volume force in LBM constructor is set to zero. You may disable the extension by commenting out \"#define VOLUME_FORCE\" in defines.hpp.");
+#endif // FORCE_FIELD
+#endif // VOLUME_FORCE
+#ifndef SURFACE
+	if(sigma!=0.0f) print_error("Surface tension is set in LBM constructor in main_setup(), but SURFACE is not enabled. Uncomment \"#define SURFACE\" in defines.hpp.");
+#endif // SURFACE
+#ifndef TEMPERATURE
+	if(alpha!=0.0f||beta!=0.0f) print_error("Thermal diffusion/expansion coefficients are set in LBM constructor in main_setup(), but TEMPERATURE is not enabled. Uncomment \"#define TEMPERATURE\" in defines.hpp.");
+#else // TEMPERATURE
+	if(alpha==0.0f&&beta==0.0f) print_warning("The TEMPERATURE extension is enabled but the thermal diffusion/expansion coefficients alpha/beta in the LBM constructor are both set to zero. You may disable the extension by commenting out \"#define TEMPERATURE\" in defines.hpp.");
+#endif // TEMPERATURE
+}
+
+void LBM::sanity_checks_initialization() { // sanity checks during initialization on used extensions based on used flags
+	bool moving_boundaries_used=false, equilibrium_boundaries_used=false, surface_used=false, temperature_used=false; // identify used extensions based used flags
+	for(ulong n=0ull; n<get_N(); n++) {
+		const uchar flagsn = flags[n];
+		const uchar flagsn_bo = flagsn&(TYPE_S|TYPE_E);
+		const uchar flagsn_su = flagsn&(TYPE_F|TYPE_I|TYPE_G);
+		moving_boundaries_used = moving_boundaries_used || (((flagsn_bo==TYPE_S)&&(u.x[n]!=0.0f||u.y[n]!=0.0f||u.z[n]!=0.0f))||(flagsn_bo==(TYPE_S|TYPE_E)));
+		equilibrium_boundaries_used = equilibrium_boundaries_used || (flagsn_bo==TYPE_E);
+		surface_used = surface_used || flagsn_su;
+		temperature_used = temperature_used || (flagsn&TYPE_T);
+	}
+#ifndef MOVING_BOUNDARIES
+	if(moving_boundaries_used) print_warning("Some boundary nodes have non-zero velocity, but MOVING_BOUNDARIES is not enabled. If you intend to use moving boundaries, uncomment \"#define MOVING_BOUNDARIES\" in defines.hpp.");
+#else // MOVING_BOUNDARIES
+	if(!moving_boundaries_used) print_warning("The MOVING_BOUNDARIES extension is enabled but no moving boundary nodes (TYPE_S flag and velocity unequal to zero) are placed in the simulation box. You may disable the extension by commenting out \"#define MOVING_BOUNDARIES\" in defines.hpp.");
+#endif // MOVING_BOUNDARIES
+#ifndef EQUILIBRIUM_BOUNDARIES
+	if(equilibrium_boundaries_used) print_error("Some nodes are set as equilibrium boundaries with the TYPE_E flag, but EQUILIBRIUM_BOUNDARIES is not enabled. Uncomment \"#define EQUILIBRIUM_BOUNDARIES\" in defines.hpp.");
+#else // EQUILIBRIUM_BOUNDARIES
+	if(!equilibrium_boundaries_used) print_warning("The EQUILIBRIUM_BOUNDARIES extension is enabled but no equilibrium boundary nodes (TYPE_E flag) are placed in the simulation box. You may disable the extension by commenting out \"#define EQUILIBRIUM_BOUNDARIES\" in defines.hpp.");
+#endif // EQUILIBRIUM_BOUNDARIES
+#ifndef SURFACE
+	if(surface_used) print_error("Some nodes are set as fluid/interface/gas with the TYPE_F/TYPE_I/TYPE_G flags, but SURFACE is not enabled. Uncomment \"#define SURFACE\" in defines.hpp.");
+#else // SURFACE
+	if(!surface_used) print_error("The SURFACE extension is enabled but no fluid/interface/gas nodes (TYPE_F/TYPE_I/TYPE_G flags) are placed in the simulation box. Disable the extension by commenting out \"#define SURFACE\" in defines.hpp.");
+#endif // SURFACE
+#ifndef TEMPERATURE
+	if(temperature_used) print_error("Some nodes are set as temperature boundary with the TYPE_T flag, but TEMPERATURE is not enabled. Uncomment \"#define TEMPERATURE\" in defines.hpp.");
+#endif // TEMPERATURE
+}
+
+void LBM::initialize() { // write all data fields to device and call kernel_initialize
+	sanity_checks_initialization();
+
+	for(uint d=0u; d<get_D(); d++) lbm[d]->rho.enqueue_write_to_device();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->u.enqueue_write_to_device();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->flags.enqueue_write_to_device();
+#ifdef FORCE_FIELD
+	for(uint d=0u; d<get_D(); d++) lbm[d]->F.enqueue_write_to_device();
+#endif // FORCE_FIELD
+#ifdef SURFACE
+	for(uint d=0u; d<get_D(); d++) lbm[d]->phi.enqueue_write_to_device();
+#endif // SURFACE
+#ifdef TEMPERATURE
+	for(uint d=0u; d<get_D(); d++) lbm[d]->T.enqueue_write_to_device();
+#endif // TEMPERATURE
+
+	for(uint d=0u; d<get_D(); d++) lbm[d]->increment_time_step(); // the communicate calls at initialization need an odd time step
+	communicate_rho_u_flags();
+#ifdef SURFACE
+	communicate_phi_massex_flags();
+#endif // SURFACE
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_initialize(); // odd time step is baked-in the kernel
+	communicate_rho_u_flags();
+#ifdef SURFACE
+	communicate_phi_massex_flags();
+#endif // SURFACE
+	communicate_fi(); // time step must be odd here
+#ifdef TEMPERATURE
+	communicate_gi(); // time step must be odd here
+#endif // TEMPERATURE
+	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->reset_time_step(); // set time step to 0 again
+	initialized = true;
+}
+
+void LBM::do_time_step() { // call kernel_stream_collide to perform one LBM time step
+#ifdef SURFACE
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_0();
+#endif // SURFACE
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_stream_collide(); // run LBM stream_collide kernel after domain communication
+#ifdef SURFACE
+	communicate_rho_u_flags();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_1();
+	communicate_flags();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_2();
+	communicate_flags();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_3();
+	communicate_phi_massex_flags();
+#endif // SURFACE
+	communicate_fi();
+#ifdef TEMPERATURE
+	communicate_gi();
+#endif // TEMPERATURE
+	if(get_D()==1u) for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // this additional domain synchronization barrier is only required in single-GPU, as communication calls already provide all necessary synchronization barriers in multi-GPU
+	for(uint d=0u; d<get_D(); d++) lbm[d]->increment_time_step();
+}
+
+void LBM::run(const ulong steps) { // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
+	info.append(steps, get_t());
+	if(!initialized) {
+		initialize();
+		info.print_initialize(); // only print setup info if the setup is new (run() was not called before)
+	}
+	Clock clock;
+	for(ulong i=1ull; i<=steps; i++) {
+#if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
+		while(!key_P&&running) sleep(0.016);
+		if(!running) break;
+#endif // INTERACTIVE_GRAPHICS_ASCII || INTERACTIVE_GRAPHICS
+		clock.start();
+		do_time_step();
+		info.update(clock.stop());
+	}
+	if(get_D()>1u) for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // wait for everything to finish (multi-GPU only)
+}
+
+void LBM::update_fields() { // update fields (rho, u, T) manually
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_update_fields();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
+}
+
+void LBM::reset() { // reset simulation (takes effect in following run() call)
+	initialized = false;
+}
+
+#ifdef FORCE_FIELD
+void LBM::calculate_force_on_boundaries() { // calculate forces from fluid on TYPE_S nodes
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_calculate_force_on_boundaries();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
+}
+float3 LBM::calculate_force_on_object(const uchar flag_marker) { // add up force for all nodes flagged with flag_marker
+	double3 force(0.0, 0.0, 0.0);
+	for(ulong n=0ull; n<get_N(); n++) {
+		if(flags[n]==flag_marker) {
+			force.x += (double)F.x[n];
+			force.y += (double)F.y[n];
+			force.z += (double)F.z[n];
+		}
+	}
+	return float3(force.x, force.y, force.z);
+}
+float3 LBM::calculate_torque_on_object(const uchar flag_marker) { // add up torque around center of mass for all nodes flagged with flag_marker
+	double3 center_of_mass(0.0, 0.0, 0.0);
+	ulong counter = 0ull;
+	for(ulong n=0ull; n<get_N(); n++) {
+		if(flags[n]==flag_marker) {
+			const float3 p = position(n);
+			center_of_mass.x += (double)p.x;
+			center_of_mass.y += (double)p.y;
+			center_of_mass.z += (double)p.z;
+			counter++;
+		}
+	}
+	return calculate_torque_on_object(float3(center_of_mass.x/(double)counter, center_of_mass.y/(double)counter, center_of_mass.z/(double)counter)+center(), flag_marker);
+}
+float3 LBM::calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker) { // add up torque around specified rotation center for all nodes flagged with flag_marker
+	double3 torque(0.0, 0.0, 0.0);
+	const float3 rotation_center_in_box = rotation_center-center();
+	for(ulong n=0ull; n<get_N(); n++) {
+		if(flags[n]==flag_marker) {
+			const float3 t = cross(position(n)-rotation_center_in_box, float3(F.x[n], F.y[n], F.z[n]));
+			torque.x += (double)t.x;
+			torque.y += (double)t.y;
+			torque.z += (double)t.z;
+		}
+	}
+	return float3(torque.x, torque.y, torque.z);
+}
+#endif // FORCE_FIELD
+
+#ifdef MOVING_BOUNDARIES
+void LBM::update_moving_boundaries() { // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_update_moving_boundaries();
+	communicate_rho_u_flags();
+	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
+}
+#endif // MOVING_BOUNDARIES
+
+void LBM::write_status(const string& path) { // write LBM status report to a .txt file
+	string status = "";
+	status += "Grid Resolution = ("+to_string(Nx)+", "+to_string(Ny)+", "+to_string(Nz)+")\n";
+	status += "LBM type = D"+string(get_velocity_set()==9 ? "2" : "3")+"Q"+to_string(get_velocity_set())+" "+info.collision+"\n";
+	status += "Memory Usage = "+to_string(info.cpu_mem_required)+" MB (CPU), "+to_string(info.gpu_mem_required)+" MB (GPU)\n";
+	status += "Maximum Allocation Size = "+to_string((uint)(get_N()*(ulong)(get_velocity_set()*sizeof(fpxx))/1048576ull))+" MB\n";
+	status += "Time Step = "+to_string(get_t())+" / "+(info.steps==max_ulong ? "infinite" : to_string(info.steps))+"\n";
+	status += "Kinematic Viscosity = "+to_string(get_nu())+"\n";
+	status += "Relaxation Time = "+to_string(get_tau())+"\n";
+	status += "Maximum Reynolds Number = "+to_string(get_Re_max())+"\n";
+#ifdef VOLUME_FORCE
+	status += "Volume Force = ("+to_string(get_fx())+", "+to_string(get_fy())+", "+to_string(get_fz())+")\n";
+#endif // VOLUME_FORCE
+#ifdef SURFACE
+	status += "Surface Tension Coefficient = "+to_string(get_sigma())+"\n";
+#endif // SURFACE
+#ifdef TEMPERATURE
+	status += "Thermal Diffusion Coefficient = "+to_string(get_alpha())+"\n";
+	status += "Thermal Expansion Coefficient = "+to_string(get_beta())+"\n";
+#endif // TEMPERATURE
+	const string filename = default_filename(path, "status", ".txt", get_t());
+	write_file(filename, status);
+}
+
+void LBM::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
+	print_info("Voxelizing mesh. This may take a few minutes."); // if this crashes on Windows, create a TdrDelay 32-bit DWORD with decimal value 300 in Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers
+	{ thread* threads=new thread[get_D()]; for(uint d=0u; d<get_D(); d++) threads[d]=thread([=]() {
+		lbm[d]->voxelize_mesh(mesh, flag);
+	}); for(uint d=0u; d<get_D(); d++) threads[d].join(); delete[] threads; }
+}
+void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
+	const Mesh* mesh = read_stl(path, float3(get_Nx(), get_Ny(), get_Nz()), center, rotation, size);
+	voxelize_mesh(mesh, flag);
+	delete mesh;
+}
+void LBM::voxelize_stl(const string& path, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center)
+	voxelize_stl(path, center(), rotation, size, flag);
+}
+void LBM::voxelize_stl(const string& path, const float3& center, const float size, const uchar flag) { // read and voxelize binary .stl file (no rotation)
+	voxelize_stl(path, center, float3x3(1.0f), size, flag);
+}
+void LBM::voxelize_stl(const string& path, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center, no rotation)
+	voxelize_stl(path, center(), float3x3(1.0f), size, flag);
+}
+
+#ifdef GRAPHICS
+int* LBM::Graphics::draw_frame() {
+#ifndef UPDATE_FIELDS
+	if(key_2||key_3||key_4) {
+		for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->enqueue_update_fields(); // only call update_fields() if the time step has changed since the last rendered frame
+		//for(uint d=0u; d<lbm->get_D(); d++) lbm->communicate_rho_u_flags();
+	}
+#endif // UPDATE_FIELDS
+	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->graphics.enqueue_draw_frame();
+	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->finish_queue();
+	int* bitmap = lbm->lbm[0]->graphics.get_bitmap();
+	int* zbuffer = lbm->lbm[0]->graphics.get_zbuffer();
+	for(uint d=1u; d<lbm->get_D(); d++) {
+		const int* bitmap_d = lbm->lbm[d]->graphics.get_bitmap(); // each domain renders its own frame
+		const int* zbuffer_d = lbm->lbm[d]->graphics.get_zbuffer();
+		for(uint i=0u; i<camera.width*camera.height; i++) {
+			const int zdi = zbuffer_d[i];
+			if(zdi>zbuffer[i]) {
+				bitmap[i] = bitmap_d[i]; // overlay frames using their z-buffers
+				zbuffer[i] = zdi;
+			}
+		}
+	}
+	return bitmap;
+}
 
 void LBM::Graphics::set_camera_centered(const float rx, const float ry, const float fov, const float zoom) {
 	camera.free = false;
@@ -682,8 +798,8 @@ void LBM::Graphics::set_camera_free(const float3& p, const float rx, const float
 void LBM::Graphics::print_frame() { // preview current frame in console
 #ifndef INTERACTIVE_GRAPHICS_ASCII
 	info.allow_rendering = false; // temporarily disable interactive rendering
-	draw_frame(); // make sure the frame is fully rendered
-	Image* image = new Image(camera.width, camera.height, bitmap.data());
+	int* image_data = draw_frame(); // make sure the frame is fully rendered
+	Image* image = new Image(camera.width, camera.height, image_data);
 	println();
 	print_image(image);
 	delete image;
@@ -702,12 +818,12 @@ void LBM::Graphics::write_frame(const string& path, const string& name, const st
 }
 void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, const uint y2, const string& path, const string& name, const string& extension, bool print_preview) { // save a cropped current frame with two corner points (x1,y1) and (x2,y2)
 	info.allow_rendering = false; // temporarily disable interactive rendering
-	draw_frame(); // make sure the frame is fully rendered
-	const string filename = lbm->default_filename(path, name, extension);
+	int* image_data = draw_frame(); // make sure the frame is fully rendered
+	const string filename = default_filename(path, name, extension, lbm->get_t());
 	const uint xa=max(min(x1, x2), 0u), xb=min(max(x1, x2), camera.width ); // sort coordinates if necessary
 	const uint ya=max(min(y1, y2), 0u), yb=min(max(y1, y2), camera.height);
 	Image* image = new Image(xb-xa, yb-ya); // create local copy of frame buffer
-	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, bitmap[camera.width*(ya+y)+(xa+x)]);
+	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, image_data[camera.width*(ya+y)+(xa+x)]);
 #ifndef INTERACTIVE_GRAPHICS_ASCII
 	if(print_preview) {
 		println();
@@ -739,3 +855,92 @@ void LBM::Graphics::write_frame_bmp(const uint x1, const uint y1, const uint x2,
 	write_frame(x1, y1, x2, y2, path, "image", ".bmp", print_preview);
 }
 #endif // GRAPHICS
+
+
+
+void LBM_Domain::allocate_transfer(Device& device) { // allocate all memory for multi-device trqansfer
+	const ulong Ax=(ulong)Ny*(ulong)Nz, Ay=(ulong)Nz*(ulong)Nx, Az=(ulong)Nx*(ulong)Ny, Amax=max(max(Ax, Ay), Az);
+	transfer_buffer_p = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
+	transfer_buffer_m = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u));
+
+	kernel_transfer[enum_transfer_field::fi              ][0] = Kernel(device, 0u, "transfer_extract_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
+	kernel_transfer[enum_transfer_field::fi              ][1] = Kernel(device, 0u, "transfer__insert_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
+	kernel_transfer[enum_transfer_field::rho_u_flags     ][0] = Kernel(device, 0u, "transfer_extract_rho_u_flags"     , 0u, t, transfer_buffer_p, transfer_buffer_m, rho, u, flags);
+	kernel_transfer[enum_transfer_field::rho_u_flags     ][1] = Kernel(device, 0u, "transfer__insert_rho_u_flags"     , 0u, t, transfer_buffer_p, transfer_buffer_m, rho, u, flags);
+#ifdef SURFACE
+	kernel_transfer[enum_transfer_field::flags           ][0] = Kernel(device, 0u, "transfer_extract_flags"           , 0u, t, transfer_buffer_p, transfer_buffer_m, flags);
+	kernel_transfer[enum_transfer_field::flags           ][1] = Kernel(device, 0u, "transfer__insert_flags"           , 0u, t, transfer_buffer_p, transfer_buffer_m, flags);
+	kernel_transfer[enum_transfer_field::phi_massex_flags][0] = Kernel(device, 0u, "transfer_extract_phi_massex_flags", 0u, t, transfer_buffer_p, transfer_buffer_m, phi, massex, flags);
+	kernel_transfer[enum_transfer_field::phi_massex_flags][1] = Kernel(device, 0u, "transfer__insert_phi_massex_flags", 0u, t, transfer_buffer_p, transfer_buffer_m, phi, massex, flags);
+#endif // SURFACE
+#ifdef TEMPERATURE
+	kernel_transfer[enum_transfer_field::gi              ][0] = Kernel(device, 0u, "transfer_extract_gi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, gi);
+	kernel_transfer[enum_transfer_field::gi              ][1] = Kernel(device, 0u, "transfer__insert_gi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, gi);
+#endif // TEMPERATURE
+}
+
+ulong LBM_Domain::get_area(const uint direction) {
+	const ulong A[3] = { (ulong)Ny*(ulong)Nz, (ulong)Nz*(ulong)Nx, (ulong)Nx*(ulong)Ny };
+	return A[direction];
+}
+void LBM_Domain::enqueue_transfer_extract_field(Kernel& kernel_transfer_extract_field, const uint direction, const uint bytes_per_cell) {
+	kernel_transfer_extract_field.set_ranges(get_area(direction)); // direction: x=0, y=1, z=2
+	kernel_transfer_extract_field.set_parameters(0u, direction, get_t()).enqueue_run(); // selective in-VRAM copy
+	transfer_buffer_p.enqueue_read_from_device(0ull, kernel_transfer_extract_field.range()*(ulong)bytes_per_cell); // PCIe copy (+)
+	transfer_buffer_m.enqueue_read_from_device(0ull, kernel_transfer_extract_field.range()*(ulong)bytes_per_cell); // PCIe copy (-)
+}
+void LBM_Domain::enqueue_transfer_insert_field(Kernel& kernel_transfer_insert_field, const uint direction, const uint bytes_per_cell) {
+	kernel_transfer_insert_field.set_ranges(get_area(direction)); // direction: x=0, y=1, z=2
+	transfer_buffer_p.enqueue_write_to_device(0ull, kernel_transfer_insert_field.range()*(ulong)bytes_per_cell); // PCIe copy (+)
+	transfer_buffer_m.enqueue_write_to_device(0ull, kernel_transfer_insert_field.range()*(ulong)bytes_per_cell); // PCIe copy (-)
+	kernel_transfer_insert_field.set_parameters(0u, direction, get_t()).enqueue_run(); // selective in-VRAM copy
+}
+void LBM::communicate_field(const enum_transfer_field field, const uint bytes_per_cell) {
+	if(Dx>1u) { // communicate in x-direction
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 0u, bytes_per_cell); // selective in-VRAM copy (X) + PCIe copy
+		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
+		for(uint d=0u; d<get_D(); d++) {
+			const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
+			lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[((x+1u)%Dx)+(y+z*Dy)*Dx]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+		}
+		for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 0u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (X)
+	}
+	if(Dy>1u) { // communicate in y-direction
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 1u, bytes_per_cell); // selective in-VRAM copy (Y) + PCIe copy
+		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
+		for(uint d=0u; d<get_D(); d++) {
+			const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
+			lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[x+(((y+1u)%Dy)+z*Dy)*Dx]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+		}
+		for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 1u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (Y)
+	}
+	if(Dz>1u) { // communicate in z-direction
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 2u, bytes_per_cell); // selective in-VRAM copy (Z) + PCIe copy
+		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
+		for(uint d=0u; d<get_D(); d++) {
+			const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
+			lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[x+(y+((z+1u)%Dz)*Dy)*Dx]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+		}
+		for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 2u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (Z)
+	}
+}
+
+void LBM::communicate_fi() {
+	communicate_field(enum_transfer_field::fi, transfers*sizeof(fpxx));
+}
+void LBM::communicate_rho_u_flags() {
+	communicate_field(enum_transfer_field::rho_u_flags, 17u);
+}
+#ifdef SURFACE
+void LBM::communicate_flags() {
+	communicate_field(enum_transfer_field::flags, 1u);
+}
+void LBM::communicate_phi_massex_flags() {
+	communicate_field(enum_transfer_field::phi_massex_flags, 9u);
+}
+#endif // SURFACE
+#ifdef TEMPERATURE
+void LBM::communicate_gi() {
+	communicate_field(enum_transfer_field::gi, sizeof(fpxx));
+}
+#endif // TEMPERATURE
