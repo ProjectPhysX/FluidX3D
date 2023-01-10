@@ -1969,7 +1969,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return index(coordinates[direction]);
 }
 
-uint index_transfer(const uint side_i) {
+)+R(uint index_transfer(const uint side_i) {
 	const uint index_transfer_data[2u*def_dimensions*def_transfers] = {
 )+"#if defined(D2Q9)"+R(
 		1,  5,  7, // xp
