@@ -338,7 +338,7 @@ If your GPU is not on the list yet, you can report your benchmarks [here](https:
 
 ## Multi-GPU Benchmarks
 
-Multi-GPU benchmarks are done at the largest possible grid resolution with a cubic domain, and either 2x1x1, 2x2x1 or 2x2x2 of these cubic domains together. The multiplicator numbers in brackets are relative to single-GPU results.
+Multi-GPU benchmarks are done at the largest possible grid resolution with a cubic domain, and either 2x1x1, 2x2x1 or 2x2x2 of these cubic domains together. The percentages in brackets are single-GPU roofline efficiency, and the multiplicator numbers in brackets are scaling factors relative to benchmarked single-GPU performance.
 
 | Device                        | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :---------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
@@ -348,9 +348,16 @@ Multi-GPU benchmarks are done at the largest possible grid resolution with a cub
 | 2x AMD Instinct MI250 (4 GCD) |             181.04 |         256 |         6554 |           16925 (3.0x) |            29163 (3.2x) |            29627 (3.5x) |
 | 4x AMD Instinct MI250 (8 GCD) |             362.08 |         512 |        13107 |           27350 (4.9x) |            52258 (5.8x) |            53521 (6.3x) |
 |                               |                    |             |              |                        |                         |                         |
+| 1x AMD Radeon VII             |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
+| 2x AMD Radeon VII             |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
+| 4x AMD Radeon VII             |              55.32 |          64 |         4096 |           12911 (2.6x) |            24273 (3.1x) |            17080 (3.2x) |
+|                               |                    |             |              |                        |                         |                         |
 | 1x Nvidia A100 SXM4 40GB      |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
 | 2x Nvidia A100 SXM4 40GB      |              38.98 |          80 |         3110 |           13629 (1.6x) |            24620 (1.5x) |            18850 (1.7x) |
 | 4x Nvidia A100 SXM4 40GB      |              77.96 |         160 |         6220 |           17978 (2.1x) |            30604 (1.9x) |            30627 (2.7x) |
+|                               |                    |             |              |                        |                         |                         |
+| 1x Nvidia Tesla K40m          |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
+| 2x Nvidia Tesla K40m          |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
 |                               |                    |             |              |                        |                         |                         |
 | 1x Nvidia Quadro RTX 8000 Pa. |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
 | 2x Nvidia Quadro RTX 8000 Pa. |              29.86 |          96 |         1248 |            4767 (1.8x) |             9607 (1.8x) |            10214 (1.8x) |
