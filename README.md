@@ -338,7 +338,7 @@ If your GPU is not on the list yet, you can report your benchmarks [here](https:
 
 ## Multi-GPU Benchmarks
 
-Multi-GPU benchmarks are done at the largest possible grid resolution with a cubic domain, and either 2x1x1, 2x2x1 or 2x2x2 of these cubic domains together. The percentages in brackets are single-GPU roofline efficiency, and the multiplicator numbers in brackets are scaling factors relative to benchmarked single-GPU performance.
+Multi-GPU benchmarks are done at the largest possible grid resolution with a cubic domain, and either 2x1x1, 2x2x1 or 2x2x2 of these cubic domains together. The percentages in brackets are single-GPU roofline model efficiency, and the multiplicator numbers in brackets are scaling factors relative to benchmarked single-GPU performance.
 
 | Device                        | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :---------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
