@@ -1970,7 +1970,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 
 )+R(uint index_transfer(const uint side_i) {
-	const uint index_transfer_data[2u*def_dimensions*def_transfers] = {
+	const uchar index_transfer_data[2u*def_dimensions*def_transfers] = {
 )+"#if defined(D2Q9)"+R(
 		1,  5,  7, // xp
 		2,  6,  8, // xm
@@ -1999,7 +1999,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		6, 10, 12, 15, 17, 20, 21, 24, 26  // zm
 )+"#endif"+R( // D3Q27
 	};
-	return index_transfer_data[side_i];
+	return (uint)index_transfer_data[side_i];
 }
 )+R(void extract_fi(const uint a, const uint n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* fi) {
 	uint j[def_velocity_set]; // neighbor indices

@@ -246,9 +246,9 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 Here are [performance benchmarks](https://doi.org/10.3390/computation10060092) on various hardware in MLUPs/s, or how many million lattice points are updated per second. The settings used for the benchmark are D3Q19 SRT with no extensions enabled (only LBM with implicit mid-grid bounce-back boundaries) and the setup consists of an empty cubic box with sufficient size (typically 256³). Without extensions, a single lattice point requires:
 - a memory capacity of 93 (FP32/FP32) or 55 (FP32/FP16) Bytes
 - a memory bandwidth of 153 (FP32/FP32) or 77 (FP32/FP16) Bytes per time step
-- 360 (FP32/FP32) or 403 (FP32/FP16S) or 1272 (FP32/FP16C) FLOPs per time step (FP32+INT32 operations counted combined)
+- 363 (FP32/FP32) or 406 (FP32/FP16S) or 1275 (FP32/FP16C) FLOPs per time step (FP32+INT32 operations counted combined)
 
-In consequence, the arithmetic intensity of this implementation is 2.35 (FP32/FP32) or 5.23 (FP32/FP16S) or 16.52 (FP32/FP16C) FLOPs/Byte. So performance is only limited by memory bandwidth.
+In consequence, the arithmetic intensity of this implementation is 2.37 (FP32/FP32) or 5.27 (FP32/FP16S) or 16.56 (FP32/FP16C) FLOPs/Byte. So performance is only limited by memory bandwidth.
 
 If your GPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
 
