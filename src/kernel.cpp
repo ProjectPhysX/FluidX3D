@@ -2073,7 +2073,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float3 offset = (float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
 	const float3 r_origin = p+offset;
 	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
-	const float3 r_direction_check = -r_direction; // cast a second ray to check if starting point is really inside (error correction)
 	uint intersections=0u, intersections_check=0u;
 	ushort distances[64]; // allow up to 64 mesh intersections
 	const bool condition = direction==0u ? r_origin.y<y0||r_origin.z<z0||r_origin.y>y1||r_origin.z>z1 : direction==1u ? r_origin.x<x0||r_origin.z<z0||r_origin.x>x1||r_origin.z>z1 : r_origin.x<x0||r_origin.y<y0||r_origin.x>x1||r_origin.y>y1;
@@ -2097,43 +2096,33 @@ string opencl_c_container() { return R( // ########################## begin of O
 		barrier(CLK_LOCAL_MEM_FENCE);
 		for(int j=0; j<def_workgroup_size&&i+j<triangle_number; j++) {
 			const float3 p0i=cache_p0[j], p1i=cache_p1[j], p2i=cache_p2[j];
-			const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, q=cross(w, u);
-			{
-				const float3 h=cross(r_direction, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
-				if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
+			const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, h=cross(r_direction, v), q=cross(w, u); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
+			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
+			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f) { // ray-triangle intersection ahead or behind
+				if(d>0.0f) { // ray-triangle intersection ahead
 					if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
 					intersections++;
-				}
-			} { // cast a second ray to check if starting point is really inside (error correction)
-				const float3 h=cross(r_direction_check, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction_check, q), d=f*dot(v, q);
-				if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
-					intersections_check++;
+				} else { // ray-triangle intersection behind
+					intersections_check++; // cast a second ray to check if starting point is really inside (error correction)
 				}
 			}
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 	}/**/
 
-	/*if(condition) return; // return immediately if grid point is outside the bounding box of the mesh
+	/*if(condition) return; // don't use local memory (this also runs on old OpenCL 1.0 GPUs)
 	for(uint i=0u; i<triangle_number; i++) {
 		const float3 p0i = (float3)(p0[3u*i], p0[3u*i+1u], p0[3u*i+2u]);
 		const float3 p1i = (float3)(p1[3u*i], p1[3u*i+1u], p1[3u*i+2u]);
 		const float3 p2i = (float3)(p2[3u*i], p2[3u*i+1u], p2[3u*i+2u]);
-		const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, q=cross(w, u);
-		{
-			const float3 h=cross(r_direction, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
-			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
+		const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, h=cross(r_direction, v), q=cross(w, u); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
+		const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
+		if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f) { // ray-triangle intersection ahead or behind
+			if(d>0.0f) { // ray-triangle intersection ahead
 				if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
 				intersections++;
-			}
-		} { // cast a second ray to check if starting point is really inside (error correction)
-			const float3 h=cross(r_direction_check, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction_check, q), d=f*dot(v, q);
-			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
-				intersections_check++;
+			} else { // ray-triangle intersection behind
+				intersections_check++; // cast a second ray to check if starting point is really inside (error correction)
 			}
 		}
 	}/**/
