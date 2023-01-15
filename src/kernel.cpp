@@ -2075,7 +2075,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
 	const float3 r_direction_check = -r_direction; // cast a second ray to check if starting point is really inside (error correction)
 	uint intersections=0u, intersections_check=0u;
-	ushort distances[16];
+	ushort distances[64]; // allow up to 64 mesh intersections
 	const bool condition = direction==0u ? r_origin.y<y0||r_origin.z<z0||r_origin.y>y1||r_origin.z>z1 : direction==1u ? r_origin.x<x0||r_origin.z<z0||r_origin.x>x1||r_origin.z>z1 : r_origin.x<x0||r_origin.y<y0||r_origin.x>x1||r_origin.y>y1;
 
 	volatile local uint workgroup_condition; // use local memory optimization (~25% faster)
@@ -2102,7 +2102,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 				const float3 h=cross(r_direction, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
 				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
 				if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
-					if(intersections<64&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
+					if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
 					intersections++;
 				}
 			} { // cast a second ray to check if starting point is really inside (error correction)
@@ -2126,7 +2126,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			const float3 h=cross(r_direction, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
 			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
 			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
-				if(intersections<64&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
+				if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
 				intersections++;
 			}
 		} { // cast a second ray to check if starting point is really inside (error correction)
