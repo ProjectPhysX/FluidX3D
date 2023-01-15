@@ -164,18 +164,31 @@ uint LBM_Domain::get_velocity_set() const {
 	return velocity_set;
 }
 
-void LBM_Domain::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
+void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
 	Memory<float3> p0(device, mesh->triangle_number, 1u, mesh->p0);
 	Memory<float3> p1(device, mesh->triangle_number, 1u, mesh->p1);
 	Memory<float3> p2(device, mesh->triangle_number, 1u, mesh->p2);
 	const float x0=mesh->pmin.x, y0=mesh->pmin.y, z0=mesh->pmin.z, x1=mesh->pmax.x, y1=mesh->pmax.y, z1=mesh->pmax.z; // use bounding box of mesh to speed up voxelization
-	Kernel kernel_voxelize_mesh(device, get_N(), "voxelize_mesh", flags, flag, p0, p1, p2, mesh->triangle_number, x0, y0, z0, x1, y1, z1);
+	const float M[3] = { (y1-y0)*(z1-z0), (z1-z0)*(x1-x0), (x1-x0)*(y1-y0) };
+	float Mmin = M[0];
+	uint direction = 0u;
+	for(uint i=1u; i<3u; i++) {
+		if(M[i]<Mmin) {
+			Mmin = M[i];
+			direction = i; // find direction of minimum bounding-box cross-section area
+		}
+	}
+	const ulong A[3] = { (ulong)Ny*(ulong)Nz, (ulong)Nz*(ulong)Nx, (ulong)Nx*(ulong)Ny };
+	Kernel kernel_voxelize_mesh(device, A[direction], "voxelize_mesh", direction, flags, flag, p0, p1, p2, mesh->triangle_number, x0, y0, z0, x1, y1, z1);
 	p0.write_to_device();
 	p1.write_to_device();
 	p2.write_to_device();
-	flags.write_to_device();
 	kernel_voxelize_mesh.run();
-	flags.read_from_device();
+}
+void LBM_Domain::enqueue_unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // remove voxelized triangle mesh from LBM grid
+	const float x0=mesh->pmin.x, y0=mesh->pmin.y, z0=mesh->pmin.z, x1=mesh->pmax.x, y1=mesh->pmax.y, z1=mesh->pmax.z; // remove all flags in bounding box of mesh
+	Kernel kernel_unvoxelize_mesh(device, get_N(), "unvoxelize_mesh", flags, flag, x0, y0, z0, x1, y1, z1);
+	kernel_unvoxelize_mesh.run();
 }
 
 string LBM_Domain::device_defines() const { return
@@ -188,13 +201,17 @@ string LBM_Domain::device_defines() const { return
 	"\n	#define def_Dy "+to_string(Dy)+"u"
 	"\n	#define def_Dz "+to_string(Dz)+"u"
 
+	"\n	#define def_Ox "+to_string(Ox)+"" // offsets are signed integer!
+	"\n	#define def_Oy "+to_string(Oy)+""
+	"\n	#define def_Oz "+to_string(Oz)+""
+
 	"\n	#define def_Ax "+to_string(Ny*Nz)+"u"
 	"\n	#define def_Ay "+to_string(Nz*Nx)+"u"
 	"\n	#define def_Az "+to_string(Nx*Ny)+"u"
 
-	"\n	#define def_domain_offset_x "+to_string((float)Ox+(float)(Dx>1u)-0.5f*(((float)Dx-1.0f)*(float)(Nx-2u*(Dx>1u))))+"f"
-	"\n	#define def_domain_offset_y "+to_string((float)Oy+(float)(Dy>1u)-0.5f*(((float)Dy-1.0f)*(float)(Ny-2u*(Dy>1u))))+"f"
-	"\n	#define def_domain_offset_z "+to_string((float)Oz+(float)(Dz>1u)-0.5f*(((float)Dz-1.0f)*(float)(Nz-2u*(Dz>1u))))+"f"
+	"\n	#define def_domain_offset_x "+to_string((float)Ox+(float)(Dx>1u)-0.5f*((float)Dx-1.0f)*(float)(Nx-2u*(Dx>1u)))+"f"
+	"\n	#define def_domain_offset_y "+to_string((float)Oy+(float)(Dy>1u)-0.5f*((float)Dy-1.0f)*(float)(Ny-2u*(Dy>1u)))+"f"
+	"\n	#define def_domain_offset_z "+to_string((float)Oz+(float)(Dz>1u)-0.5f*((float)Dz-1.0f)*(float)(Nz-2u*(Dz>1u)))+"f"
 
 	"\n	#define D"+to_string(dimensions)+"Q"+to_string(velocity_set)+"" // D2Q9/D3Q15/D3Q19/D3Q27
 	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)
@@ -343,7 +360,7 @@ void LBM_Domain::Graphics::enqueue_draw_frame() {
 	const bool camera_update = update_camera();
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
 	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return; // don't render a new frame if the scene hasn't changed since last frame
-#endif // INTERACTIVE_GRAPHICS or INTERACTIVE_GRAPHICS_ASCII
+#endif // INTERACTIVE_GRAPHICS||INTERACTIVE_GRAPHICS_ASCII
 	t_last_frame = lbm->get_t();
 	camera.key_update = false;
 	if(camera_update) camera_parameters.enqueue_write_to_device(); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
@@ -733,16 +750,25 @@ void LBM::write_status(const string& path) { // write LBM status report to a .tx
 	write_file(filename, status);
 }
 
-void LBM::voxelize_mesh(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
-	print_info("Voxelizing mesh. This may take a few minutes."); // if this crashes on Windows, create a TdrDelay 32-bit DWORD with decimal value 300 in Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers
-	{ thread* threads=new thread[get_D()]; for(uint d=0u; d<get_D(); d++) threads[d]=thread([=]() {
-		lbm[d]->voxelize_mesh(mesh, flag);
-	}); for(uint d=0u; d<get_D(); d++) threads[d].join(); delete[] threads; }
+void LBM::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
+	if(get_D()==1u) {
+		lbm[0]->voxelize_mesh_on_device(mesh, flag); // if this crashes on Windows, create a TdrDelay 32-bit DWORD with decimal value 300 in Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers
+	} else {
+		thread* threads=new thread[get_D()]; for(uint d=0u; d<get_D(); d++) threads[d]=thread([=]() {
+			lbm[d]->voxelize_mesh_on_device(mesh, flag);
+		}); for(uint d=0u; d<get_D(); d++) threads[d].join(); delete[] threads;
+	}
+}
+void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // remove voxelized triangle mesh from LBM grid
+	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_unvoxelize_mesh_on_device(mesh, flag);
+	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
 }
 void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
 	const Mesh* mesh = read_stl(path, float3(get_Nx(), get_Ny(), get_Nz()), center, rotation, size);
-	voxelize_mesh(mesh, flag);
+	flags.write_to_device();
+	voxelize_mesh_on_device(mesh, flag);
 	delete mesh;
+	flags.read_from_device();
 }
 void LBM::voxelize_stl(const string& path, const float3x3& rotation, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center)
 	voxelize_stl(path, center(), rotation, size, flag);

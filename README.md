@@ -235,7 +235,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - CPUs
   - even smartphone ARM GPUs
 - supports parallelization across multiple GPUs on a single node (PC/laptop/server) with PCIe communication, no SLI/Crossfire/NVLink/InfinityFabric or MPI installation required; the GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth is recommended
-- supports importing and voxelizing triangle meshes from binary `.stl` files
+- supports importing and voxelizing triangle meshes from binary `.stl` files, with fast GPU voxelization
 - supports exporting volumetric data as binary `.vtk` files
 - supports exporting rendered frames as `.png`/`.qoi`/`.bmp` files; time-consuming image encoding is handled in parallel on the CPU while the simulation on GPU can continue without delay
 

@@ -237,7 +237,6 @@
 		else lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
-	//voxelize_triangle(lbm, p0, p1, p2, TYPE_S);
 	lbm.run();
 } /**/
 
@@ -341,8 +340,7 @@
 	const float size = 1.0f*(float)L;
 	const float3 center = float3(lbm.center().x, 32.0f+0.5f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(180.0f));
-	voxelize_stl_hull(lbm, get_exe_path()+"../stl/X-wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
-	//lbm.voxelize_stl(get_exe_path()+"../stl/X-wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
+	lbm.voxelize_stl(get_exe_path()+"../stl/X-wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
 	const ulong N=lbm.get_N(); uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
@@ -368,15 +366,7 @@
 
 
 
-/*std::atomic_bool revoxelizing = false;
-void revoxelize(LBM* lbm, Mesh* mesh) { // voxelize new frames in detached thread in parallel while LBM is running
-	for(uint n=0u; n<lbm->get_N(); n++) lbm->flags[n] &= ~TYPE_S; // clear flags
-	const float3x3 rotation = float3x3(float3(0.2f, 1.0f, 0.1f), radians(0.4032f)); // create rotation matrix to rotate mesh
-	mesh->rotate(rotation); // rotate mesh
-	voxelize_mesh_hull(*lbm, mesh, TYPE_S); // voxelize rotated mesh in lbm.flags
-	revoxelizing = false; // indicate new voxelizer thread has finished
-}
-void main_setup() { // Star Wars TIE fighter
+/*void main_setup() { // Star Wars TIE fighter
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
 	const uint L = 256u;
 	const float Re = 100000.0f;
@@ -387,7 +377,8 @@ void main_setup() { // Star Wars TIE fighter
 	const float3 center = float3(lbm.center().x, 0.6f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(90.0f));
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/TIE-fighter.stl", lbm.size(), center, rotation, size); // https://www.thingiverse.com/thing:2919109/files
-	voxelize_mesh_hull(lbm, mesh, TYPE_S);
+	lbm.voxelize_mesh_on_device(mesh);
+	lbm.flags.read_from_device();
 	const ulong N=lbm.get_N(); uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
@@ -405,12 +396,11 @@ void main_setup() { // Star Wars TIE fighter
 	//	lbm.graphics.write_frame_png(get_exe_path()+"export/f/");
 	//	lbm.graphics.set_camera_free(float3(2.5f*(float)Nx, 0.0f*(float)Ny, 0.0f*(float)Nz), 0.0f, 0.0f, 50.0f);
 	//	lbm.graphics.write_frame_png(get_exe_path()+"export/s/");
-		while(revoxelizing.load()) sleep(0.01f); // wait for voxelizer thread to finish
-		lbm.flags.write_to_device(); // lbm.flags on host is finished, write to device now
-		revoxelizing = true; // indicate new voxelizer thread is starting
-		thread voxelizer(revoxelize, &lbm, mesh); // start new voxelizer thread
-		voxelizer.detach(); // detatch voxelizer thread so LBM can run in parallel
 		lbm.run(28u); // run LBM in parallel while CPU is voxelizing the next frame
+		const float3x3 rotation = float3x3(float3(0.2f, 1.0f, 0.1f), radians(0.4032f)); // create rotation matrix to rotate mesh
+		lbm.unvoxelize_mesh_on_device(mesh);
+		mesh->rotate(rotation); // rotate mesh
+		lbm.voxelize_mesh_on_device(mesh);
 	}
 	//write_file(get_exe_path()+"time.txt", print_time(clock.stop()));
 } /**/

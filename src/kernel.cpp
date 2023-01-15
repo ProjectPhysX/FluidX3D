@@ -1885,69 +1885,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 
 
-)+R(kernel void voxelize_mesh(global uchar* flags, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const uint triangle_number, float x0, float y0, float z0, float x1, float y1, float z1) { // voxelize triangle mesh
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N) return;
-	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
-	const float3 r0_origin = p;
-	const float3 r1_origin = p;
-	const float3 r0_direction = (float3)(+0.01f, +0.04f, +1.03f); // from each grid point, shoot an outward ray and count how often it intersects the mesh, odd number -> grid point is inside mesh
-	const float3 r1_direction = (float3)(-0.05f, -0.06f, -1.07f); // to eliminate errors, repeat with a second ray in a different random direction
-	uint intersections_0=0u, intersections_1=0u;
-	/*if(p.x<x0||p.y<y0||p.z<z0||p.x>x1||p.y>y1||p.z>z1) return; // return straight away if grid point is outside the bounds of the mesh (~4x faster)
-	for(uint i=0u; i<triangle_number; i++) {
-		const float3 p0i = (float3)(p0[3u*i], p0[3u*i+1u], p0[3u*i+2u]);
-		const float3 p1i = (float3)(p1[3u*i], p1[3u*i+1u], p1[3u*i+2u]);
-		const float3 p2i = (float3)(p2[3u*i], p2[3u*i+1u], p2[3u*i+2u]);
-		const float3 u=p1i-p0i, v=p2i-p0i;
-		{
-			const float3 w=r0_origin-p0i, h=cross(r0_direction, v), q=cross(w, u);
-			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r0_direction, q);
-			intersections_0 += (uint)(s>=0.0f&&s<=1.0f&&t>=0.0f&&s+t<=1.0f&&f*dot(v, q)>0.0f);
-		} {
-			const float3 w=r1_origin-p0i, h=cross(r1_direction, v), q=cross(w, u);
-			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r1_direction, q);
-			intersections_1 += (uint)(s>=0.0f&&s<=1.0f&&t>=0.0f&&s+t<=1.0f&&f*dot(v, q)>0.0f);
-		}
-	}/**/
-	const bool condition = p.x<x0||p.y<y0||p.z<z0||p.x>x1||p.y>y1||p.z>z1; // use local memory (~25% faster)
-	volatile local uint workgroup_condition;
-	workgroup_condition = 1u;
-	barrier(CLK_LOCAL_MEM_FENCE);
-	atomic_and(&workgroup_condition, (uint)condition);
-	barrier(CLK_LOCAL_MEM_FENCE);
-	const bool workgroup_all = (bool)workgroup_condition;
-	if(workgroup_all) return; // return straight away if grid point is outside the bounds of the mesh (~4x faster)
-	const uint lid = get_local_id(0);
-	local float3 cache_p0[def_workgroup_size];
-	local float3 cache_p1[def_workgroup_size];
-	local float3 cache_p2[def_workgroup_size];
-	for(uint i=0u; i<triangle_number; i+=def_workgroup_size) {
-		const uint tx=3u*(i+lid), ty=tx+1u, tz=ty+1u;
-		cache_p0[lid] = (float3)(p0[tx], p0[ty], p0[tz]);
-		cache_p1[lid] = (float3)(p1[tx], p1[ty], p1[tz]);
-		cache_p2[lid] = (float3)(p2[tx], p2[ty], p2[tz]);
-		barrier(CLK_LOCAL_MEM_FENCE);
-		for(int j=0; j<def_workgroup_size&&i+j<triangle_number; j++) {
-			const float3 p0i=cache_p0[j], p1i=cache_p1[j], p2i=cache_p2[j];
-			const float3 u=p1i-p0i, v=p2i-p0i;
-			{
-				const float3 w=r0_origin-p0i, h=cross(r0_direction, v), q=cross(w, u);
-				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r0_direction, q);
-				intersections_0 += (uint)(s>=0.0f&&s<=1.0f&&t>=0.0f&&s+t<=1.0f&&f*dot(v, q)>0.0f);
-			} {
-				const float3 w=r1_origin-p0i, h=cross(r1_direction, v), q=cross(w, u);
-				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r1_direction, q);
-				intersections_1 += (uint)(s>=0.0f&&s<=1.0f&&t>=0.0f&&s+t<=1.0f&&f*dot(v, q)>0.0f);
-			}
-		}
-		barrier(CLK_LOCAL_MEM_FENCE);
-	}/**/
-	if(intersections_0%2u&&intersections_1%2u) flags[n] = flag;
-} // voxelize_mesh()
-
-
-
 )+R(uint get_area(const uint direction) {
 	const uint A[3] = { def_Ax, def_Ay, def_Az };
 	return A[direction];
@@ -2125,6 +2062,112 @@ string opencl_c_container() { return R( // ########################## begin of O
 	insert_gi(a, index_insert_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, gi);
 }
 )+"#endif"+R( // TEMPERATURE
+
+
+
+)+R(kernel void voxelize_mesh(const uint direction, global uchar* flags, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const uint triangle_number, float x0, float y0, float z0, float x1, float y1, float z1) { // voxelize triangle mesh
+	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
+	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	const uint3 xyz = direction==0u ? (uint3)((uint)max(0, (int)x0-def_Ox), a%def_Ny, a/def_Ny) : direction==1u ? (uint3)(a/def_Nz, (uint)max(0, (int)y0-def_Oy), a%def_Nz) : (uint3)(a%def_Nx, a/def_Nx, (uint)max(0, (int)z0-def_Oz));
+	const float3 p = position(xyz);
+	const float3 offset = (float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
+	const float3 r_origin = p+offset;
+	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
+	const float3 r_direction_check = -r_direction; // cast a second ray to check if starting point is really inside (error correction)
+	uint intersections=0u, intersections_check=0u;
+	ushort distances[16];
+	const bool condition = direction==0u ? r_origin.y<y0||r_origin.z<z0||r_origin.y>y1||r_origin.z>z1 : direction==1u ? r_origin.x<x0||r_origin.z<z0||r_origin.x>x1||r_origin.z>z1 : r_origin.x<x0||r_origin.y<y0||r_origin.x>x1||r_origin.y>y1;
+
+	volatile local uint workgroup_condition; // use local memory optimization (~25% faster)
+	workgroup_condition = 1u;
+	barrier(CLK_LOCAL_MEM_FENCE);
+	atomic_and(&workgroup_condition, (uint)condition);
+	barrier(CLK_LOCAL_MEM_FENCE);
+	const bool workgroup_all = (bool)workgroup_condition;
+	if(workgroup_all) return; // return immediately if grid point is outside the bounding box of the mesh
+	const uint lid = get_local_id(0);
+	local float3 cache_p0[def_workgroup_size];
+	local float3 cache_p1[def_workgroup_size];
+	local float3 cache_p2[def_workgroup_size];
+	for(uint i=0u; i<triangle_number; i+=def_workgroup_size) {
+		const uint tx=3u*(i+lid), ty=tx+1u, tz=ty+1u;
+		cache_p0[lid] = (float3)(p0[tx], p0[ty], p0[tz]);
+		cache_p1[lid] = (float3)(p1[tx], p1[ty], p1[tz]);
+		cache_p2[lid] = (float3)(p2[tx], p2[ty], p2[tz]);
+		barrier(CLK_LOCAL_MEM_FENCE);
+		for(int j=0; j<def_workgroup_size&&i+j<triangle_number; j++) {
+			const float3 p0i=cache_p0[j], p1i=cache_p1[j], p2i=cache_p2[j];
+			const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, q=cross(w, u);
+			{
+				const float3 h=cross(r_direction, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
+				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
+				if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
+					if(intersections<64&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
+					intersections++;
+				}
+			} { // cast a second ray to check if starting point is really inside (error correction)
+				const float3 h=cross(r_direction_check, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
+				const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction_check, q), d=f*dot(v, q);
+				if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
+					intersections_check++;
+				}
+			}
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}/**/
+
+	/*if(condition) return; // return immediately if grid point is outside the bounding box of the mesh
+	for(uint i=0u; i<triangle_number; i++) {
+		const float3 p0i = (float3)(p0[3u*i], p0[3u*i+1u], p0[3u*i+2u]);
+		const float3 p1i = (float3)(p1[3u*i], p1[3u*i+1u], p1[3u*i+2u]);
+		const float3 p2i = (float3)(p2[3u*i], p2[3u*i+1u], p2[3u*i+2u]);
+		const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, q=cross(w, u);
+		{
+			const float3 h=cross(r_direction, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
+			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
+			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
+				if(intersections<64&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
+				intersections++;
+			}
+		} { // cast a second ray to check if starting point is really inside (error correction)
+			const float3 h=cross(r_direction_check, v); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
+			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction_check, q), d=f*dot(v, q);
+			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f&&d>0.0f) { // ray-triangle intersection ahead
+				intersections_check++;
+			}
+		}
+	}/**/
+
+	if(intersections==0u) return; // no intersection for the entire column, so return immediately
+	bool inside = (intersections%2u)&&(intersections_check%2u);
+
+	for(int i=1; i<(int)intersections; i++) { // insertion sort of distances
+		ushort t = distances[i];
+		int j = i-1;
+		while(distances[j]>t&&j>=0) {
+			distances[j+1] = distances[j];
+			j--;
+		}
+		distances[j+1] = t;
+	}
+
+	uint intersection = 0u; // iterate through column
+	const uint h0 = direction==0u ? xyz.x : direction==1u ? xyz.y : xyz.z;
+	for(uint h=h0; h<min(h0+(uint)distances[intersections-1u], (uint)def_N/A); h++) {
+		while(intersection<intersections&&h>h0+(uint)distances[intersection]) {
+			inside = !inside; // passed mesh intersection, so switch inside/outside state
+			intersection++;
+		}
+		const ulong n = index((uint3)(direction==0u?h:xyz.x, direction==1u?h:xyz.y, direction==2u?h:xyz.z));
+		if(inside) flags[n] |= flag;
+	}
+} // voxelize_mesh()
+
+)+R(kernel void unvoxelize_mesh(global uchar* flags, const uchar flag, float x0, float y0, float z0, float x1, float y1, float z1) { // remove voxelized triangle mesh
+	const uint n = get_global_id(0);
+	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
+	if(p.x>=x0-1.0f&&p.y>=y0-1.0f&&p.z>=z0-1.0f&&p.x<=x1+1.0f&&p.y<=y1+1.0f&&p.z<=z1+1.0f) flags[n] &= ~flag;
+} // unvoxelize_mesh()
 
 
 

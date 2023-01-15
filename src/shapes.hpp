@@ -23,13 +23,3 @@ float cylinder_x_plic(const uint x, const uint y, const uint z, const float3& p,
 float cylinder_y_plic(const uint x, const uint y, const uint z, const float3& p, const float r, const float l); // bar with PLIC fill levels returned
 float cylinder_z_plic(const uint x, const uint y, const uint z, const float3& p, const float r, const float l); // bar with PLIC fill levels returned
 float plane_plic(const uint x, const uint y, const uint z, const float3& p, const float3& n); // plane with PLIC fill levels returned
-
-class LBM; // forward-declare LBM class
-void voxelize_line(LBM& lbm, const float3& p0, const float3& p1, const uchar flag); // voxelize line
-void voxelize_triangle(LBM& lbm, const float3& p0, const float3& p1, const float3& p2, const uchar flag); // voxelize triangle
-void voxelize_mesh_hull(LBM& lbm, const Mesh* mesh, const uchar flag); // voxelize mesh
-
-void voxelize_stl_hull(LBM& lbm, const string& path, const float3& center, const float3x3& rotation, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file
-void voxelize_stl_hull(LBM& lbm, const string& path, const float3x3& rotation, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center)
-void voxelize_stl_hull(LBM& lbm, const string& path, const float3& center, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (no rotation)
-void voxelize_stl_hull(LBM& lbm, const string& path, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center, no rotation)

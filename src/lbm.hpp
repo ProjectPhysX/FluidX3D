@@ -121,7 +121,8 @@ public:
 	void set_fz(const float fz) { this->fz = fz; } // set global froce per volume
 	void set_f(const float fx, const float fy, const float fz) { set_fx(fx); set_fy(fy); set_fz(fz); } // set global froce per volume
 
-	void voxelize_mesh(const Mesh* mesh, const uchar flag=TYPE_S); // voxelize mesh
+	void voxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // voxelize mesh
+	void enqueue_unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // remove voxelized triangle mesh from LBM grid
 
 	#ifdef GRAPHICS
 	class Graphics {
@@ -472,7 +473,8 @@ public:
 	}
 	void write_status(const string& path=""); // write LBM status report to a .txt file
 
-	void voxelize_mesh(const Mesh* mesh, const uchar flag=TYPE_S); // voxelize mesh
+	void voxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // voxelize mesh
+	void unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // remove voxelized triangle mesh from LBM grid
 	void voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file
 	void voxelize_stl(const string& path, const float3x3& rotation, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center)
 	void voxelize_stl(const string& path, const float3& center, const float size=-1.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (no rotation)
