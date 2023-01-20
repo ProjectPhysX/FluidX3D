@@ -2065,9 +2065,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 
 
-)+R(kernel void voxelize_mesh(const uint direction, global uchar* flags, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const uint triangle_number, float x0, float y0, float z0, float x1, float y1, float z1) { // voxelize triangle mesh
+)+R(kernel void voxelize_mesh(const uint direction, global fpxx* fi, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu) { // voxelize triangle mesh
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	const uint triangle_number = as_uint(bbu[0]);
+	const float x0=bbu[ 1], y0=bbu[ 2], z0=bbu[ 3], x1=bbu[ 4], y1=bbu[ 5], z1=bbu[ 6];
+	const float cx=bbu[ 7], cy=bbu[ 8], cz=bbu[ 9], ux=bbu[10], uy=bbu[11], uz=bbu[12], rx=bbu[13], ry=bbu[14], rz=bbu[15];
+
 	const uint3 xyz = direction==0u ? (uint3)((uint)max(0, (int)x0-def_Ox), a%def_Ny, a/def_Ny) : direction==1u ? (uint3)(a/def_Nz, (uint)max(0, (int)y0-def_Oy), a%def_Nz) : (uint3)(a%def_Nx, a/def_Nx, (uint)max(0, (int)z0-def_Oz));
 	const float3 p = position(xyz);
 	const float3 offset = (float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
@@ -2127,10 +2131,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}/**/
 
-	if(intersections==0u) return; // no intersection for the entire column, so return immediately
-	bool inside = (intersections%2u)&&(intersections_check%2u);
-
-	for(int i=1; i<(int)intersections; i++) { // insertion sort of distances
+	for(int i=1; i<(int)intersections; i++) { // insertion-sort distances
 		ushort t = distances[i];
 		int j = i-1;
 		while(distances[j]>t&&j>=0) {
@@ -2140,15 +2141,47 @@ string opencl_c_container() { return R( // ########################## begin of O
 		distances[j+1] = t;
 	}
 
-	uint intersection = 0u; // iterate through column
+	bool inside = (intersections%2u)&&(intersections_check%2u);
+	const bool set_u = sq(ux)+sq(uy)+sq(uz)+sq(rx)+sq(ry)+sq(rz)>0.0f;
+	uint intersection = intersections%2u!=intersections_check%2u; // iterate through column, start with 0 regularly, start with 1 if forward and backward intersection count evenness differs (error correction)
 	const uint h0 = direction==0u ? xyz.x : direction==1u ? xyz.y : xyz.z;
-	for(uint h=h0; h<min(h0+(uint)distances[intersections-1u], (uint)def_N/A); h++) {
+	const uint hmax = direction==0u ? (uint)clamp((int)x1-def_Ox, 0, (int)def_Nx-1) : direction==1u ? (uint)clamp((int)y1-def_Oy, 0, (int)def_Ny-1) : (uint)clamp((int)z1-def_Oz, 0, (int)def_Nz-1);
+	const uint hmesh = h0+(uint)distances[intersections-1u];
+	for(uint h=h0; h<hmax; h++) {
 		while(intersection<intersections&&h>h0+(uint)distances[intersection]) {
 			inside = !inside; // passed mesh intersection, so switch inside/outside state
 			intersection++;
 		}
+		inside &= (intersection<intersections&&h<hmesh); // point must be outside if there are no more ray-mesh intersections ahead (error correction)
 		const ulong n = index((uint3)(direction==0u?h:xyz.x, direction==1u?h:xyz.y, direction==2u?h:xyz.z));
-		if(inside) flags[n] |= flag;
+		uchar flagsn = flags[n];
+		if(inside) {
+			flagsn = (flagsn&~TYPE_BO)|flag;
+			if(set_u) {
+				const float3 p = position(coordinates(n))+offset;
+				const float3 un = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-p, (float3)(rx, ry, rz));
+				u[                 n] = un.x;
+				u[    def_N+(ulong)n] = un.y;
+				u[2ul*def_N+(ulong)n] = un.z;
+			}
+		} else {
+			if(set_u) {
+				const float3 un = (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]); // for velocity voxelization, only clear moving boundaries
+				if((flagsn&TYPE_BO)==TYPE_S) { // reconstruct DDFs when boundary point is converted to fluid
+					uint j[def_velocity_set]; // neighbor indices
+					neighbors(n, j); // calculate neighbor indices
+					float feq[def_velocity_set]; // f_equilibrium
+					calculate_f_eq(1.0f, un.x, un.y, un.z, feq);
+					store_f(n, feq, fi, j, t); // write to fi
+				}
+				if(sq(un.x)+sq(un.y)+sq(un.z)>0.0f) {
+					flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag;
+				}
+			} else {
+				flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag;
+			}
+		}
+		flags[n] = flagsn;
 	}
 } // voxelize_mesh()
 
@@ -2164,7 +2197,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef GRAPHICS"+R(
 
-)+"#ifndef FORCE_FIELD"+R(
+)+"#ifndef FORCE_FIELD"+R( // render flags as grid
 )+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global int* bitmap, global int* zbuffer) {
 )+"#else"+R( // FORCE_FIELD
 )+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global int* bitmap, global int* zbuffer, const global float* F) {
@@ -2231,7 +2264,62 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}
 )+"#endif"+R( // FORCE_FIELD
-}
+}/**/
+
+/*)+"#ifndef FORCE_FIELD"+R( // render solid boundaries with marching-cubes
+)+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global int* bitmap, global int* zbuffer) {
+)+"#else"+R( // FORCE_FIELD
+)+R(kernel void graphics_flags(const global uchar* flags, const global float* camera, global int* bitmap, global int* zbuffer, const global float* F) {
+)+"#endif"+R( // FORCE_FIELD
+	const uint n = get_global_id(0);
+	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
+	const uint3 xyz = coordinates(n);
+	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
+	//if(xyz.x==0u||xyz.y==0u||xyz.z==0u||xyz.x>=def_Nx-2u||xyz.y>=def_Ny-2u||xyz.z>=def_Nz-2u) return;
+	uint j[8];
+	const uint x0 =  xyz.x; // cube stencil
+	const uint xp =  xyz.x+1u;
+	const uint y0 =  xyz.y    *def_Nx;
+	const uint yp = (xyz.y+1u)*def_Nx;
+	const uint z0 =  xyz.z    *def_Ny*def_Nx;
+	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
+	j[0] = n       ; // 000
+	j[1] = xp+y0+z0; // +00
+	j[2] = xp+y0+zp; // +0+
+	j[3] = x0+y0+zp; // 00+
+	j[4] = x0+yp+z0; // 0+0
+	j[5] = xp+yp+z0; // ++0
+	j[6] = xp+yp+zp; // +++
+	j[7] = x0+yp+zp; // 0++
+	float v[8];
+	for(uint i=0u; i<8u; i++) v[i] = (float)((flags[j[i]]&TYPE_BO)==TYPE_S);
+	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
+	const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
+	if(tn==0u) return;
+	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
+	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
+	const float3 offset = (float3)((float)xyz.x+0.5f-0.5f*(float)def_Nx, (float)xyz.y+0.5f-0.5f*(float)def_Ny, (float)xyz.z+0.5f-0.5f*(float)def_Nz);
+	for(uint i=0u; i<tn; i++) {
+		const float3 p0 = triangles[3u*i   ]+offset;
+		const float3 p1 = triangles[3u*i+1u]+offset;
+		const float3 p2 = triangles[3u*i+2u]+offset;
+		const float3 p=(p0+p1+p2)/3.0f, normal=cross(p1-p0, p2-p0);
+		const int c = lighting(191<<16|191<<8|191, p, normal, camera_cache);
+		draw_triangle(p0, p1, p2, c, camera_cache, bitmap, zbuffer);
+	}
+)+"#ifdef FORCE_FIELD"+R(
+	const uchar flagsn_bo = flags[n]&TYPE_BO;
+	const float3 p = position(xyz);
+	if(flagsn_bo==TYPE_S) {
+		const float3 Fn = def_scale_F*(float3)(F[n], F[def_N+(ulong)n], F[2ul*def_N+(ulong)n]);
+		const float Fnl = length(Fn);
+		if(Fnl>0.0f) {
+			const int c = iron_color(255.0f*Fnl); // color boundaries depending on the force on them
+			draw_line(p, p+5.0f*Fn, c, camera_cache, bitmap, zbuffer); // draw colored force vectors
+		}
+	}
+)+"#endif"+R( // FORCE_FIELD
+}/**/
 
 )+R(kernel void graphics_field(const global uchar* flags, const global float* u, const global float* camera, global int* bitmap, global int* zbuffer) {
 	const uint n = get_global_id(0);

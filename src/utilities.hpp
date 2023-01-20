@@ -4203,6 +4203,12 @@ struct Mesh { // triangle mesh
 	inline const float3& get_center() const {
 		return center;
 	}
+	inline float get_min_size() {
+		return fmin(fmin(pmax.x-pmin.x, pmax.y-pmin.y), pmax.z-pmin.z);
+	}
+	inline float get_max_size() {
+		return fmax(fmax(pmax.x-pmin.x, pmax.y-pmin.y), pmax.z-pmin.z);
+	}
 };
 inline Mesh* read_stl(const string& path, const float3& box_size, const float3& center, const float3x3& rotation, const float size) { // read binary .stl file
 	const string filename = create_file_extension(path, ".stl");
@@ -4232,13 +4238,15 @@ inline Mesh* read_stl(const string& path, const float3& box_size, const float3& 
 	mesh->find_bounds();
 	const float3 offset = -0.5f*(mesh->pmin+mesh->pmax); // auto-rescale mesh
 	float scale = 1.0f;
-	if(size>0) { // rescale to specified size
-		scale = size/fmax(fmax(mesh->pmax.x-mesh->pmin.x, mesh->pmax.y-mesh->pmin.y), mesh->pmax.z-mesh->pmin.z);
-	} else { // auto-rescale to largest possible size
+	if(size==0.0f) { // auto-rescale to largest possible size
 		const float scale_x = box_size.x/(mesh->pmax.x-mesh->pmin.x);
 		const float scale_y = box_size.y/(mesh->pmax.y-mesh->pmin.y);
 		const float scale_z = box_size.z/(mesh->pmax.z-mesh->pmin.z);
 		scale = fmin(fmin(scale_x, scale_y), scale_z);
+	} else if(size>0.0f) { // rescale to specified size relative to box
+		scale = size/fmax(fmax(mesh->pmax.x-mesh->pmin.x, mesh->pmax.y-mesh->pmin.y), mesh->pmax.z-mesh->pmin.z);
+	} else { // rescale to specified size relative to original size (input size as negative number)
+		scale = -size;
 	}
 	for(uint i=0u; i<triangle_number; i++) { // rescale mesh
 		mesh->p0[i] = center+scale*(offset+mesh->p0[i]);

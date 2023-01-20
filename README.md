@@ -2,9 +2,40 @@
 
 The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper").
 
-<a href="https://youtu.be/o3TPN142HxM"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" alt="FluidX3D - A New Era of Computational Fluid Dynamics Software" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" alt="8 billion voxel raindrop simulation" width="50%"></img></a><br>
-<a href="https://youtu.be/NQPgumd3Ei8"><img src="https://img.youtube.com/vi/NQPgumd3Ei8/maxresdefault.jpg" alt="Hydraulic jump simulation" width="50%"></img></a><a href="https://youtu.be/3JNVBQyetMA"><img src="https://img.youtube.com/vi/3JNVBQyetMA/maxresdefault.jpg" alt="Star Wars X-wing simulation" width="50%"></img></a>
+<a href="https://youtu.be/o3TPN142HxM"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
+<a href="https://youtu.be/NQPgumd3Ei8"><img src="https://img.youtube.com/vi/NQPgumd3Ei8/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/aqG8qZ_Gc4U"><img src="https://img.youtube.com/vi/aqG8qZ_Gc4U/maxresdefault.jpg" width="50%"></img></a>
 
+
+<details><summary>Update History</summary>
+
+- v1.0
+  - initial release
+- v1.1
+  - added solid voxelization on GPU (slow algorithm)
+  - added tool to print current camera position (key_H)
+  - minor bug fix (workaround for Intel iGPU driver bug with triangle rendering)
+- v1.2
+  - added functions to compute force/torque on objects
+  - added function to translate Mesh
+  - added Stokes drag validation setup
+- v1.3
+  - added unit conversion functions for torque
+  - `FORCE_FIELD` and `VOLUME_FORCE` can now be used independently
+  - minor bug fix (workaround for AMD legacy driver bug with binary number literals)
+- v1.4
+  - added interactive graphics mode on Linux with X11
+  - fixed streamline visualization bug in 2D
+- v2.0
+  - added (cross-vendor) multi-GPU support on a single node (PC/laptop/server)
+- v2.1
+  - made solid voxelization on GPU lightning fast (new algorithm, from minutes to milliseconds)
+- v2.2
+  - added option to voxelize moving/rotating geometry on GPU, with automatic velocity initialization for each grid point based on center of rotation, linear velocity and rotational velocity
+  - cells that are converted from solid->fluid during re-voxelization now have their DDFs properly initialized
+  - added option to not auto-scale mesh during `read_stl(...)`, with negative `size` parameter
+  - added kernel for solid boundary rendering with marching-cubes
+
+</details>
 
 
 ## Compute Features

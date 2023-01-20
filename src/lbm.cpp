@@ -164,25 +164,54 @@ uint LBM_Domain::get_velocity_set() const {
 	return velocity_set;
 }
 
-void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
+void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, const float3& rotation_center, const float3& linear_velocity, const float3& rotational_velocity) { // voxelize triangle mesh
 	Memory<float3> p0(device, mesh->triangle_number, 1u, mesh->p0);
 	Memory<float3> p1(device, mesh->triangle_number, 1u, mesh->p1);
 	Memory<float3> p2(device, mesh->triangle_number, 1u, mesh->p2);
+	Memory<float> bounding_box_and_velocity(device, 16u);
 	const float x0=mesh->pmin.x, y0=mesh->pmin.y, z0=mesh->pmin.z, x1=mesh->pmax.x, y1=mesh->pmax.y, z1=mesh->pmax.z; // use bounding box of mesh to speed up voxelization
-	const float M[3] = { (y1-y0)*(z1-z0), (z1-z0)*(x1-x0), (x1-x0)*(y1-y0) };
-	float Mmin = M[0];
+	bounding_box_and_velocity[ 0] = as_float(mesh->triangle_number);
+	bounding_box_and_velocity[ 1] = x0;
+	bounding_box_and_velocity[ 2] = y0;
+	bounding_box_and_velocity[ 3] = z0;
+	bounding_box_and_velocity[ 4] = x1;
+	bounding_box_and_velocity[ 5] = y1;
+	bounding_box_and_velocity[ 6] = z1;
+	bounding_box_and_velocity[ 7] = rotation_center.x;
+	bounding_box_and_velocity[ 8] = rotation_center.y;
+	bounding_box_and_velocity[ 9] = rotation_center.z;
+	bounding_box_and_velocity[10] = linear_velocity.x;
+	bounding_box_and_velocity[11] = linear_velocity.y;
+	bounding_box_and_velocity[12] = linear_velocity.z;
+	bounding_box_and_velocity[13] = rotational_velocity.x;
+	bounding_box_and_velocity[14] = rotational_velocity.y;
+	bounding_box_and_velocity[15] = rotational_velocity.z;
 	uint direction = 0u;
-	for(uint i=1u; i<3u; i++) {
-		if(M[i]<Mmin) {
-			Mmin = M[i];
-			direction = i; // find direction of minimum bounding-box cross-section area
+	if(length(rotational_velocity)==0.0f) { // choose direction of minimum bounding-box cross-section area
+		float v[3] = { (y1-y0)*(z1-z0), (z1-z0)*(x1-x0), (x1-x0)*(y1-y0) };
+		float vmin = v[0];
+		for(uint i=1u; i<3u; i++) {
+			if(v[i]<vmin) {
+				vmin = v[i];
+				direction = i;
+			}
+		}
+	} else { // choose direction closest to rotation axis
+		float v[3] = { rotational_velocity.x, rotational_velocity.y, rotational_velocity.z };
+		float vmax = v[0];
+		for(uint i=1u; i<3u; i++) {
+			if(v[i]>vmax) {
+				vmax = v[i];
+				direction = i; // find direction of minimum bounding-box cross-section area
+			}
 		}
 	}
 	const ulong A[3] = { (ulong)Ny*(ulong)Nz, (ulong)Nz*(ulong)Nx, (ulong)Nx*(ulong)Ny };
-	Kernel kernel_voxelize_mesh(device, A[direction], "voxelize_mesh", direction, flags, flag, p0, p1, p2, mesh->triangle_number, x0, y0, z0, x1, y1, z1);
+	Kernel kernel_voxelize_mesh(device, A[direction], "voxelize_mesh", direction, fi, u, flags, t+1ull, flag, p0, p1, p2, bounding_box_and_velocity);
 	p0.write_to_device();
 	p1.write_to_device();
 	p2.write_to_device();
+	bounding_box_and_velocity.write_to_device();
 	kernel_voxelize_mesh.run();
 }
 void LBM_Domain::enqueue_unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // remove voxelized triangle mesh from LBM grid
@@ -750,16 +779,23 @@ void LBM::write_status(const string& path) { // write LBM status report to a .tx
 	write_file(filename, status);
 }
 
-void LBM::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // voxelize triangle mesh
+void LBM::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, const float3& rotation_center, const float3& linear_velocity, const float3& rotational_velocity) { // voxelize triangle mesh
 	if(get_D()==1u) {
-		lbm[0]->voxelize_mesh_on_device(mesh, flag); // if this crashes on Windows, create a TdrDelay 32-bit DWORD with decimal value 300 in Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers
+		lbm[0]->voxelize_mesh_on_device(mesh, flag, rotation_center, linear_velocity, rotational_velocity); // if this crashes on Windows, create a TdrDelay 32-bit DWORD with decimal value 300 in Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers
 	} else {
 		thread* threads=new thread[get_D()]; for(uint d=0u; d<get_D(); d++) threads[d]=thread([=]() {
-			lbm[d]->voxelize_mesh_on_device(mesh, flag);
+			lbm[d]->voxelize_mesh_on_device(mesh, flag, rotation_center, linear_velocity, rotational_velocity);
 		}); for(uint d=0u; d<get_D(); d++) threads[d].join(); delete[] threads;
 	}
+#ifdef MOVING_BOUNDARIES
+	if(flag==TYPE_S&&(length(linear_velocity)>0.0f||length(rotational_velocity)>0.0f)) update_moving_boundaries();
+#endif // MOVING_BOUNDARIES
+	if(!initialized) {
+		flags.read_from_device();
+		u.read_from_device();
+	}
 }
-void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // remove voxelized triangle mesh from LBM grid
+void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // remove voxelized triangle mesh from LBM grid by removing all flags in mesh bounding box (only required when bounding box size changes during re-voxelization)
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_unvoxelize_mesh_on_device(mesh, flag);
 	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
 }
