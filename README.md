@@ -8,28 +8,28 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
 
 <details><summary>Update History</summary>
 
-- v1.0
+- v1.0 (04.08.2022)
   - initial release
-- v1.1
+- v1.1 (29.09.2022)
   - added solid voxelization on GPU (slow algorithm)
   - added tool to print current camera position (key_H)
   - minor bug fix (workaround for Intel iGPU driver bug with triangle rendering)
-- v1.2
+- v1.2 (24.10.2022)
   - added functions to compute force/torque on objects
   - added function to translate Mesh
   - added Stokes drag validation setup
-- v1.3
+- v1.3 (10.11.2022)
   - added unit conversion functions for torque
   - `FORCE_FIELD` and `VOLUME_FORCE` can now be used independently
   - minor bug fix (workaround for AMD legacy driver bug with binary number literals)
-- v1.4
+- v1.4 (14.12.2022)
   - added interactive graphics mode on Linux with X11
   - fixed streamline visualization bug in 2D
-- v2.0
+- v2.0 (09.01.2023)
   - added (cross-vendor) multi-GPU support on a single node (PC/laptop/server)
-- v2.1
+- v2.1 (15.01.2023)
   - made solid voxelization on GPU lightning fast (new algorithm, from minutes to milliseconds)
-- v2.2
+- v2.2 (20.01.2023)
   - added option to voxelize moving/rotating geometry on GPU, with automatic velocity initialization for each grid point based on center of rotation, linear velocity and rotational velocity
   - cells that are converted from solid->fluid during re-voxelization now have their DDFs properly initialized
   - added option to not auto-scale mesh during `read_stl(...)`, with negative `size` parameter
