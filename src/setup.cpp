@@ -439,17 +439,17 @@
 
 /*void main_setup() { // electric ducted fan (EDF) (enable MOVING_BOUNDARIES and SUBGRID)
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 476u/2u;
+	const uint L = 1876u/8u;
 	const float Re = 1000000.0f;
-	const float u = 0.12f;
-	LBM lbm(L, L*2u, L, units.nu_from_Re(Re, (float)L, u));
+	const float u = 0.15f;
+	LBM lbm(L, L*3u/2u, L, units.nu_from_Re(Re, (float)L, u));
 	// #############################################################################################################################################################################################
 	const float3 center = lbm.center();
 	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(180.0f));
-	Mesh* rotor = read_stl(get_exe_path()+"../stl/edf_rotor.stl", lbm.size(), center, rotation, -(float)L/110.0f); // https://www.thingiverse.com/thing:3014759/files
-	Mesh* stator = read_stl(get_exe_path()+"../stl/edf_stator.stl", lbm.size(), center, rotation, -(float)L/110.0f); // https://www.thingiverse.com/thing:3014759/files
-	rotor->translate(float3(0.0f, -0.35f*lbm.size().y, 0.0f));
-	stator->translate(float3(0.0f, -0.25f*lbm.size().y, 0.0f));
+	Mesh* rotor = read_stl(get_exe_path()+"../stl/edf_rotor.stl", lbm.size(), center, rotation, -(float)L/102.0f); // https://www.thingiverse.com/thing:3014759/files
+	Mesh* stator = read_stl(get_exe_path()+"../stl/edf_stator.stl", lbm.size(), center, rotation, -(float)L/102.0f); // https://www.thingiverse.com/thing:3014759/files
+	rotor->translate(float3(0.0f, -0.3f*lbm.size().y, 0.0f));
+	stator->translate(float3(0.0f, -0.2f*lbm.size().y, 0.0f));
 	const float radius = 0.5f*rotor->get_max_size();
 	const uint dt = 10u;
 	const float omega=u/radius, domega=omega*dt;
@@ -457,18 +457,16 @@
 	lbm.voxelize_mesh_on_device(rotor, TYPE_S, center, float3(0.0f), float3(0.0f, omega, 0.0f));
 	const ulong N=lbm.get_N(); uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
-		//if(lbm.flags[n]==0u) lbm.u.y[n] = 0.1f*u;
-		//if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
+		if(lbm.flags[n]==0u) lbm.u.y[n] = 0.15f*u;
+		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	key_4 = true;
 	lbm.run(0u);
 	uint k = 0u;
-	while(lbm.get_t()<48000u) {
-		//if((k++)%4u==0u) {
-		//	lbm.graphics.set_camera_centered(-70.0f+40.0f*(float)lbm.get_t()/(float)48000u, 0.0f, 78.0f, 1.284025f);
-		//	lbm.graphics.write_frame(get_exe_path()+"export/a/");
-		//	lbm.graphics.set_camera_centered(90.0f-40.0f*(float)lbm.get_t()/(float)48000u, 0.0f, 28.0f, 2.718283f);
-		//	lbm.graphics.write_frame(get_exe_path()+"export/b/");
+	while(lbm.get_t()<180000u) {
+		//if((k++)%10u==0u) {
+		//	lbm.graphics.set_camera_centered(-70.0f+100.0f*(float)lbm.get_t()/(float)180000u, 2.0f, 60.0f, 1.284025f);
+		//	lbm.graphics.write_frame();
 		//}
 		rotor->rotate(float3x3(float3(0.0f, 1.0f, 0.0f), domega)); // rotate mesh
 		lbm.voxelize_mesh_on_device(rotor, TYPE_S, center, float3(0.0f), float3(0.0f, omega, 0.0f));
