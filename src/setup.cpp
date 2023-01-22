@@ -457,7 +457,7 @@
 	lbm.voxelize_mesh_on_device(rotor, TYPE_S, center, float3(0.0f), float3(0.0f, omega, 0.0f));
 	const ulong N=lbm.get_N(); uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
-		if(lbm.flags[n]==0u) lbm.u.y[n] = 0.15f*u;
+		if(lbm.flags[n]==0u) lbm.u.y[n] = 0.3f*u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}	// #########################################################################################################################################################################################
 	key_4 = true;

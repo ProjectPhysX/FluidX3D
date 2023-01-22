@@ -2378,7 +2378,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifndef GRAPHICS_TEMPERATURE"+R(
 			const int c = iron_color(255.0f*def_scale_u*ul);
 )+"#else"+R( // GRAPHICS_TEMPERATURE
-			const int c = iron_color(180.0f+250.0f*(T[n]-def_T_avg));
+			const int c = iron_color(167.0f+255.0f*(T[n]-def_T_avg));
 )+"#endif"+R( // GRAPHICS_TEMPERATURE
 			draw_line(p0, p1, c, camera_cache, bitmap, zbuffer);
 		}
@@ -2396,7 +2396,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float3 p = position(coordinates(n));
-	const int c = rainbow_color(255.0f*2.0f*ul*def_scale_u); // coloring by velocity
+	const int c = rainbow_color(255.0f*def_scale_u*ul); // coloring by velocity
 	draw_line(p-(0.5f/ul)*un, p+(0.5f/ul)*un, c, camera_cache, bitmap, zbuffer);
 }
 
@@ -2487,15 +2487,15 @@ string opencl_c_container() { return R( // ########################## begin of O
 		{
 			const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 			const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-			c0 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p0+offset, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
+			c0 = lighting(rainbow_color(255.0f*def_scale_u*length(ui)), p0+offset, normal, camera_cache); // rainbow_color(255.0f*def_scale_u*length(ui));
 		} {
 			const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 			const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-			c1 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p1+offset, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
+			c1 = lighting(rainbow_color(255.0f*def_scale_u*length(ui)), p1+offset, normal, camera_cache); // rainbow_color(255.0f*def_scale_u*length(ui));
 		} {
 			const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 			const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-			c2 = lighting(rainbow_color(255.0f*2.0f*length(ui)*def_scale_u), p2+offset, normal, camera_cache); // rainbow_color(255.0f*2.0f*length(ui)*def_scale_u);
+			c2 = lighting(rainbow_color(255.0f*def_scale_u*length(ui)), p2+offset, normal, camera_cache); // rainbow_color(255.0f*def_scale_u*length(ui));
 		}
 		draw_triangle_interpolated(p0+offset, p1+offset, p2+offset, c0, c1, c2, camera_cache, bitmap, zbuffer); // draw triangle with interpolated colors
 	}

@@ -418,7 +418,7 @@ string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define def_screen_width "     +to_string(camera.width)+"u"
 	"\n	#define def_screen_height "    +to_string(camera.height)+"u"
 	"\n	#define def_n "                +to_string(1.333f)+"f" // refractive index of water
-	"\n	#define def_scale_u "          +to_string(0.57735027f/(GRAPHICS_U_MAX))+"f"
+	"\n	#define def_scale_u "          +to_string(1.0f/(0.57735027f*(GRAPHICS_U_MAX)))+"f"
 	"\n	#define def_scale_Q_min "      +to_string(GRAPHICS_Q_CRITERION)+"f"
 	"\n	#define def_scale_F "          +to_string(GRAPHICS_BOUNDARY_FORCE_SCALE)+"f"
 	"\n	#define def_streamline_sparse "+to_string(GRAPHICS_STREAMLINE_SPARSE)+"u"
