@@ -38,7 +38,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - added particles with immersed-boundary method (either passive or 2-way-coupled, only supported with single-GPU)
   - minor optimization to GPU voxelization algorithm (workgroup threads outside mesh bounding-box return after ray-mesh intersections have been found)
   - displayed GPU memory allocation size is now fully accurate
-  - fixed bug in write_line() function in `src/utilities.hpp`
+  - fixed bug in `write_line()` function in `src/utilities.hpp`
   - removed `.exe` file extension for Linux/macOS
 
 </details>
