@@ -3922,14 +3922,10 @@ inline void write_file(const string& filename, const string& content="") {
 	file.close();
 }
 inline void write_line(const string& filename, const string& content="") {
-	string t = trim(content);
-	if((int)t.length()>0) {
-		const string s = content+t.substr(t.length()-1, 1)=="\n"?"":"\n"; // add new line if needed
-		//write_file(filename, read_file(filename)+s); // write content as new line to existing file
-		std::ofstream file(filename, std::ios::ios_base::app);
-		file.write(s.c_str(), s.length());
-		file.close();
-	}
+	const string s = content+(ends_with(content, "\n")?"":"\n"); // add new line if needed
+	std::ofstream file(filename, std::ios::ios_base::app);
+	file.write(s.c_str(), s.length());
+	file.close();
 }
 template<typename T> inline void write_file(const string& filename, const uint n, const T* y, const string& header="") {
 	string s = header;

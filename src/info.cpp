@@ -5,7 +5,6 @@ Info info;
 
 void Info::initialize(LBM* lbm) {
 	this->lbm = lbm;
-	device_allocation = lbm->get_velocity_set()*sizeof(fpxx)+17u; // lattice.set()*fi + flags + rho + 3*u
 	device_transfer = lbm->get_velocity_set()*(2u*sizeof(fpxx))+17u; // lattice.set()*(2*fi) + flags + rho + 3*u
 #ifndef UPDATE_FIELDS
 	device_transfer -= 16u; // rho, u
@@ -27,16 +26,14 @@ void Info::initialize(LBM* lbm) {
 #endif // MOVING_BOUNDARIES, SURFACE or TEMPERATURE
 #ifdef SURFACE
 	host_allocation += 4u; // phi
-	device_allocation += 12u; // mass, massex, phi
 	device_transfer += (1u+(2u*lbm->get_velocity_set()-1u)*sizeof(fpxx)+8u+(lbm->get_velocity_set()-1u)*4u) + 1u + 1u + (4u+lbm->get_velocity_set()+4u+4u+4u); // surface_0 (flags, fi, mass, massex), surface_1 (flags), surface_2 (flags), surface_3 (rho, flags, mass, massex, phi)
 #endif // SURFACE
 #ifdef TEMPERATURE
 	host_allocation += 4u; // T
-	device_allocation += 7u*sizeof(fpxx)+4u; // gi, T
 	device_transfer += 7u*2u*sizeof(fpxx)+4u; // 2*gi, T
 #endif // TEMPERATURE
 	cpu_mem_required = (uint)(lbm->get_N()*(ulong)host_allocation/1048576ull); // reset to get valid values for consecutive simulations
-	gpu_mem_required = (uint)(lbm->get_N()*(ulong)device_allocation/1048576ull);
+	gpu_mem_required = lbm->lbm[0]->get_device().info.memory_used;
 }
 void Info::append(const ulong steps, const ulong t) {
 	this->steps = steps; // has to be executed before info.print_initialize()
@@ -70,7 +67,7 @@ void Info::print_logo() const {
 	print("|                                  ");                print("\\  \\ /  /", c);                 print("                                  |\n");
 	print("|                                   ");                print("\\  '  /", c);                  print("                                   |\n");
 	print("|                                    ");                print("\\   /", c);                  print("                                    |\n");
-	print("|                                     ");                print("\\ /", c);                  print("                FluidX3D Version 2.2 |\n");
+	print("|                                     ");                print("\\ /", c);                  print("                FluidX3D Version 2.3 |\n");
 	print("|                                      ");                 print("'", c);                  print("         Copyright (c) Moritz Lehmann |\n");
 }
 void Info::print_initialize() {
@@ -79,7 +76,7 @@ void Info::print_initialize() {
 	println("| Grid Resolution | "+alignr(57u, to_string(lbm->get_Nx())+" x "+to_string(lbm->get_Ny())+" x "+to_string(lbm->get_Nz())+" = "+to_string(lbm->get_N()))+" |");
 	println("| Grid Domains    | "+alignr(57u, to_string(lbm->get_Dx())+" x "+to_string(lbm->get_Dy())+" x "+to_string(lbm->get_Dz())+" = "+to_string(lbm->get_D()))+" |");
 	println("| LBM Type        | "+alignr(57u,                   "D"+to_string(lbm->get_velocity_set()==9?2:3)+"Q"+to_string(lbm->get_velocity_set())+" "+collision)+" |");
-	println("| Memory Usage    | "+alignr(54u,                                        "CPU "+to_string(cpu_mem_required)+" MB, GPU "+to_string(gpu_mem_required))+" MB |");
+	println("| Memory Usage    | "+alignr(54u,           "CPU "+to_string(cpu_mem_required)+" MB, GPU "+to_string(lbm->get_D())+"x "+to_string(gpu_mem_required))+" MB |");
 	println("| Max Alloc Size  | "+alignr(54u,                 (uint)(lbm->get_N()/(ulong)lbm->get_D()*(ulong)(lbm->get_velocity_set()*sizeof(fpxx))/1048576ull))+" MB |");
 	println("| Time Steps      | "+alignr(57u,                                                                   (steps==max_ulong ? "infinite" : to_string(steps)))+" |");
 	println("| Kin. Viscosity  | "+alignr(57u,                                                                                         to_string(lbm->get_nu(), 8u))+" |");

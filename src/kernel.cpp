@@ -807,6 +807,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float3 position(const uint3 xyz) { // 3D coordinates to 3D position
 	return (float3)((float)xyz.x+0.5f-0.5f*(float)def_Nx, (float)xyz.y+0.5f-0.5f*(float)def_Ny, (float)xyz.z+0.5f-0.5f*(float)def_Nz);
 }
+)+R(float3 mirror_position(const float3 p) { // mirror position into periodic boundaries
+	float3 r;
+	r.x = sign(p.x)*(fmod(fabs(p.x)+0.5f*(float)def_Nx, (float)def_Nx)-0.5f*(float)def_Nx);
+	r.y = sign(p.y)*(fmod(fabs(p.y)+0.5f*(float)def_Ny, (float)def_Ny)-0.5f*(float)def_Ny);
+	r.z = sign(p.z)*(fmod(fabs(p.z)+0.5f*(float)def_Nz, (float)def_Nz)-0.5f*(float)def_Nz);
+	return r;
+}
+)+R(float3 mirror_distance(const float3 d) { // mirror distance vector into periodic boundaries
+	return mirror_position(d);
+}
 )+R(bool is_halo(const uint n) {
 	const uint3 xyz = coordinates(n);
 	return ((def_Dx>1u)&(xyz.x==0u||xyz.x>=def_Nx-1u))||((def_Dy>1u)&(xyz.y==0u||xyz.y>=def_Ny-1u))||((def_Dz>1u)&(xyz.z==0u||xyz.z>=def_Nz-1u));
@@ -818,7 +828,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // SURFACE
 	return ((def_Dx>1u)&(xyz.x==0u||xyz.x>=def_Nx-2u))||((def_Dy>0u)&(xyz.y==1u||xyz.y>=def_Ny-2u))||((def_Dz>1u)&(xyz.z==0u||xyz.z>=def_Nz-2u)); // halo data is kept up-to-date with SURFACE extension, so allow using halo data for rendering
 )+"#endif"+R( // SURFACE
-}
+} // is_halo_q()
+
 )+R(float half_to_float_custom(const ushort x) { // custom 16-bit floating-point format, 1-4-11, exp-15, +-1.99951168, +-6.10351562E-5, +-2.98023224E-8, 3.612 digits
 	const uint e = (x&0x7800)>>11; // exponent
 	const uint m = (x&0x07FF)<<12; // mantissa
@@ -930,6 +941,52 @@ string opencl_c_container() { return R( // ########################## begin of O
 	j[25] = xm+yp+zp; j[26] = xp+ym+zm; // -++ +--
 )+"#endif"+R( // D3Q27
 } // neighbors()
+
+)+R(float3 load_u(const uint n, const global float* u) {
+	return (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]);
+}
+)+R(float3 closest_u(const float3 p, const global float* u) { // return velocity of closest lattice point to point p
+	const uint x = (uint)(p.x+1.5f*(float)def_Nx)%def_Nx;
+	const uint y = (uint)(p.y+1.5f*(float)def_Ny)%def_Ny;
+	const uint z = (uint)(p.z+1.5f*(float)def_Nz)%def_Nz;
+	const uint n = x+(y+z*def_Ny)*def_Nx;
+	return load_u(n, u);
+} // closest_u()
+)+R(float3 interpolate_u(const float3 p, const global float* u) { // trilinear interpolation of velocity at point p
+	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
+	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	float3 un[8]; // velocities of unit cube corner points
+	for(uint c=0u; c<8u; c++) { // count over eight corner points
+		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
+		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
+		const uint n = x+(y+z*def_Ny)*def_Nx; // calculate lattice linear index
+		un[c] = load_u(n, u); // load velocity from lattice point
+	}
+	return (x0*y0*z0)*un[0]+(x0*y0*z1)*un[1]+(x0*y1*z0)*un[2]+(x0*y1*z1)*un[3]+(x1*y0*z0)*un[4]+(x1*y0*z1)*un[5]+(x1*y1*z0)*un[6]+(x1*y1*z1)*un[7]; // perform trilinear interpolation
+} // interpolate_u()
+)+R(float calculate_Q_cached(const float3* uj) { // Q-criterion
+	const float duxdx=uj[0].x-uj[1].x, duydx=uj[0].y-uj[1].y, duzdx=uj[0].z-uj[1].z; // du/dx = (u2-u0)/2
+	const float duxdy=uj[2].x-uj[3].x, duydy=uj[2].y-uj[3].y, duzdy=uj[2].z-uj[3].z;
+	const float duxdz=uj[4].x-uj[5].x, duydz=uj[4].y-uj[5].y, duzdz=uj[4].z-uj[5].z;
+	const float omega_xy=duxdy-duydx, omega_xz=duxdz-duzdx, omega_yz=duydz-duzdy; // antisymmetric tensor, omega_xx = omega_yy = omega_zz = 0
+	const float s_xx2=duxdx, s_yy2=duydy, s_zz2=duzdz; // s_xx2 = s_xx/2, s_yy2 = s_yy/2, s_zz2 = s_zz/2
+	const float s_xy=duxdy+duydx, s_xz=duxdz+duzdx, s_yz=duydz+duzdy; // symmetric tensor
+	const float omega2 = sq(omega_xy)+sq(omega_xz)+sq(omega_yz); // ||omega||_2^2
+	const float s2 = 2.0f*(sq(s_xx2)+sq(s_yy2)+sq(s_zz2))+sq(s_xy)+sq(s_xz)+sq(s_yz); // ||s||_2^2
+	return 0.25f*(omega2-s2); // Q = 1/2*(||omega||_2^2-||s||_2^2), addidional factor 1/2 from cental finite differences of velocity
+} // calculate_Q_cached()
+)+R(float calculate_Q(const uint n, const global float* u) { // Q-criterion
+	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
+	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
+	uint j[6];
+	j[0] = xp+y0+z0; j[1] = xm+y0+z0; // +00 -00
+	j[2] = x0+yp+z0; j[3] = x0+ym+z0; // 0+0 0-0
+	j[4] = x0+y0+zp; j[5] = x0+y0+zm; // 00+ 00-
+	float3 uj[6];
+	for(uint i=0u; i<6u; i++) uj[i] = load_u(j[i], u);
+	return calculate_Q_cached(uj);
+} // calculate_Q()
 
 )+R(void calculate_f_eq(const float rho, float ux, float uy, float uz, float* feq) { // calculate f_equilibrium from density and velocity field (perturbation method / DDF-shifting)
 	const float c3=-3.0f*(sq(ux)+sq(uy)+sq(uz)), rhom1=rho-1.0f; // c3 = -2*sq(u)/(2*sq(c)), rhom1 is arithmetic optimization to minimize digit extinction
@@ -1833,55 +1890,52 @@ string opencl_c_container() { return R( // ########################## begin of O
 	F[    def_N+(ulong)n] = 2.0f*fy*Fb;
 	F[2ul*def_N+(ulong)n] = 2.0f*fz*Fb;
 } // calculate_force_on_boundaries()
-)+"#endif"+R( // FORCE_FIELD
-
-
-
-)+R(float3 load_u(const uint n, const global float* u) {
-	return (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]);
-}
-)+R(float3 closest_u(const float3 p, const global float* u) { // return velocity of closest lattice point to point p
-	const uint x = (uint)(p.x+1.5f*(float)def_Nx)%def_Nx;
-	const uint y = (uint)(p.y+1.5f*(float)def_Ny)%def_Ny;
-	const uint z = (uint)(p.z+1.5f*(float)def_Nz)%def_Nz;
-	const uint n = x+(y+z*def_Ny)*def_Nx;
-	return load_u(n, u);
-} // closest_u()
-)+R(float3 interpolate_u(const float3 p, const global float* u) { // trilinear interpolation of velocity at point p
+)+R(kernel void reset_force_field(global float* F) { // reset force field
+	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uint)def_N) return; // execute reset_force_field() also on halo
+	F[                 n] = 0.0f;
+	F[    def_N+(ulong)n] = 0.0f;
+	F[2ul*def_N+(ulong)n] = 0.0f;
+} // reset_force_field()
+)+R(void spread_force(volatile global float* F, const float3 p, const float3 Fn) {
 	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
-	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-	float3 un[8]; // velocities of unit cube corner points
+	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb; // calculate interpolation factors
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
-		const uint i=(c&0x04)>>2, j=(c&0x02)>>1, k=c&0x01; // disassemble c into corner indices ijk
+		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
 		const uint n = x+(y+z*def_Ny)*def_Nx; // calculate lattice linear index
-		un[c] = load_u(n, u); // load velocity from lattice point
+		const float d = (1.0f-fabs(x1-(float)i))*(1.0f-fabs(y1-(float)j))*(1.0f-fabs(z1-(float)k)); // force spreading
+		atomic_add_f(&F[                 n], Fn.x*d); // F[                 n] += Fn.x*d;
+		atomic_add_f(&F[    def_N+(ulong)n], Fn.y*d); // F[    def_N+(ulong)n] += Fn.y*d;
+		atomic_add_f(&F[2ul*def_N+(ulong)n], Fn.z*d); // F[2ul*def_N+(ulong)n] += Fn.z*d;
 	}
-	return (x0*y0*z0)*un[0]+(x0*y0*z1)*un[1]+(x0*y1*z0)*un[2]+(x0*y1*z1)*un[3]+(x1*y0*z0)*un[4]+(x1*y0*z1)*un[5]+(x1*y1*z0)*un[6]+(x1*y1*z1)*un[7]; // perform trilinear interpolation
-} // interpolate_u()
-)+R(float calculate_Q_cached(const float3* uj) { // Q-criterion
-	const float duxdx=uj[0].x-uj[1].x, duydx=uj[0].y-uj[1].y, duzdx=uj[0].z-uj[1].z; // du/dx = (u2-u0)/2
-	const float duxdy=uj[2].x-uj[3].x, duydy=uj[2].y-uj[3].y, duzdy=uj[2].z-uj[3].z;
-	const float duxdz=uj[4].x-uj[5].x, duydz=uj[4].y-uj[5].y, duzdz=uj[4].z-uj[5].z;
-	const float omega_xy=duxdy-duydx, omega_xz=duxdz-duzdx, omega_yz=duydz-duzdy; // antisymmetric tensor, omega_xx = omega_yy = omega_zz = 0
-	const float s_xx2=duxdx, s_yy2=duydy, s_zz2=duzdz; // s_xx2 = s_xx/2, s_yy2 = s_yy/2, s_zz2 = s_zz/2
-	const float s_xy=duxdy+duydx, s_xz=duxdz+duzdx, s_yz=duydz+duzdy; // symmetric tensor
-	const float omega2 = sq(omega_xy)+sq(omega_xz)+sq(omega_yz); // ||omega||_2^2
-	const float s2 = 2.0f*(sq(s_xx2)+sq(s_yy2)+sq(s_zz2))+sq(s_xy)+sq(s_xz)+sq(s_yz); // ||s||_2^2
-	return 0.25f*(omega2-s2); // Q = 1/2*(||omega||_2^2-||s||_2^2), addidional factor 1/2 from cental finite differences of velocity
-} // calculate_Q_cached()
-)+R(float calculate_Q(const uint n, const global float* u) { // Q-criterion
-	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
-	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
-	uint j[6];
-	j[0] = xp+y0+z0; j[1] = xm+y0+z0; // +00 -00
-	j[2] = x0+yp+z0; j[3] = x0+ym+z0; // 0+0 0-0
-	j[4] = x0+y0+zp; j[5] = x0+y0+zm; // 00+ 00-
-	float3 uj[6];
-	for(uint i=0u; i<6u; i++) uj[i] = load_u(j[i], u);
-	return calculate_Q_cached(uj);
-} // calculate_Q()
+} // spread_force()
+)+"#endif"+R( // FORCE_FIELD
+
+)+"#ifdef PARTICLES"+R(
+)+R(kernel void integrate_particles)+"("+R(global float* particles, const global float* u // ) {
+)+"#ifdef FORCE_FIELD"+R(
+	, volatile global float* F, const float fx, const float fy, const float fz
+)+"#endif"+R( // FORCE_FIELD
+)+") {"+R( // initialize()
+	const uint n = get_global_id(0); // index of membrane points
+	if(n>=(uint)def_particles_N) return;
+	const float3 p0 = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]); // cache particle position
+)+"#ifdef FORCE_FIELD"+R(
+	if(def_particles_rho!=1.0f) {
+		const float drho = def_particles_rho-1.0f; // density difference leads to particle buoyancy
+		float3 Fn = (float3)(fx*drho, fy*drho, fz*drho); // F = F_p+F_f = (m_p-m_f)*g = (rho_p-rho_f)*g*V
+		spread_force(F, p0, Fn); // do force spreading
+	}
+)+"#endif"+R( // FORCE_FIELD
+	const float3 un = interpolate_u(mirror_position(p0), u); // trilinear interpolation of velocity at point p
+	const float3 p = mirror_position(p0+un); // advect particles
+	particles[                           n] = p.x;
+	particles[    def_particles_N+(ulong)n] = p.y;
+	particles[2ul*def_particles_N+(ulong)n] = p.z;
+} // integrate_particles()
+)+"#endif"+R( // PARTICLES
 
 
 
@@ -2079,7 +2133,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
 	uint intersections=0u, intersections_check=0u;
 	ushort distances[64]; // allow up to 64 mesh intersections
-	const bool condition = direction==0u ? r_origin.y<y0||r_origin.z<z0||r_origin.y>y1||r_origin.z>z1 : direction==1u ? r_origin.x<x0||r_origin.z<z0||r_origin.x>x1||r_origin.z>z1 : r_origin.x<x0||r_origin.y<y0||r_origin.x>x1||r_origin.y>y1;
+	const bool condition = direction==0u ? r_origin.y<y0||r_origin.z<z0||r_origin.y>=y1||r_origin.z>=z1 : direction==1u ? r_origin.x<x0||r_origin.z<z0||r_origin.x>=x1||r_origin.z>=z1 : r_origin.x<x0||r_origin.y<y0||r_origin.x>=x1||r_origin.y>=y1;
 
 	volatile local uint workgroup_condition; // use local memory optimization (~25% faster)
 	workgroup_condition = 1u;
@@ -2087,7 +2141,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	atomic_and(&workgroup_condition, (uint)condition);
 	barrier(CLK_LOCAL_MEM_FENCE);
 	const bool workgroup_all = (bool)workgroup_condition;
-	if(workgroup_all) return; // return immediately if grid point is outside the bounding box of the mesh
+	if(workgroup_all) return; // return only if the entire workgroup is outside of the bounding-box of the mesh
 	const uint lid = get_local_id(0);
 	local float3 cache_p0[def_workgroup_size];
 	local float3 cache_p1[def_workgroup_size];
@@ -2112,7 +2166,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 			}
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
-	}/**/
+	}
+	if(condition) return; // extra workgroup threads outside of the bounding-box are not needed anymore, so return /**/
 
 	/*if(condition) return; // don't use local memory (this also runs on old OpenCL 1.0 GPUs)
 	for(uint i=0u; i<triangle_number; i++) {
@@ -2602,6 +2657,19 @@ string opencl_c_container() { return R( // ########################## begin of O
 	bitmap[n] = pixelcolor; // no zbuffer required
 }
 )+"#endif"+R( // SURFACE
+
+)+"#ifdef PARTICLES"+R(
+)+R(kernel void graphics_particles(const global float* particles, const global float* camera, global int* bitmap, global int* zbuffer) {
+	const uint n = get_global_id(0);
+	if(n>=(uint)def_particles_N) return;
+	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
+	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
+	const int c = 255<<16|0<<8|0; // coloring scheme
+	const float3 p = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]);
+	//draw_circle(p, 0.5f, c, camera_cache, bitmap, zbuffer);
+	draw_point(p, c, camera_cache, bitmap, zbuffer);
+}
+)+"#endif"+R( // PARTICLES
 )+"#endif"+R( // GRAPHICS
 
 

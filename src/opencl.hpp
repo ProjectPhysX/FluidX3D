@@ -174,21 +174,11 @@ public:
 		this->exists = true;
 	}
 	inline Device() {} // default constructor
-	inline void finish_queue() {
-		cl_queue.finish();
-	}
-	inline cl::Context get_cl_context() const {
-		return cl_context;
-	}
-	inline cl::Program get_cl_program() const {
-		return cl_program;
-	}
-	inline cl::CommandQueue get_cl_queue() const {
-		return cl_queue;
-	}
-	inline bool is_initialized() const {
-		return exists;
-	}
+	inline void finish_queue() { cl_queue.finish(); }
+	inline cl::Context get_cl_context() const { return cl_context; }
+	inline cl::Program get_cl_program() const { return cl_program; }
+	inline cl::CommandQueue get_cl_queue() const { return cl_queue; }
+	inline bool is_initialized() const { return exists; }
 };
 
 template<typename T> class Memory {
@@ -203,22 +193,10 @@ private:
 	Device* device = nullptr; // pointer to linked Device
 	cl::CommandQueue cl_queue; // command queue
 	inline void initialize_auxiliary_pointers() {
-		x = s0 = host_buffer;
-		if(d>0x1u) y = s1 = host_buffer+N;
-		if(d>0x2u) z = s2 = host_buffer+N*0x2ull;
-		if(d>0x3u) w = s3 = host_buffer+N*0x3ull;
-		if(d>0x4u) s4 = host_buffer+N*0x4ull;
-		if(d>0x5u) s5 = host_buffer+N*0x5ull;
-		if(d>0x6u) s6 = host_buffer+N*0x6ull;
-		if(d>0x7u) s7 = host_buffer+N*0x7ull;
-		if(d>0x8u) s8 = host_buffer+N*0x8ull;
-		if(d>0x9u) s9 = host_buffer+N*0x9ull;
-		if(d>0xAu) sA = host_buffer+N*0xAull;
-		if(d>0xBu) sB = host_buffer+N*0xBull;
-		if(d>0xCu) sC = host_buffer+N*0xCull;
-		if(d>0xDu) sD = host_buffer+N*0xDull;
-		if(d>0xEu) sE = host_buffer+N*0xEull;
-		if(d>0xFu) sF = host_buffer+N*0xFull;
+		/********/ x = s0 = host_buffer; /******/ if(d>0x4u) s4 = host_buffer+N*0x4ull; if(d>0x8u) s8 = host_buffer+N*0x8ull; if(d>0xCu) sC = host_buffer+N*0xCull;
+		if(d>0x1u) y = s1 = host_buffer+N; /****/ if(d>0x5u) s5 = host_buffer+N*0x5ull; if(d>0x9u) s9 = host_buffer+N*0x9ull; if(d>0xDu) sD = host_buffer+N*0xDull;
+		if(d>0x2u) z = s2 = host_buffer+N*0x2ull; if(d>0x6u) s6 = host_buffer+N*0x6ull; if(d>0xAu) sA = host_buffer+N*0xAull; if(d>0xEu) sE = host_buffer+N*0xEull;
+		if(d>0x3u) w = s3 = host_buffer+N*0x3ull; if(d>0x7u) s7 = host_buffer+N*0x7ull; if(d>0xBu) sB = host_buffer+N*0xBull; if(d>0xFu) sF = host_buffer+N*0xFull;
 	}
 	inline void allocate_device_buffer(Device& device, const bool allocate_device) {
 		this->device = &device;
@@ -332,42 +310,18 @@ public:
 		if(host_buffer_exists) for(ulong i=0ull; i<N*(ulong)d; i++) host_buffer[i] = value;
 		write_to_device();
 	}
-	inline const ulong length() const {
-		return N;
-	}
-	inline const uint dimensions() const {
-		return d;
-	}
-	inline const ulong range() const {
-		return N*(ulong)d;
-	}
-	inline const ulong capacity() const { // returns capacity of the buffer in Byte
-		return N*(ulong)d*sizeof(T);
-	}
-	inline T* const data() {
-		return host_buffer;
-	}
-	inline const T* const data() const {
-		return host_buffer;
-	}
-	inline T* const operator()() {
-		return host_buffer;
-	}
-	inline const T* const operator()() const {
-		return host_buffer;
-	}
-	inline T& operator[](const ulong i) {
-		return host_buffer[i];
-	}
-	inline const T& operator[](const ulong i) const {
-		return host_buffer[i];
-	}
-	inline const T operator()(const ulong i) const {
-		return host_buffer[i];
-	}
-	inline const T operator()(const ulong i, const uint dimension) const {
-		return host_buffer[i+(ulong)dimension*N]; // array of structures
-	}
+	inline const ulong length() const { return N; }
+	inline const uint dimensions() const { return d; }
+	inline const ulong range() const { return N*(ulong)d; }
+	inline const ulong capacity() const { return N*(ulong)d*sizeof(T); } // returns capacity of the buffer in Byte
+	inline T* const data() { return host_buffer; }
+	inline const T* const data() const { return host_buffer; }
+	inline T* const operator()() { return host_buffer; }
+	inline const T* const operator()() const { return host_buffer; }
+	inline T& operator[](const ulong i) { return host_buffer[i]; }
+	inline const T& operator[](const ulong i) const { return host_buffer[i]; }
+	inline const T operator()(const ulong i) const { return host_buffer[i]; }
+	inline const T operator()(const ulong i, const uint dimension) const { return host_buffer[i+(ulong)dimension*N]; } // array of structures
 	inline void read_from_device(const bool blocking=true) {
 		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueReadBuffer(device_buffer, blocking, 0u, capacity(), (void*)host_buffer);
 	}
@@ -462,24 +416,12 @@ public:
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void enqueue_read_from_device() {
-		read_from_device(false);
-	}
-	inline void enqueue_write_to_device() {
-		write_to_device(false);
-	}
-	inline void enqueue_read_from_device(const ulong offset, const ulong length) {
-		read_from_device(offset, length, false);
-	}
-	inline void enqueue_write_to_device(const ulong offset, const ulong length) {
-		write_to_device(offset, length, false);
-	}
-	inline void finish_queue() {
-		cl_queue.finish();
-	}
-	inline const cl::Buffer& get_cl_buffer() const {
-		return device_buffer;
-	}
+	inline void enqueue_read_from_device() { read_from_device(false); }
+	inline void enqueue_write_to_device() { write_to_device(false); }
+	inline void enqueue_read_from_device(const ulong offset, const ulong length) { read_from_device(offset, length, false); }
+	inline void enqueue_write_to_device(const ulong offset, const ulong length) { write_to_device(offset, length, false); }
+	inline void finish_queue() { cl_queue.finish(); }
+	inline const cl::Buffer& get_cl_buffer() const { return device_buffer; }
 };
 
 class Kernel {
@@ -524,12 +466,8 @@ public:
 		cl_range_local = cl::NDRange(workgroup_size);
 		return *this;
 	}
-	inline const ulong range() const {
-		return N;
-	}
-	inline uint get_number_of_parameters() const {
-		return number_of_parameters;
-	}
+	inline const ulong range() const { return N; }
+	inline uint get_number_of_parameters() const { return number_of_parameters; }
 	template<class... T> inline Kernel& add_parameters(const T&... parameters) { // add parameters to the list of existing parameters
 		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
 		return *this;
