@@ -1918,7 +1918,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef FORCE_FIELD"+R(
 	, volatile global float* F, const float fx, const float fy, const float fz
 )+"#endif"+R( // FORCE_FIELD
-)+") {"+R( // initialize()
+)+") {"+R( // integrate_particles()
 	const uint n = get_global_id(0); // index of membrane points
 	if(n>=(uint)def_particles_N) return;
 	const float3 p0 = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]); // cache particle position
