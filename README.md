@@ -315,6 +315,7 @@ If your GPU is not on the list yet, you can report your benchmarks [here](https:
 | Intel Arc A770 LE             |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
 | Intel Arc A750 LE             |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
 | Nvidia GeForce RTX 4090       |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
+| Nvidia GeForce RTX 4080       |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
 | Nvidia GeForce RTX 3090 Ti    |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | Nvidia GeForce RTX 3080 Ti    |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
