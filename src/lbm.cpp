@@ -453,15 +453,16 @@ string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define def_streamline_sparse "+to_string(GRAPHICS_STREAMLINE_SPARSE)+"u"
 	"\n	#define def_streamline_length "+to_string(GRAPHICS_STREAMLINE_LENGTH)+"u"
 
-	"\n	#define COLOR_S (127<<16|127<<8|127)" // coloring scheme
-	"\n	#define COLOR_T (255<<16|  0<<8|  0)"
-	"\n	#define COLOR_E (  0<<16|255<<8|  0)"
-	"\n	#define COLOR_M (255<<16|  0<<8|255)"
-	"\n	#define COLOR_F (  0<<16|  0<<8|255)"
-	"\n	#define COLOR_I (  0<<16|255<<8|255)"
-	"\n	#define COLOR_X (255<<16|127<<8|  0)"
-	"\n	#define COLOR_Y (255<<16|255<<8|  0)"
-	"\n	#define COLOR_0 (127<<16|127<<8|127)"
+	"\n	#define COLOR_S (127<<16|127<<8|127)" // (stationary or moving) solid boundary
+	"\n	#define COLOR_E (  0<<16|255<<8|  0)" // equilibrium boundary (inflow/outflow)
+	"\n	#define COLOR_M (255<<16|  0<<8|255)" // cells next to moving solid boundary
+	"\n	#define COLOR_T (255<<16|  0<<8|  0)" // temperature boundary
+	"\n	#define COLOR_F (  0<<16|  0<<8|255)" // fluid
+	"\n	#define COLOR_I (  0<<16|255<<8|255)" // interface
+	"\n	#define COLOR_0 (127<<16|127<<8|127)" // regular cell or gas
+	"\n	#define COLOR_X (255<<16|127<<8|  0)" // reserved type X
+	"\n	#define COLOR_Y (255<<16|255<<8|  0)" // reserved type Y
+	"\n	#define COLOR_P (255<<16|255<<8|191)" // particles
 
 #ifndef SURFACE
 	"\n	#define def_skybox_width 1u"

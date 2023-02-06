@@ -2664,7 +2664,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(n>=(uint)def_particles_N) return;
 	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
-	const int c = 255<<16|0<<8|0; // coloring scheme
+	const int c = COLOR_P; // coloring scheme
 	const float3 p = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]);
 	//draw_circle(p, 0.5f, c, camera_cache, bitmap, zbuffer);
 	draw_point(p, c, camera_cache, bitmap, zbuffer);
