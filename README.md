@@ -346,6 +346,7 @@ If your GPU is not on the list yet, you can report your benchmarks [here](https:
 | Nvidia GeForce GTX 1060M      |               4.44 |           6 |          192 |              983 (78%) |              1882 (75%) |              1803 (72%) |
 | Nvidia GeForce GTX 1050M Ti   |               2.49 |           4 |          112 |              631 (86%) |              1224 (84%) |              1115 (77%) |
 | Nvidia Quadro P1000           |               1.89 |           4 |           82 |              426 (79%) |               839 (79%) |               778 (73%) |
+| Nvidia GeForce GTX 970        |               4.17 |           4 |          224 |              980 (67%) |              1721 (59%) |              1623 (56%) |
 | Nvidia Quadro M4000           |               2.57 |           8 |          192 |              899 (72%) |              1519 (61%) |              1050 (42%) |
 | Nvidia Tesla M60 (1 GPU)      |               4.82 |           8 |          160 |              853 (82%) |              1571 (76%) |              1557 (75%) |
 | Nvidia GeForce GTX 960M       |               1.51 |           4 |           80 |              442 (84%) |               872 (84%) |               627 (60%) |
