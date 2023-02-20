@@ -1283,11 +1283,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 	j7[5] = x0+y0+zp; j7[6] = x0+y0+zm; // 00+ 00-
 }
 )+R(void calculate_g_eq(const float T, const float ux, const float uy, const float uz, float* geq) { // calculate g_equilibrium from density and velocity field (perturbation method / DDF-shifting)
-	const float wsT3=0.375f*T, wsTm1=0.125f*(T-1.0f); // 0.125f*T*3.0f (straight directions in D3Q7), wsTm1 is arithmetic optimization to minimize digit extinction
-	geq[0] = fma(0.25f, T, -0.25f); // 000 (rho0=rho/4.0f)
-	geq[1] = fma(wsT3, ux, wsTm1); geq[2] = fma(wsT3, -ux, wsTm1); // +00 -00, source: http://dx.doi.org/10.1016/j.ijheatmasstransfer.2009.11.014
-	geq[3] = fma(wsT3, uy, wsTm1); geq[4] = fma(wsT3, -uy, wsTm1); // 0+0 0-0
-	geq[5] = fma(wsT3, uz, wsTm1); geq[6] = fma(wsT3, -uz, wsTm1); // 00+ 00-
+	const float wsT4=0.5f*T, wsTm1=0.125f*(T-1.0f); // 0.125f*T*4.0f (straight directions in D3Q7), wsTm1 is arithmetic optimization to minimize digit extinction, lattice speed of sound is 1/2 for D3Q7 and not 1/sqrt(3)
+	geq[0] = fma(0.25f, T, -0.25f); // 000
+	geq[1] = fma(wsT4, ux, wsTm1); geq[2] = fma(wsT4, -ux, wsTm1); // +00 -00, source: http://dx.doi.org/10.1016/j.ijheatmasstransfer.2009.11.014
+	geq[3] = fma(wsT4, uy, wsTm1); geq[4] = fma(wsT4, -uy, wsTm1); // 0+0 0-0
+	geq[5] = fma(wsT4, uz, wsTm1); geq[6] = fma(wsT4, -uz, wsTm1); // 00+ 00-
 }
 )+R(void load_g(const uint n, float* ghn, const global fpxx* gi, const uint* j7, const ulong t) {
 	ghn[0] = load(gi, index_f(n, 0u)); // Esoteric-Pull
