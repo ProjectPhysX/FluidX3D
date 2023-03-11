@@ -624,7 +624,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return hsv_to_rgb(h, s, v);
 }
 )+R(uint skybox_color_sunset(const float x, const float y) {
-	return color_mix(255<<16|175<<8|55, y<0.5f ? 55<<16|111<<8|255 : 0, 2.0f*(0.5f-fabs(y-0.5)));
+	return color_mix(255<<16|175<<8|55, y<0.5f ? 55<<16|111<<8|255 : 0, 2.0f*(0.5f-fabs(y-0.5f)));
 }
 )+R(uint skybox_color_grid(const float x, const float y) {
 	int a = (int)(36.0f*x);
@@ -634,7 +634,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(uint skybox_color(const ray r, const global int* skybox) {
 	//const float x = fma(atan2(r.direction.x, r.direction.y),  0.5f/3.1415927f, 0.5f);
 	//const float y = fma(asin (r.direction.z               ), -1.0f/3.1415927f, 0.5f);
-	//return color_mix(skybox_color_hsv(x, y), skybox_color_grid(x, y), 0.95f-0.33f*(2.0f*(0.5f-fabs(y-0.5))));
+	//return color_mix(skybox_color_hsv(x, y), skybox_color_grid(x, y), 0.95f-0.33f*(2.0f*(0.5f-fabs(y-0.5f))));
 	//return skybox_color_sunset(x, y);
 	const float fu = (float)def_skybox_width *fma(atan2(r.direction.x, r.direction.y),  0.5f/3.1415927f, 0.5f);
 	const float fv = (float)def_skybox_height*fma(asin (r.direction.z               ), -1.0f/3.1415927f, 0.5f);
@@ -1992,35 +1992,35 @@ string opencl_c_container() { return R( // ########################## begin of O
 	};
 	return (uint)index_transfer_data[side_i];
 }
-)+R(void extract_fi(const uint a, const uint n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* fi) {
+)+R(void extract_fi(const uint a, const uint A, const uint n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* fi) {
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	for(uint b=0u; b<def_transfers; b++) {
 		const uint i = index_transfer(side*def_transfers+b);
 		const ulong index = index_f(i%2u ? j[i] : n, t%2ul ? (i%2u ? i+1u : i-1u) : i); // Esoteric-Pull: standard store, or streaming part 1/2
-		transfer_buffer[a*def_transfers+b] = fi[index]; // fpxx_copy allows direct copying without decompression+compression
+		transfer_buffer[b*A+a] = fi[index]; // fpxx_copy allows direct copying without decompression+compression
 	}
 }
-)+R(void insert_fi(const uint a, const uint n, const uint side, const ulong t, const global fpxx_copy* transfer_buffer, global fpxx_copy* fi) {
+)+R(void insert_fi(const uint a, const uint A, const uint n, const uint side, const ulong t, const global fpxx_copy* transfer_buffer, global fpxx_copy* fi) {
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	for(uint b=0u; b<def_transfers; b++) {
 		const uint i = index_transfer(side*def_transfers+b);
 		const ulong index = index_f(i%2u ? n : j[i-1u], t%2ul ? i : (i%2u ? i+1u : i-1u)); // Esoteric-Pull: standard load, or streaming part 2/2
-		fi[index] = transfer_buffer[a*def_transfers+b]; // fpxx_copy allows direct copying without decompression+compression
+		fi[index] = transfer_buffer[b*A+a]; // fpxx_copy allows direct copying without decompression+compression
 	}
 }
 )+R(kernel void transfer_extract_fi(const uint direction, const ulong t, global fpxx_copy* transfer_buffer_p, global fpxx_copy* transfer_buffer_m, const global fpxx_copy* fi) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
-	extract_fi(a, index_extract_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, fi);
-	extract_fi(a, index_extract_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
+	extract_fi(a, A, index_extract_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, fi);
+	extract_fi(a, A, index_extract_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
 }
 )+R(kernel void transfer__insert_fi(const uint direction, const ulong t, const global fpxx_copy* transfer_buffer_p, const global fpxx_copy* transfer_buffer_m, global fpxx_copy* fi) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
-	insert_fi(a, index_insert_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, fi);
-	insert_fi(a, index_insert_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
+	insert_fi(a, A, index_insert_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, fi);
+	insert_fi(a, A, index_insert_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
 }
 
 )+R(void extract_rho_u_flags(const uint a, const uint A, const uint n, global char* transfer_buffer, const global float* rho, const global float* u, const global uchar* flags) {

@@ -82,7 +82,7 @@
 					if(r<R) {
 						const double unum = (double)sqrt(sq(lbm.u.x[n])+sq(lbm.u.y[n])+sq(lbm.u.z[n])); // numerical velocity
 						const double uref = umax*(sq(R)-sq(r))/sq(R); // theoretical velocity profile u = G*(R^2-r^2)
-						error_dif += sq(unum-uref); // L2 error (Krüger p. 138)
+						error_dif += sq(unum-uref); // L2 error (KrÃ¼ger p. 138)
 						error_sum += sq(uref);
 						s += to_string(r)+" "+to_string(unum)+" "+to_string(uref)+"\n";
 					}
@@ -96,19 +96,19 @@
 				const double r = (double)(y+0.5f-0.5f*(float)Ny); // radius from channel center
 				const double unum = (double)sqrt(sq(lbm.u.x[n])+sq(lbm.u.y[n])); // numerical velocity
 				const double uref = umax*(sq(R)-sq(r))/sq(R); // theoretical velocity profile u = G*(R^2-r^2)
-				error_dif += sq(unum-uref); // L2 error (Krüger p. 138)
+				error_dif += sq(unum-uref); // L2 error (KrÃ¼ger p. 138)
 				error_sum += sq(uref);
 				s += to_string(r)+" "+to_string(unum)+" "+to_string(uref)+"\n";
 			}
 		}
 #endif // D2Q9
 		if(sqrt(error_dif/error_sum)>=error_min) { // stop when error has converged
-			print_info("Poiseuille flow error converged after "+to_string(lbm.get_t())+" steps to "+to_string(error_min)); // typical expected L2 errors: 2-5% (Krüger p. 256)
+			print_info("Poiseuille flow error converged after "+to_string(lbm.get_t())+" steps to "+to_string(error_min)); // typical expected L2 errors: 2-5% (KrÃ¼ger p. 256)
 			wait();
 			exit(0);
 		}
 		error_min = fmin(error_min, sqrt(error_dif/error_sum));
-		print_info("Poiseuille flow error after t="+to_string(lbm.get_t())+" is "+to_string(error_min)); // typical expected L2 errors: 2-5% (Krüger p. 256)
+		print_info("Poiseuille flow error after t="+to_string(lbm.get_t())+" is "+to_string(error_min)); // typical expected L2 errors: 2-5% (KrÃ¼ger p. 256)
 	}
 } /**/
 
@@ -516,7 +516,7 @@
 	LBM lbm(L, L*2u, L/2u, nu);
 	// #############################################################################################################################################################################################
 	const float3 center = float3(lbm.center().x, 0.525f*size, 0.116f*size);
-	lbm.voxelize_stl(get_exe_path()+"../stl/Ferrari_SF71H_V5.stl", center, size); // https://www.thingiverse.com/thing:2990512/files
+	lbm.voxelize_stl(get_exe_path()+"../stl/Ferrari_SF71H_V5.stl", center, size); // https://www.thingiverse.com/thing:2990512/files (unfortunately, this model is not available anymore)
 	const ulong N=lbm.get_N(); const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
 		//if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
@@ -865,11 +865,11 @@
 	const float scale = (float)box_diameter/(10.0f*drop_diameter); // 256.0f/400.0f; // 1.0f;
 
 	// rain drop parameters from "Effects of Altitude on Maximum Raindrop Size and Fall Velocity as Limited by Collisional Breakup, Fig. 3" in SI-units
-	float const si_nu = 1.0508E-6f; // kinematic shear viscosity [m^2/s] at 20°C and 35g/l salinity
-	const float si_rho = 1024.8103f; // fluid density [kg/m^3] at 20°C and 35g/l salinity
-	const float si_sigma = 73.81E-3f; // fluid surface tension [kg/s^2] at 20°C and 35g/l salinity
+	float const si_nu = 1.0508E-6f; // kinematic shear viscosity [m^2/s] at 20Â°C and 35g/l salinity
+	const float si_rho = 1024.8103f; // fluid density [kg/m^3] at 20Â°C and 35g/l salinity
+	const float si_sigma = 73.81E-3f; // fluid surface tension [kg/s^2] at 20Â°C and 35g/l salinity
 	const float si_g = 9.81f; // gravitational acceleration [m/s^2]
-	const float alpha = alpha_sim; // impact angle [°], 0 = vertical
+	const float alpha = alpha_sim; // impact angle [Â°], 0 = vertical
 
 	//                            0        1        2        3        4        5        6        7        8        9       10       11       12       13 (13 is for validation)
 	const float si_Ds[] = { 1.0E-3f, 1.5E-3f, 2.0E-3f, 2.5E-3f, 3.0E-3f, 3.5E-3f, 4.0E-3f, 4.5E-3f, 5.0E-3f, 5.5E-3f, 6.0E-3f, 6.5E-3f, 7.0E-3f, 4.1E-3f };
@@ -1140,7 +1140,7 @@ void main_setup() { // benchmark
 		//LBM lbm(480u, 480u, 480u, 1.0f);
 		//LBM lbm(512u, 512u, 512u, 1.0f);
 
-		//const uint memory = 4096u; // in MB
+		//const uint memory = 1488u; // in MB
 		//const uint L = ((uint)cbrt(fmin((float)memory*1048576.0f/(19.0f*(float)sizeof(fpxx)+17.0f), (float)max_uint))/2u)*2u;
 		//LBM lbm(1u*L, 1u*L, 1u*L, 1u, 1u, 1u, 1.0f); // 1 GPU
 		//LBM lbm(2u*L, 1u*L, 1u*L, 2u, 1u, 1u, 1.0f); // 2 GPUs

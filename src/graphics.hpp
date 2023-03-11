@@ -30,17 +30,17 @@ public:
 	double rx=0.5*pi, ry=pi; // rotation angles
 	float3 pos = float3(0.0f); // free camera position
 	bool free = false; // free camera mode
+	double free_camera_velocity = 0.05; // free camera speed
 	bool vr=false, tv=false; // virtual reality mode (enables stereoscopic rendering), VR TV mode
 	float eye_distance = 8.0f; // distance between cameras in VR mode
+	bool autorotation = false; // autorotation
 	bool key_update = true; // a key variable has been updated
 
 private:
 	float log_zoom=4.0f*log(zoom), target_log_zoom=log_zoom;
-	double free_camera_velocity = 0.05; // free camera speed
 	double mouse_x=0.0, mouse_y=0.0, target_mouse_x=0.0, target_mouse_y=0.0; // mouse position
 	double mouse_sensitivity = 1.0; // mouse sensitivity
 	bool lockmouse = false; // mouse movement won't change camera view when this is true
-	bool autorotation = false; // autorotation
 	bool key_state[512] = { 0 };
 
 public:
@@ -96,8 +96,8 @@ public:
 			case 'L': input_L(); break;
 			case 'V': input_V(); break;
 			case 'B': input_B(); break;
-			case ',': input_scroll_up(); break;
-			case '.': input_scroll_down(); break;
+			case '+': input_scroll_down(); break;
+			case '-': input_scroll_up(); break;
 			case 'F': input_F(); break;
 			case 27: running=false; exit(0);
 		}
@@ -314,8 +314,8 @@ private:
 	}
 
 	void update_rotation(const double arx, const double ary) {
-#if defined(INTERACTIVE_GRAPHICS) && defined(_WIN32)
-		SetCursorPos((int)width/2, (int)height/2);
+#if defined(INTERACTIVE_GRAPHICS)&&defined(_WIN32)
+		if(!lockmouse) SetCursorPos((int)width/2, (int)height/2);
 #endif // INTERACTIVE_GRAPHICS && Windows
 		rx += arx*pi/180.0;
 		ry += ary*pi/180.0;
@@ -326,7 +326,7 @@ private:
 };
 
 extern Camera camera;
-extern bool key_E, key_F, key_G, key_H, key_O, key_P, key_Q, key_T, key_Z; // defined in graphics.cpp
+extern bool key_E, key_G, key_H, key_O, key_P, key_Q, key_T, key_Z; // defined in graphics.cpp
 extern bool key_1, key_2, key_3, key_4, key_5, key_6, key_7, key_8, key_9, key_0; // defined in graphics.cpp
 
 #define GRAPHICS_CONSOLE // open console additionally to graphics window

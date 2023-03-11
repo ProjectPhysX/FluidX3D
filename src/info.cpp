@@ -67,7 +67,7 @@ void Info::print_logo() const {
 	print("|                                  ");                print("\\  \\ /  /", c);                 print("                                  |\n");
 	print("|                                   ");                print("\\  '  /", c);                  print("                                   |\n");
 	print("|                                    ");                print("\\   /", c);                  print("                                    |\n");
-	print("|                                     ");                print("\\ /", c);                  print("                FluidX3D Version 2.3 |\n");
+	print("|                                     ");                print("\\ /", c);                  print("                FluidX3D Version 2.4 |\n");
 	print("|                                      ");                 print("'", c);                  print("         Copyright (c) Moritz Lehmann |\n");
 }
 void Info::print_initialize() {
@@ -109,13 +109,13 @@ void Info::print_update() const {
 		alignr(19, print_time(time()))+" |" // either elapsed time or remaining time
 	);
 #ifdef GRAPHICS
-	if(key_H) { // print camera settings
+	if(key_G) { // print camera settings
 		const string camera_position = "float3("+to_string(camera.pos.x/(float)lbm->get_Nx(), 6u)+"f*(float)Nx, "+to_string(camera.pos.y/(float)lbm->get_Ny(), 6u)+"f*(float)Ny, "+to_string(camera.pos.z/(float)lbm->get_Nz(), 6u)+"f*(float)Nz)";
-		const string camera_rx_ry_fov = to_string(degrees(camera.rx)-90.0f, 1u)+"f, "+to_string(180.0f-degrees(camera.ry), 1u)+"f, "+to_string(camera.fov, 1u)+"f";
+		const string camera_rx_ry_fov = to_string(degrees(camera.rx)-90.0, 1u)+"f, "+to_string(180.0-degrees(camera.ry), 1u)+"f, "+to_string(camera.fov, 1u)+"f";
 		const string camera_zoom = to_string(camera.zoom*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/(float)min(camera.width, camera.height), 6u)+"f";
 		if(camera.free) print_info("lbm.graphics.set_camera_free("+camera_position+", "+camera_rx_ry_fov+");");
 		else print_info("lbm.graphics.set_camera_centered("+camera_rx_ry_fov+", "+camera_zoom+");");
-		key_H = false;
+		key_G = false;
 	}
 #endif // GRAPHICS
 }

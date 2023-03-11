@@ -9,9 +9,12 @@
 #endif // _WIN32
 #include <CL/cl.hpp> // OpenCL 1.0, 1.1, 1.2
 #include "utilities.hpp"
+using cl::Event;
 
 struct Device_Info {
-	cl::Device cl_device;
+	cl::Device cl_device; // OpenCL device
+	cl::Context cl_context; // multiple devices in the same context can communicate buffers
+	uint id = 0u; // unique device ID assigned by get_devices()
 	string name, vendor; // device name, vendor
 	string driver_version, opencl_c_version; // device driver version, OpenCL C version
 	uint memory=0u; // global memory in MB
@@ -24,8 +27,10 @@ struct Device_Info {
 	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u;
 	uint cores=0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 	float tflops=0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
-	inline Device_Info(const cl::Device& cl_device) {
+	inline Device_Info(const cl::Device& cl_device, const cl::Context& cl_context, const uint id) {
 		this->cl_device = cl_device; // see https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/clGetDeviceInfo.html
+		this->cl_context = cl_context;
+		this->id = id;
 		name = trim(cl_device.getInfo<CL_DEVICE_NAME>()); // device name
 		vendor = trim(cl_device.getInfo<CL_DEVICE_VENDOR>()); // device vendor
 		driver_version = trim(cl_device.getInfo<CL_DRIVER_VERSION>()); // device driver version
@@ -63,9 +68,9 @@ struct Device_Info {
 };
 
 string get_opencl_c_code(); // implemented in kernel.hpp
-inline void print_device_info(const Device_Info& d, const int id=-1) { // print OpenCL device info
+inline void print_device_info(const Device_Info& d) { // print OpenCL device info
 	println("\r|----------------.------------------------------------------------------------|");
-	if(id>-1) println("| Device ID      | "+alignl(58, to_string(id))+" |");
+	println("| Device ID      | "+alignl(58, to_string(d.id)        )+" |");
 	println("| Device Name    | "+alignl(58, d.name                 )+" |");
 	println("| Device Vendor  | "+alignl(58, d.vendor               )+" |");
 	println("| Device Driver  | "+alignl(58, d.driver_version       )+" |");
@@ -79,11 +84,13 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
 	cl::Platform::get(&cl_platforms);
+	uint id = 0u;
 	for(uint i=0u; i<(uint)cl_platforms.size(); i++) {
 		vector<cl::Device> cl_devices;
 		cl_platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &cl_devices);
+		cl::Context cl_context(cl_devices);
 		for(uint j=0u; j<(uint)cl_devices.size(); j++) {
-			devices.push_back(Device_Info(cl_devices[j]));
+			devices.push_back(Device_Info(cl_devices[j], cl_context, id++));
 		}
 	}
 	if((uint)cl_platforms.size()==0u||(uint)devices.size()==0u) {
@@ -96,7 +103,7 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 	}
 	return devices;
 }
-inline Device_Info select_device_with_most_flops(const vector<Device_Info>& devices=get_devices(), const bool print_info=true) { // returns device with best floating-point performance
+inline Device_Info select_device_with_most_flops(const vector<Device_Info>& devices=get_devices()) { // returns device with best floating-point performance
 	float best_value = 0.0f;
 	uint best_i = 0u;
 	for(uint i=0u; i<(uint)devices.size(); i++) { // find device with highest (estimated) floating point performance
@@ -105,10 +112,9 @@ inline Device_Info select_device_with_most_flops(const vector<Device_Info>& devi
 			best_i = i;
 		}
 	}
-	if(print_info) print_device_info(devices[best_i], best_i);
 	return devices[best_i];
 }
-inline Device_Info select_device_with_most_memory(const vector<Device_Info>& devices=get_devices(), const bool print_info=true) { // returns device with largest memory capacity
+inline Device_Info select_device_with_most_memory(const vector<Device_Info>& devices=get_devices()) { // returns device with largest memory capacity
 	uint best_value = 0u;
 	uint best_i = 0u;
 	for(uint i=0u; i<(uint)devices.size(); i++) { // find device with most memory
@@ -117,12 +123,10 @@ inline Device_Info select_device_with_most_memory(const vector<Device_Info>& dev
 			best_i = i;
 		}
 	}
-	if(print_info) print_device_info(devices[best_i], best_i);
 	return devices[best_i];
 }
-inline Device_Info select_device_with_id(const uint id, const vector<Device_Info>& devices=get_devices(), const bool print_info=true) { // returns device with specified ID
+inline Device_Info select_device_with_id(const uint id, const vector<Device_Info>& devices=get_devices()) { // returns device with specified ID
 	if(id<(uint)devices.size()) {
-		if(print_info) print_device_info(devices[id], id);
 		return devices[id];
 	} else {
 		print_error("Your selected Device ID ("+to_string(id)+") is wrong.");
@@ -132,7 +136,6 @@ inline Device_Info select_device_with_id(const uint id, const vector<Device_Info
 
 class Device {
 private:
-	cl::Context cl_context;
 	cl::Program cl_program;
 	cl::CommandQueue cl_queue;
 	bool exists = false;
@@ -151,18 +154,18 @@ private:
 public:
 	Device_Info info;
 	inline Device(const Device_Info& info, const string& opencl_c_code=get_opencl_c_code()) {
+		print_device_info(info);
 		this->info = info;
-		cl_context = cl::Context(info.cl_device);
-		cl_queue = cl::CommandQueue(cl_context, info.cl_device); // queue to push commands for the device
+		this->cl_queue = cl::CommandQueue(info.cl_context, info.cl_device); // queue to push commands for the device
 		cl::Program::Sources cl_source;
 		const string kernel_code = enable_device_capabilities()+"\n"+opencl_c_code;
 		cl_source.push_back({ kernel_code.c_str(), kernel_code.length() });
-		cl_program = cl::Program(cl_context, cl_source);
+		this->cl_program = cl::Program(info.cl_context, cl_source);
 #ifndef LOG
-		int error = cl_program.build("-cl-fast-relaxed-math -w"); // compile OpenCL C code, disable warnings
+		int error = cl_program.build({ info.cl_device }, "-cl-fast-relaxed-math -w"); // compile OpenCL C code, disable warnings
 		if(error) print_warning(cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device)); // print build log
 #else // LOG, generate logfile for OpenCL code compilation
-		int error = cl_program.build("-cl-fast-relaxed-math"); // compile OpenCL C code
+		int error = cl_program.build({ info.cl_device }, "-cl-fast-relaxed-math"); // compile OpenCL C code
 		const string log = cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device);
 		write_file("bin/kernel.log", log); // save build log
 		if((uint)log.length()>2u) print_warning(log); // print build log
@@ -175,8 +178,9 @@ public:
 		this->exists = true;
 	}
 	inline Device() {} // default constructor
+	inline void barrier(const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { cl_queue.enqueueBarrierWithWaitList(event_waitlist, event_returned); }
 	inline void finish_queue() { cl_queue.finish(); }
-	inline cl::Context get_cl_context() const { return cl_context; }
+	inline cl::Context get_cl_context() const { return info.cl_context; }
 	inline cl::Program get_cl_program() const { return cl_program; }
 	inline cl::CommandQueue get_cl_queue() const { return cl_queue; }
 	inline bool is_initialized() const { return exists; }
@@ -323,71 +327,71 @@ public:
 	inline const T& operator[](const ulong i) const { return host_buffer[i]; }
 	inline const T operator()(const ulong i) const { return host_buffer[i]; }
 	inline const T operator()(const ulong i, const uint dimension) const { return host_buffer[i+(ulong)dimension*N]; } // array of structures
-	inline void read_from_device(const bool blocking=true) {
-		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueReadBuffer(device_buffer, blocking, 0u, capacity(), (void*)host_buffer);
+	inline void read_from_device(const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
+		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueReadBuffer(device_buffer, blocking, 0u, capacity(), (void*)host_buffer, event_waitlist, event_returned);
 	}
-	inline void write_to_device(const bool blocking=true) {
-		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueWriteBuffer(device_buffer, blocking, 0u, capacity(), (void*)host_buffer);
+	inline void write_to_device(const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
+		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueWriteBuffer(device_buffer, blocking, 0u, capacity(), (void*)host_buffer, event_waitlist, event_returned);
 	}
-	inline void read_from_device(const ulong offset, const ulong length, const bool blocking=true) {
+	inline void read_from_device(const ulong offset, const ulong length, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
 		if(host_buffer_exists&&device_buffer_exists) {
 			const ulong safe_offset=min(offset, range()), safe_length=min(length, range()-safe_offset);
-			if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+			if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 		}
 	}
-	inline void write_to_device(const ulong offset, const ulong length, const bool blocking=true) {
+	inline void write_to_device(const ulong offset, const ulong length, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
 		if(host_buffer_exists&&device_buffer_exists) {
 			const ulong safe_offset=min(offset, range()), safe_length=min(length, range()-safe_offset);
-			if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+			if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 		}
 	}
-	inline void read_from_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true) { // read 1D domain from device, either for all vector dimensions (-1) or for a specified dimension
+	inline void read_from_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 1D domain from device, either for all vector dimensions (-1) or for a specified dimension
 		if(host_buffer_exists&&device_buffer_exists) {
 			const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 			for(uint i=i0; i<i1; i++) {
 				const ulong safe_offset=min((ulong)i*N+x0, range()), safe_length=min(x1-x0, range()-safe_offset);
-				if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+				if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 			}
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void write_to_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true) { // write 1D domain to device, either for all vector dimensions (-1) or for a specified dimension
+	inline void write_to_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 1D domain to device, either for all vector dimensions (-1) or for a specified dimension
 		if(host_buffer_exists&&device_buffer_exists) {
 			const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 			for(uint i=i0; i<i1; i++) {
 				const ulong safe_offset=min((ulong)i*N+x0, range()), safe_length=min(x1-x0, range()-safe_offset);
-				if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+				if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 			}
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void read_from_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true) { // read 2D domain from device, either for all vector dimensions (-1) or for a specified dimension
+	inline void read_from_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 2D domain from device, either for all vector dimensions (-1) or for a specified dimension
 		if(host_buffer_exists&&device_buffer_exists) {
 			for(uint y=y0; y<y1; y++) {
 				const ulong n = x0+y*Nx;
 				const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 				for(uint i=i0; i<i1; i++) {
 					const ulong safe_offset=min((ulong)i*N+n, range()), safe_length=min(x1-x0, range()-safe_offset);
-					if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+					if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 				}
 			}
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void write_to_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true) { // write 2D domain to device, either for all vector dimensions (-1) or for a specified dimension
+	inline void write_to_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 2D domain to device, either for all vector dimensions (-1) or for a specified dimension
 		if(host_buffer_exists&&device_buffer_exists) {
 			for(uint y=y0; y<y1; y++) {
 				const ulong n = x0+y*Nx;
 				const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 				for(uint i=i0; i<i1; i++) {
 					const ulong safe_offset=min((ulong)i*N+n, range()), safe_length=min(x1-x0, range()-safe_offset);
-					if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+					if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 				}
 			}
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void read_from_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true) { // read 3D domain from device, either for all vector dimensions (-1) or for a specified dimension
+	inline void read_from_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 3D domain from device, either for all vector dimensions (-1) or for a specified dimension
 		if(host_buffer_exists&&device_buffer_exists) {
 			for(uint z=z0; z<z1; z++) {
 				for(uint y=y0; y<y1; y++) {
@@ -395,14 +399,14 @@ public:
 					const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 					for(uint i=i0; i<i1; i++) {
 						const ulong safe_offset=min((ulong)i*N+n, range()), safe_length=min(x1-x0, range()-safe_offset);
-						if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+						if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 					}
 				}
 			}
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void write_to_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true) { // write 3D domain to device, either for all vector dimensions (-1) or for a specified dimension
+	inline void write_to_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 3D domain to device, either for all vector dimensions (-1) or for a specified dimension
 		if(host_buffer_exists&&device_buffer_exists) {
 			for(uint z=z0; z<z1; z++) {
 				for(uint y=y0; y<y1; y++) {
@@ -410,17 +414,17 @@ public:
 					const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 					for(uint i=i0; i<i1; i++) {
 						const ulong safe_offset=min((ulong)i*N+n, range()), safe_length=min(x1-x0, range()-safe_offset);
-						if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset));
+						if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, false, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 					}
 				}
 			}
 			if(blocking) cl_queue.finish();
 		}
 	}
-	inline void enqueue_read_from_device() { read_from_device(false); }
-	inline void enqueue_write_to_device() { write_to_device(false); }
-	inline void enqueue_read_from_device(const ulong offset, const ulong length) { read_from_device(offset, length, false); }
-	inline void enqueue_write_to_device(const ulong offset, const ulong length) { write_to_device(offset, length, false); }
+	inline void enqueue_read_from_device(const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { read_from_device(false, event_waitlist, event_returned); }
+	inline void enqueue_write_to_device(const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { write_to_device(false, event_waitlist, event_returned); }
+	inline void enqueue_read_from_device(const ulong offset, const ulong length, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { read_from_device(offset, length, false, event_waitlist, event_returned); }
+	inline void enqueue_write_to_device(const ulong offset, const ulong length, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { write_to_device(offset, length, false, event_waitlist, event_returned); }
 	inline void finish_queue() { cl_queue.finish(); }
 	inline const cl::Buffer& get_cl_buffer() const { return device_buffer; }
 };
@@ -477,22 +481,22 @@ public:
 		link_parameters(starting_position, parameters...); // expand variadic template to link kernel parameters
 		return *this;
 	}
-	inline Kernel& enqueue_run(const uint t=1u) {
+	inline Kernel& enqueue_run(const uint t=1u, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
 		for(uint i=0u; i<t; i++) {
-			cl_queue.enqueueNDRangeKernel(cl_kernel, cl::NullRange, cl_range_global, cl_range_local);
+			cl_queue.enqueueNDRangeKernel(cl_kernel, cl::NullRange, cl_range_global, cl_range_local, event_waitlist, event_returned);
 		}
 		return *this;
+	}
+	inline Kernel& run(const uint t=1u, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
+		enqueue_run(t, event_waitlist, event_returned);
+		finish_queue();
+		return *this;
+	}
+	inline Kernel& operator()(const uint t=1u, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
+		return run(t, event_waitlist, event_returned);
 	}
 	inline Kernel& finish_queue() {
 		cl_queue.finish();
 		return *this;
-	}
-	inline Kernel& run(const uint t=1u) {
-		enqueue_run(t);
-		finish_queue();
-		return *this;
-	}
-	inline Kernel& operator()(const uint t=1u) {
-		return run(t);
 	}
 };

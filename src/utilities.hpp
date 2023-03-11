@@ -3584,10 +3584,10 @@ inline void print_color_test() {
 	println();
 }
 #ifdef UTILITIES_CONSOLE_INPUT
-// ASCII codes (key>0): 8 backspace, 9 tab, 10 newline, 27 escape, 127 delete, !"#$%&'()*+,-./0-9:;<=>?@A-Z[]^_`a-z{|}~üäÄöÖÜßµ´§°¹³²
+// ASCII codes (key>0): 8 backspace, 9 tab, 10 newline, 27 escape, 127 delete, !"#$%&'()*+,-./0-9:;<=>?@A-Z[]^_`a-z{|}~Ã¼Ã¤Ã„Ã¶Ã–ÃœÃŸÂµÂ´Â§Â°Â¹Â³Â²
 // control key codes (key<0): -38/-40/-37/-39 up/down/left/right arrow, -33/-34 page up/down, -36/-35 pos1/end
 // other key codes (key<0): -45 insert, -144 num lock, -20 caps lock, -91 windows key, -93 kontext menu key, -112 to -123 F1 to F12
-// not working: ¹ (251), num lock (-144), caps lock (-20), windows key (-91), kontext menu key (-93), F11 (-122)
+// not working: Â¹ (251), num lock (-144), caps lock (-20), windows key (-91), kontext menu key (-93), F11 (-122)
 #if defined(_WIN32)
 inline int key_press() { // not working: F11 (-122, toggles fullscreen)
 	KEY_EVENT_RECORD keyevent;
@@ -3613,7 +3613,7 @@ inline int key_press() { // not working: F11 (-122, toggles fullscreen)
 				case  -12: continue; // disable num block 5 with num lock deactivated
 				case   13: return  10; // enter
 				case  -46: return 127; // delete
-				case  -49: return 251; // ¹
+				case  -49: return 251; // Â¹
 				case    0: continue;
 				case    1: continue; // disable Ctrl + a (selects all text)
 				case    2: continue; // disable Ctrl + b
@@ -3648,7 +3648,7 @@ inline int key_press() { // not working: F11 (-122, toggles fullscreen)
 }
 #else // Linux
 #include <termios.h>
-inline int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-20), windows key (-91), kontext menu key (-93)
+inline int key_press() { // not working: Â¹ (251), num lock (-144), caps lock (-20), windows key (-91), kontext menu key (-93)
 	struct termios term;
 	tcgetattr(0, &term);
 	while(true) {
@@ -3662,7 +3662,7 @@ inline int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-2
 			ioctl(0, FIONREAD, &nbbytes); // 0 is STDIN
 		}
 		int key = (int)getchar();
-		if(key==27||key==194||key==195) { // escape, 194/195 is escape for °ß´äöüÄÖÜ
+		if(key==27||key==194||key==195) { // escape, 194/195 is escape for Â°ÃŸÂ´Ã¤Ã¶Ã¼Ã„Ã–Ãœ
 			key = (int)getchar();
 			if(key==91) { // [ following escape
 				key = (int)getchar(); // get code of next char after \e[
@@ -3693,19 +3693,19 @@ inline int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-2
 			case  127: return   8; // backspace
 			case  -27: return  27; // escape
 			case  -51: return 127; // delete
-			case -164: return 132; // ä
-			case -182: return 148; // ö
-			case -188: return 129; // ü
-			case -132: return 142; // Ä
-			case -150: return 153; // Ö
-			case -156: return 154; // Ü
-			case -159: return 225; // ß
-			case -181: return 230; // µ
-			case -167: return 245; // §
-			case -176: return 248; // °
-			case -178: return 253; // ²
-			case -179: return 252; // ³
-			case -180: return 239; // ´
+			case -164: return 132; // Ã¤
+			case -182: return 148; // Ã¶
+			case -188: return 129; // Ã¼
+			case -132: return 142; // Ã„
+			case -150: return 153; // Ã–
+			case -156: return 154; // Ãœ
+			case -159: return 225; // ÃŸ
+			case -181: return 230; // Âµ
+			case -167: return 245; // Â§
+			case -176: return 248; // Â°
+			case -178: return 253; // Â²
+			case -179: return 252; // Â³
+			case -180: return 239; // Â´
 			case  -65: return -38; // up arrow
 			case  -66: return -40; // down arrow
 			case  -68: return -37; // left arrow

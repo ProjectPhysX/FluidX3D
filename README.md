@@ -40,6 +40,15 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - displayed GPU memory allocation size is now fully accurate
   - fixed bug in `write_line()` function in `src/utilities.hpp`
   - removed `.exe` file extension for Linux/macOS
+- v2.4 (11.03.2023)
+  - added a help menu with key H that shows keyboard/mouse controls, visualization settings and simulation stats
+  - improvements to keyboard/mouse control (+/- for zoom, mouseclick frees/locks cursor)
+  - added suggestion of largest possible grid resolution if resolution is set larger than memory allows
+  - minor optimizations in multi-GPU communication (insignificant performance difference)
+  - fixed bug in temperature equilibrium function for temperature extension
+  - fixed erroneous double literal in skybox color functions for Intel iGPUs
+  - fixed bug in make.sh where multi-GPU device IDs would not get forwarded to the executable
+  - minor bug fixes in graphics engine (free curser not centered during rotation, labels in VR mode)
 
 </details>
 
@@ -141,8 +150,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 !!          | copy \|/            | copy \|/            | copy \|/         !!
 ++   .--------------------. .-------------------. .--------------------.   ++
 ++   |   GPU 1 - TB 1X-   | |   GPU 3 - TB 3Y-  | |   GPU 5 - TB 5Z-   |   ++
-++   '--------------------' '-------------------' '--------------------'   ++
-++   .--------------------. .-------------------. .--------------------.   ++
+++   :====================: :===================: :====================:   ++
 ++   |   GPU 2 - TB 2X+   | |   GPU 4 - TB 4Y+  | |   GPU 6 - TB 6Z+   |   ++
 ++   '--------------------' '-------------------' '--------------------'   ++
 ++    /|\ selective in-  |  /|\ selective in-  |  /|\ selective in-  |     ++
@@ -150,15 +158,12 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 ++   .--------------------. .-------------------. .--------------------.   ++
 ++   |        GPU 1       | |       GPU 3       | |        GPU 5       |   ++
 ++   |    LBM Domain 1    | |   LBM Domain 3    | |    LBM Domain 5    |   ++
-++   '--------------------' '-------------------' '--------------------'   ++
-++   .--------------------. .-------------------. .--------------------.   ++
+++   :====================: :===================: :====================:   ++
 ++   |        GPU 2       | |       GPU 4       | |        GPU 6       |   ++
 ++   |    LBM Domain 2    | |   LBM Domain 4    | |    LBM Domain 6    |   ++
 ++   '--------------------' '-------------------' '--------------------'   ++
 ##              |                     |                     |              ##
-##           domain                domain                domain            ##
-##       synchronization       synchronization       synchronization       ##
-##           barrier               barrier               barrier           ##
+##              |      domain synchronization barriers      |              ##
 ##              |                     |                     |              ##
 ||   -------------------------------------------------------------> time   ||
 ```
@@ -234,28 +239,26 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
    - Call `lbm.run();` to initialize and execute the setup (infinite time steps) or `lbm.run(time_steps);` to execute only a specific number of time steps.
    - As long as the `lbm` object is in scope, you can access the memory. As soon as it goes out of scope, all memory associated to the current simulation is freed again.
 3. When done with the setup, on Windows in Visual Studio Community select "Release" and "x64" and hit compile+run, or on Linux execute `chmod +x make.sh` and `./make.sh`; this will automatically select the fastest installed GPU(s). Alternatively, you can add the device ID(s) as command-line arguments, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D 1 3` to run the executable on devices 1 and 3. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
-4. With `INTERACTIVE_GRAPHICS`/`INTERACTIVE_GRAPHICS_ASCII` enabled, press the <kbd>P</kbd> key to start/pause the simulation.
-
-   Toggle rendering modes with the keyboard:
+4. Keyboard/mouse controls with `INTERACTIVE_GRAPHICS`/`INTERACTIVE_GRAPHICS_ASCII` enabled:
+   - <kbd>P</kbd>: start/pause the simulation
+   - <kbd>H</kbd>: show/hide help
    - <kbd>1</kbd>: flags (and force vectors on solid boundary nodes if the extension is used)
    - <kbd>2</kbd>: velocity field
    - <kbd>3</kbd>: streamlines
    - <kbd>4</kbd>: vorticity / velocity-colored Q-criterion isosurface
    - <kbd>5</kbd>: rasterized free surface
    - <kbd>6</kbd>: raytraced free surface
-
-   Camera movement:
    - <kbd>Mouse</kbd> or <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>: rotate camera
-   - <kbd>Scrollwheel</kbd> or <kbd>,</kbd>/<kbd>.</kbd>: zoom (centered camera mode) or adjust camera movement speed (free camera mode)
-   - <kbd>U</kbd>: toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>
+   - <kbd>Scrollwheel</kbd> or <kbd>+</kbd>/<kbd>-</kbd>: zoom (centered camera mode) or camera movement speed (free camera mode)
+   - <kbd>Mouseclick</kbd> or <kbd>U</kbd>: toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>
    - <kbd>Y</kbd>/<kbd>X</kbd>: adjust camera field of view
+   - <kbd>G</kbd>: print current camera position/rotation in console as copy/paste command
    - <kbd>R</kbd>: toggle camera autorotation
    - <kbd>F</kbd>: toggle centered/free camera mode
    - <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>/<kbd>Space</kbd>/<kbd>C</kbd>: move free camera
    - <kbd>V</kbd>: toggle stereoscopic rendering for VR
    - <kbd>B</kbd>: toggle VR-goggles/3D-TV mode for stereoscopic rendering
    - <kbd>N</kbd>/<kbd>M</kbd>: adjust eye distance for stereoscopic rendering
-   - <kbd>H</kbd>: print current camera position/rotation in console as copy/paste command
    - <kbd>Esc</kbd>/<kbd>Alt</kbd>+<kbd>F4</kbd>: quit
 
 

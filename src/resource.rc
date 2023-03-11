@@ -21,7 +21,7 @@ BEGIN
 			VALUE "FileDescription", "FluidX3D"
 			VALUE "FileVersion", "1.0.0.0"
 			VALUE "InternalName", "FluidX3D"
-			VALUE "LegalCopyright", "© Moritz Lehmann"
+			VALUE "LegalCopyright", "(c) Moritz Lehmann"
 			VALUE "OriginalFilename", "FluidX3D.exe"
 			VALUE "ProductName", "FluidX3D"
 			VALUE "ProductVersion", "1.0"

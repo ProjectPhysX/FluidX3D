@@ -34,7 +34,7 @@ string default_filename(const string& name, const string& extension, const ulong
 
 
 
-LBM_Domain::LBM_Domain(const int select_device, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const int Ox, const int Oy, const int Oz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // constructor with manual device selection and domain offset
+LBM_Domain::LBM_Domain(const Device_Info& device_info, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const int Ox, const int Oy, const int Oz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // constructor with manual device selection and domain offset
 	this->Nx = Nx; this->Ny = Ny; this->Nz = Nz;
 	this->Dx = Dx; this->Dy = Dy; this->Dz = Dz;
 	this->Ox = Ox; this->Oy = Oy; this->Oz = Oz;
@@ -51,8 +51,7 @@ LBM_Domain::LBM_Domain(const int select_device, const uint Nx, const uint Ny, co
 #else // GRAPHICS
 	opencl_c_code = device_defines()+get_opencl_c_code();
 #endif // GRAPHICS
-	const vector<Device_Info>& devices = get_devices(false);
-	this->device = Device(select_device<0 ? select_device_with_most_flops(devices) : select_device_with_id((uint)select_device, devices), opencl_c_code);
+	this->device = Device(device_info, opencl_c_code);
 	allocate(device); // lbm first
 #ifdef GRAPHICS
 	graphics.allocate(device); // graphics after lbm
@@ -484,49 +483,49 @@ string LBM_Domain::Graphics::device_defines() const { return
 //#include <ppl.h> // concurrency::parallel_for(0, N, [&](int n) { ... });
 //#include <omp.h> // #pragma omp parallel for \n for(int n=0; n<N; i++) { ... } // #pragma warning(disable:6993)
 
-vector<int> smart_device_selection(const int D) {
-	vector<int> select_devices(D);
+vector<Device_Info> smart_device_selection(const uint D) {
+	const vector<Device_Info>& devices = get_devices(); // a vector of all available OpenCL devices
+	vector<Device_Info> device_infos(D);
 	const int user_specified_devices = (int)main_arguments.size();
 	if(user_specified_devices>0) { // user has selevted specific devices as command line arguments
 		if(user_specified_devices==D) { // as much specified devices as domains
-			for(int d=0; d<D; d++) select_devices[d] = to_int(main_arguments[d]); // use list of devices IDs specified by user
+			for(uint d=0; d<D; d++) device_infos[d] = select_device_with_id(to_uint(main_arguments[d]), devices); // use list of devices IDs specified by user
 		} else {
 			print_warning("Incorrect number of devices specified. Using single fastest device for all domains.");
-			for(int d=0; d<D; d++) select_devices[d] = -1;
+			for(uint d=0; d<D; d++) device_infos[d] = select_device_with_most_flops(devices);
 		}
 	} else { // device auto-selection
-		const vector<Device_Info>& devices = get_devices(); // a vector of all available OpenCL devices
-		vector<vector<int>> device_type_ids; // a vector of all different devices, containing vectors of their device IDs
-		for(int i=0; i<(int)devices.size(); i++) {
+		vector<vector<Device_Info>> device_type_ids; // a vector of all different devices, containing vectors of their device IDs
+		for(uint i=0u; i<(uint)devices.size(); i++) {
 			const string name_i = devices[i].name;
 			bool already_exists = false;
-			for(int j=0; j<(int)device_type_ids.size(); j++) {
-				const string name_j = devices[device_type_ids[j][0]].name;
+			for(uint j=0u; j<(uint)device_type_ids.size(); j++) {
+				const string name_j = device_type_ids[j][0].name;
 				if(name_i==name_j) {
-					device_type_ids[j].push_back(i);
+					device_type_ids[j].push_back(devices[i]);
 					already_exists = true;
 				}
 			}
-			if(!already_exists) device_type_ids.push_back(vector<int>(1, i));
+			if(!already_exists) device_type_ids.push_back(vector<Device_Info>(1, devices[i]));
 		}
 		float best_value = 0.0f;
 		int best_j = -1;
-		for(int j=0; j<(int)device_type_ids.size(); j++) {
-			const float value = devices[device_type_ids[j][0]].tflops;
-			if((int)device_type_ids[j].size()>=D && value>best_value) {
+		for(uint j=0u; j<(uint)device_type_ids.size(); j++) {
+			const float value = device_type_ids[j][0].tflops;
+			if((uint)device_type_ids[j].size()>=D && value>best_value) {
 				best_value = value;
 				best_j = j;
 			}
 		}
 		if(best_j>=0) { // select all devices of fastest device type with at least D devices of the same type
-			for(int d=0; d<D; d++) select_devices[d] = device_type_ids[best_j][d];
+			for(uint d=0; d<D; d++) device_infos[d] = device_type_ids[best_j][d];
 		} else {
 			print_warning("Not enough devices of the same type available. Using single fastest device for all domains.");
-			for(int d=0; d<D; d++) select_devices[d] = -1;
+			for(uint d=0; d<D; d++) device_infos[d] = select_device_with_most_flops(devices);
 		}
-		//for(int j=0; j<(int)device_type_ids.size(); j++) print_info("Device Type "+to_string(j)+" ("+devices[device_type_ids[j][0]].name+"): "+to_string((int)device_type_ids[j].size())+"x");
+		//for(uint j=0u; j<(uint)device_type_ids.size(); j++) print_info("Device Type "+to_string(j)+" ("+device_type_ids[j][0].name+"): "+to_string((uint)device_type_ids[j].size())+"x");
 	}
-	return select_devices;
+	return device_infos;
 }
 
 LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) // single device
@@ -539,16 +538,16 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const floa
 	:LBM(Nx, Ny, Nz, 1u, 1u, 1u, nu, fx, fy, fz, 0.0f, 0.0f, 0.0f, particles_N, particles_rho) { // delegating constructor
 }
 LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // multiple devices
-	sanity_checks_constructor(Nx, Ny, Nz, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
 	this->Nx = Nx; this->Ny = Ny; this->Nz = Nz;
 	this->Dx = Dx; this->Dy = Dy; this->Dz = Dz;
 	const uint D = Dx*Dy*Dz;
 	const uint Hx=Dx>1u, Hy=Dy>1u, Hz=Dz>1u; // halo offsets
+	const vector<Device_Info>& device_infos = smart_device_selection(D);
+	sanity_checks_constructor(device_infos, Nx, Ny, Nz, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
 	lbm = new LBM_Domain*[D];
-	const vector<int>& devices = smart_device_selection(D);
 	for(uint d=0u; d<D; d++) { // { thread* threads=new thread[D]; for(uint d=0u; d<D; d++) threads[d]=thread([=]() {
 		const uint x=((uint)d%(Dx*Dy))%Dx, y=((uint)d%(Dx*Dy))/Dx, z=(uint)d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
-		lbm[d] = new LBM_Domain(devices[d], Nx/Dx+2u*Hx, Ny/Dy+2u*Hy, Nz/Dz+2u*Hz, Dx, Dy, Dz, (int)(x*Nx/Dx)-(int)Hx, (int)(y*Ny/Dy)-(int)Hy, (int)(z*Nz/Dz)-(int)Hz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+		lbm[d] = new LBM_Domain(device_infos[d], Nx/Dx+2u*Hx, Ny/Dy+2u*Hy, Nz/Dz+2u*Hz, Dx, Dy, Dz, (int)(x*Nx/Dx)-(int)Hx, (int)(y*Ny/Dy)-(int)Hy, (int)(z*Nz/Dz)-(int)Hz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
 	} // }); for(uint d=0u; d<D; d++) threads[d].join(); delete[] threads; }
 	{
 		Memory<float>** buffers_rho = new Memory<float>*[D];
@@ -596,12 +595,27 @@ LBM::~LBM() {
 	delete[] lbm;
 }
 
-void LBM::sanity_checks_constructor(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // sanity checks on grid resolution and extension support
+void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // sanity checks on grid resolution and extension support
 	if((ulong)Nx*(ulong)Ny*(ulong)Nz==0ull) print_error("Grid point number is 0: "+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+" = 0.");
 	if(Nx%Dx!=0u || Ny%Dy!=0u || Nz%Dz!=0u) print_error("LBM grid ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+") is not equally divisible in domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+").");
 	if(Dx*Dy*Dz==0u) print_error("You specified 0 LBM grid domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+"). There has to be at least 1 domain in every direction. Check your input in LBM constructor.");
 	const uint local_Nx=Nx/Dx+2u*(Dx>1u), local_Ny=Ny/Dy+2u*(Dy>1u), local_Nz=Nz/Dz+2u*(Dz>1u);
 	if((ulong)local_Nx*(ulong)local_Ny*(ulong)local_Nz>=(ulong)max_uint) print_error("Single domain grid resolution is too large: "+to_string(local_Nx)+"x"+to_string(local_Ny)+"x"+to_string(local_Nz)+" > 2^32.");
+	uint memory_available = max_uint; // in MB
+	for(Device_Info device_info : device_infos) memory_available = min(memory_available, device_info.memory);
+	uint memory_required = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*((ulong)velocity_set*sizeof(fpxx)+17ull)/1048576ull); // in MB
+	if(memory_required>memory_available) {
+		float factor = cbrt((float)memory_available/(float)memory_required);
+		const uint maxNx=(uint)(factor*(float)Nx), maxNy=(uint)(factor*(float)Ny), maxNz=(uint)(factor*(float)Nz);
+		string message = "Grid resolution ("+to_string(Nx)+", "+to_string(Ny)+", "+to_string(Nz)+") is too large: "+to_string(Dx*Dy*Dz)+"x "+to_string(memory_required)+" MB required, "+to_string(Dx*Dy*Dz)+"x "+to_string(memory_available)+" MB available. Largest possible resolution is ("+to_string(maxNx)+", "+to_string(maxNy)+", "+to_string(maxNz)+"). Restart the simulation with lower resolution or on different device(s) with more memory.";
+#if !defined(FP16S)&&!defined(FP16C)
+		uint memory_required_fp16 = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*((ulong)velocity_set*2ull+17ull)/1048576ull); // in MB
+		float factor_fp16 = cbrt((float)memory_available/(float)memory_required_fp16);
+		const uint maxNx_fp16=(uint)(factor_fp16*(float)Nx), maxNy_fp16=(uint)(factor_fp16*(float)Ny), maxNz_fp16=(uint)(factor_fp16*(float)Nz);
+		message += " Consider using FP16S/FP16C memory compression to double maximum grid resolution to a maximum of ("+to_string(maxNx_fp16)+", "+to_string(maxNy_fp16)+", "+to_string(maxNz_fp16)+"); for this, uncomment \"#define FP16S\" or \"#define FP16C\" in defines.hpp.";
+#endif // !FP16S&&!FP16C
+		print_error(message);
+	}
 	if(nu==0.0f) print_error("Viscosity cannot be 0. Change it in setup.cpp."); // sanity checks for viscosity
 	else if(nu<0.0f) print_error("Viscosity cannot be negative. Remove the \"-\" in setup.cpp.");
 #if !defined(SRT)&&!defined(TRT)
@@ -997,7 +1011,11 @@ void LBM::Graphics::write_frame_bmp(const uint x1, const uint y1, const uint x2,
 
 
 void LBM_Domain::allocate_transfer(Device& device) { // allocate all memory for multi-device trqansfer
-	const ulong Ax=(ulong)Ny*(ulong)Nz, Ay=(ulong)Nz*(ulong)Nx, Az=(ulong)Nx*(ulong)Ny, Amax=max(max(Ax, Ay), Az);
+	ulong Amax = 0ull; // maximum domain side area of communicated directions
+	if(Dx>1u) Amax = max(Amax, (ulong)Ny*(ulong)Nz); // Ax
+	if(Dy>1u) Amax = max(Amax, (ulong)Nz*(ulong)Nx); // Ay
+	if(Dz>1u) Amax = max(Amax, (ulong)Nx*(ulong)Ny); // Az
+
 	transfer_buffer_p = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
 	transfer_buffer_m = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u));
 

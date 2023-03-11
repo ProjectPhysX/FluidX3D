@@ -327,7 +327,8 @@ void draw_label(const int x, const int y, const string& s, const int color) {
 	if(camera.vr) {
 		if(x-camera.width/2>0) {
 			draw_text(x-(int)camera.width/2, y, s, color);
-		} else if(x+(int)camera.width/2<(int)camera.width) {
+		}
+		if(x+(int)camera.width/2<(int)camera.width) {
 			draw_text(x+(int)camera.width/2, y, s, color);
 		}
 	}
@@ -455,6 +456,10 @@ int key_windows(const int keycode) {
 		case VK_PRIOR     : return -33; // page up
 		case VK_NEXT      : return -34; // page down
 		case VK_HOME      : return -36; // pos1
+		case VK_ADD       : case VK_OEM_PLUS : return '+'; // +
+		case VK_SUBTRACT  : case VK_OEM_MINUS: return '-'; // -
+		case VK_MULTIPLY  : return '*'; // *
+		case VK_DIVIDE    : return '/'; // /
 		case VK_OEM_COMMA : return ','; // ,
 		case VK_OEM_PERIOD: return '.'; // .
 		default: return keycode;
@@ -475,6 +480,8 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 		camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));
 	} else if(message==WM_MOUSEWHEEL) {
 		if((short)HIWORD(wParam)>0) camera.input_scroll_up(); else camera.input_scroll_down();
+	} else if(message==WM_LBUTTONDOWN||message==WM_MBUTTONDOWN||message==WM_RBUTTONDOWN) {
+		camera.input_key('U');
 	} else if(message==WM_KEYDOWN) {
 		int key = key_windows((int)wParam);
 		camera.set_key_state(key, true);
@@ -559,12 +566,12 @@ int key_linux(const int keycode) {
 		case  22: return    8; // backspace
 		case   9: return   27; // escape
 		case 107: return  127; // delete
-		case  48: return  142; // Ä
-		case  47: return  153; // Ö
-		case  34: return  154; // Ü
-		case  20: return  225; // ß
+		case  48: return  142; // Ã„
+		case  47: return  153; // Ã–
+		case  34: return  154; // Ãœ
+		case  20: return  225; // ÃŸ
 		case  49: return  248; // ^
-		case  21: return  239; // ´
+		case  21: return  239; // Â´
 		case 106: return  -45; // insert
 		case  77: return -144; // num lock
 		case  66: return  -20; // caps lock
@@ -575,8 +582,8 @@ int key_linux(const int keycode) {
 		case  89: return  '3'; case  80: return  '8'; // numpad
 		case  83: return  '4'; case  81: return  '9'; // numpad
 		case  84: return  '5'; case  90: return  '0'; // numpad
-		case  63: return  '*'; case 112: return  '/'; // numpad
 		case  86: return  '+'; case  82: return  '-'; // numpad
+		case  63: return  '*'; case 112: return  '/'; // numpad
 		case  91: return  ','; case 108: return   10; // numpad
 		case  98: return  -38; case 104: return  -40; // up/down arrow
 		case 100: return  -37; case 102: return  -39; // left/right arrow
