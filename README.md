@@ -49,6 +49,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed erroneous double literal for Intel iGPUs in skybox color functions
   - fixed bug in make.sh where multi-GPU device IDs would not get forwarded to the executable
   - minor bug fixes in graphics engine (free cursor not centered during rotation, labels in VR mode)
+  - fixed bug in LBM::voxelize_stl() size parameter standard initialization
 
 </details>
 
