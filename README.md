@@ -46,9 +46,9 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - added suggestion of largest possible grid resolution if resolution is set larger than memory allows
   - minor optimizations in multi-GPU communication (insignificant performance difference)
   - fixed bug in temperature equilibrium function for temperature extension
-  - fixed erroneous double literal in skybox color functions for Intel iGPUs
+  - fixed erroneous double literal for Intel iGPUs in skybox color functions
   - fixed bug in make.sh where multi-GPU device IDs would not get forwarded to the executable
-  - minor bug fixes in graphics engine (free curser not centered during rotation, labels in VR mode)
+  - minor bug fixes in graphics engine (free cursor not centered during rotation, labels in VR mode)
 
 </details>
 
