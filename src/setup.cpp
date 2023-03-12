@@ -500,7 +500,7 @@
 
 /*void main_setup() { // F1 car
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
-	const uint L = 256u; // 2152u on 8x MI200
+	const uint L = 512u; // 2152u on 8x MI200
 	const float kmh = 100.0f;
 	const float si_u = kmh/3.6f;
 	const float si_x = 2.0f;
@@ -519,7 +519,7 @@
 	lbm.voxelize_stl(get_exe_path()+"../stl/Ferrari_SF71H_V5.stl", center, size); // https://www.thingiverse.com/thing:2990512/files (unfortunately, this model is not available anymore)
 	const ulong N=lbm.get_N(); const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<N; n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		// ########################################################################### define geometry #############################################################################################
-		//if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 		if(z==0u) lbm.flags[n] = TYPE_S;
 		const float3 p = lbm.position(x, y, z);
