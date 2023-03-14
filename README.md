@@ -149,20 +149,20 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 @@   '---------' '---------'---------' '---------'---------' '---------'   @@
 !!         /|\ PCIe |            /|\ PCIe |            /|\ PCIe |          !!
 !!          | copy \|/            | copy \|/            | copy \|/         !!
-++   .--------------------. .-------------------. .--------------------.   ++
-++   |   GPU 1 - TB 1X-   | |   GPU 3 - TB 3Y-  | |   GPU 5 - TB 5Z-   |   ++
-++   :====================: :===================: :====================:   ++
-++   |   GPU 2 - TB 2X+   | |   GPU 4 - TB 4Y+  | |   GPU 6 - TB 6Z+   |   ++
-++   '--------------------' '-------------------' '--------------------'   ++
+++   .--------------------..---------------------..--------------------.   ++
+++   |   GPU 1 - TB 1X-   ||    GPU 3 - TB 3Y-   ||   GPU 5 - TB 5Z-   |   ++
+++   :====================::=====================::====================:   ++
+++   |   GPU 2 - TB 2X+   ||    GPU 4 - TB 4Y+   ||   GPU 6 - TB 6Z+   |   ++
+++   '--------------------''---------------------''--------------------'   ++
 ++    /|\ selective in-  |  /|\ selective in-  |  /|\ selective in-  |     ++
 ++     |  VRAM copy (X) \|/  |  VRAM copy (Y) \|/  |  VRAM copy (Z) \|/    ++
-++   .--------------------. .-------------------. .--------------------.   ++
-++   |        GPU 1       | |       GPU 3       | |        GPU 5       |   ++
-++   |    LBM Domain 1    | |   LBM Domain 3    | |    LBM Domain 5    |   ++
-++   :====================: :===================: :====================:   ++
-++   |        GPU 2       | |       GPU 4       | |        GPU 6       |   ++
-++   |    LBM Domain 2    | |   LBM Domain 4    | |    LBM Domain 6    |   ++
-++   '--------------------' '-------------------' '--------------------'   ++
+++   .--------------------..---------------------..--------------------.   ++
+++   |        GPU 1       ||        GPU 3        ||        GPU 5       |   ++
+++   |    LBM Domain 1    ||    LBM Domain 3     ||    LBM Domain 5    |   ++
+++   :====================::=====================::====================:   ++
+++   |        GPU 2       ||        GPU 4        ||        GPU 6       |   ++
+++   |    LBM Domain 2    ||    LBM Domain 4     ||    LBM Domain 6    |   ++
+++   '--------------------''---------------------''--------------------'   ++
 ##              |                     |                     |              ##
 ##              |      domain synchronization barriers      |              ##
 ##              |                     |                     |              ##
@@ -249,6 +249,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
    - <kbd>4</kbd>: vorticity / velocity-colored Q-criterion isosurface
    - <kbd>5</kbd>: rasterized free surface
    - <kbd>6</kbd>: raytraced free surface
+   - <kbd>7</kbd>: particles
    - <kbd>Mouse</kbd> or <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>: rotate camera
    - <kbd>Scrollwheel</kbd> or <kbd>+</kbd>/<kbd>-</kbd>: zoom (centered camera mode) or camera movement speed (free camera mode)
    - <kbd>Mouseclick</kbd> or <kbd>U</kbd>: toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>
