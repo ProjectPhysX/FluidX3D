@@ -324,6 +324,7 @@ If your GPU is not on the list yet, you can report your benchmarks [here](https:
 | Nvidia GeForce RTX 3090 Ti    |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | Nvidia GeForce RTX 3080 Ti    |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
+| Nvidia RTX A6000              |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
 | Nvidia GeForce RTX 3080       |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
 | Nvidia GeForce RTX 3070       |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
 | Nvidia GeForce RTX 3060 Ti    |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
@@ -402,6 +403,11 @@ Multi-GPU benchmarks are done at the largest possible grid resolution with a cub
 |                               |                    |             |              |                        |                         |                         |
 | 1x Nvidia Tesla K40m          |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 | 2x Nvidia Tesla K40m          |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
+|                               |                    |             |              |                        |                         |                         |
+| 1x Nvidia RTX A6000           |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
+| 2x Nvidia RTX A6000           |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
+| 4x Nvidia RTX A6000           |             160.00 |         192 |         3072 |           14314 (3.2x) |            27915 (3.2x) |            27227 (3.2x) |
+| 8x Nvidia RTX A6000           |             320.00 |         384 |         6144 |           19311 (4.4x) |            40063 (4.5x) |            39004 (4.6x) |
 |                               |                    |             |              |                        |                         |                         |
 | 1x Nvidia Quadro RTX 8000 Pa. |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
 | 2x Nvidia Quadro RTX 8000 Pa. |              29.86 |          96 |         1248 |            4767 (1.8x) |             9607 (1.8x) |            10214 (1.8x) |
