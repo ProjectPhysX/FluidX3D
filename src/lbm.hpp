@@ -75,11 +75,15 @@ public:
 #endif // PARTICLES
 
 	Memory<char> transfer_buffer_p, transfer_buffer_m; // transfer buffers for multi-device domain communication, only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
+	Memory<char> transfer_buffer_p_receive, transfer_buffer_m_receive;
 	Kernel kernel_transfer[enum_transfer_field::enum_transfer_field_length][2]; // for each field one extract and one insert kernel
 	void allocate_transfer(Device& device); // allocate all memory for multi-device transfer
 	ulong get_area(const uint direction);
 	void enqueue_transfer_extract_field(Kernel& kernel_transfer_extract_field, const uint direction, const uint bytes_per_cell);
 	void enqueue_transfer_insert_field(Kernel& kernel_transfer_insert_field, const uint direction, const uint bytes_per_cell);
+	void enqueue_transfer_extract_field_p2p(Kernel& kernel_transfer_extract_field, const uint direction, const vector<Event>* event_waitlist, Event* event_returned);
+	void enqueue_transfer_insert_field_p2p(Kernel& kernel_transfer_insert_field, const uint direction, Memory<char>& transfer_buffer_p, Memory<char>& transfer_buffer_m, const vector<Event>* event_waitlist, Event* event_returned);
+	void enqueue_waitlist(const vector<Event>* event_waitlist);
 
 	LBM_Domain(const Device_Info& device_info, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const int Ox, const int Oy, const int Oz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho); // compiles OpenCL C code and allocates memory
 
@@ -194,6 +198,7 @@ class LBM {
 private:
 	uint Nx=1u, Ny=1u, Nz=1u; // (global) lattice dimensions
 	uint Dx=1u, Dy=1u, Dz=1u; // lattice domains
+	bool allow_p2p_communication = true; // if all selected devices are from the same vendor, multi-GPU peer-to-peer communication is enabled if the OpenCL runtime driver supports it
 	bool initialized = false; // becomes true after LBM::initialize() has been called
 
 	void sanity_checks_constructor(const vector<Device_Info>& device_infos, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho); // sanity checks on grid resolution and extension support

@@ -11,8 +11,15 @@
 #include "utilities.hpp"
 using cl::Event;
 
+#define CL_DEVICE_NUM_P2P_DEVICES_AMD 0x4088
+#define CL_DEVICE_P2P_DEVICES_AMD 0x4089
+#define cl_amd_copy_buffer_p2p 1
+typedef CL_API_ENTRY cl_int
+(CL_API_CALL* clEnqueueCopyBufferP2PAMD_fn)(cl_command_queue /*command_queue*/, cl_mem /*src_buffer*/, cl_mem /*dst_buffer*/, size_t /*src_offset*/, size_t /*dst_offset*/, size_t /*length*/, cl_uint /*num_events_in_wait_list*/, const cl_event* /*event_wait_list*/, cl_event* /*event*/) CL_EXT_SUFFIX__VERSION_1_2;
+
 struct Device_Info {
 	cl::Device cl_device; // OpenCL device
+	cl::Platform cl_platform; // OpenCL platform
 	cl::Context cl_context; // multiple devices in the same context can communicate buffers
 	uint id = 0u; // unique device ID assigned by get_devices()
 	string name, vendor; // device name, vendor
@@ -27,8 +34,9 @@ struct Device_Info {
 	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u;
 	uint cores=0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 	float tflops=0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
-	inline Device_Info(const cl::Device& cl_device, const cl::Context& cl_context, const uint id) {
+	inline Device_Info(const cl::Device& cl_device, const cl::Platform& cl_platform, const cl::Context& cl_context, const uint id) {
 		this->cl_device = cl_device; // see https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/clGetDeviceInfo.html
+		this->cl_platform = cl_platform;
 		this->cl_context = cl_context;
 		this->id = id;
 		name = trim(cl_device.getInfo<CL_DEVICE_NAME>()); // device name
@@ -90,7 +98,7 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 		cl_platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &cl_devices);
 		cl::Context cl_context(cl_devices);
 		for(uint j=0u; j<(uint)cl_devices.size(); j++) {
-			devices.push_back(Device_Info(cl_devices[j], cl_context, id++));
+			devices.push_back(Device_Info(cl_devices[j], cl_platforms[i], cl_context, id++));
 		}
 	}
 	if((uint)cl_platforms.size()==0u||(uint)devices.size()==0u) {
@@ -427,6 +435,23 @@ public:
 	inline void enqueue_write_to_device(const ulong offset, const ulong length, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { write_to_device(offset, length, false, event_waitlist, event_returned); }
 	inline void finish_queue() { cl_queue.finish(); }
 	inline const cl::Buffer& get_cl_buffer() const { return device_buffer; }
+	inline void enqueue_p2p_copy_amd(const Memory<T>& source, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
+		clEnqueueCopyBufferP2PAMD_fn p2p_copy_amd = (clEnqueueCopyBufferP2PAMD_fn)clGetExtensionFunctionAddressForPlatform(device->info.cl_platform(), "clEnqueueCopyBufferP2PAMD");
+		vector<cl_event> cl_event_waitlist;
+		if(event_waitlist!=nullptr) for(uint i=0u; i<(uint)event_waitlist->size(); i++) cl_event_waitlist.push_back(event_waitlist->at(i)());
+		cl_event cl_event_returned = nullptr;
+		if(event_returned!=nullptr) cl_event_returned = (*event_returned)();
+		p2p_copy_amd(cl_queue(), source.get_cl_buffer()(), device_buffer(), 0, 0, min(source.capacity(), capacity()), cl_event_waitlist.size(), cl_event_waitlist.data(), &cl_event_returned);
+	}
+	inline void enqueue_p2p_copy_amd(const Memory<T>& source, const ulong offset_source, const ulong offset_destination, const ulong length, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
+		clEnqueueCopyBufferP2PAMD_fn p2p_copy_amd = (clEnqueueCopyBufferP2PAMD_fn)clGetExtensionFunctionAddressForPlatform(device->info.cl_platform(), "clEnqueueCopyBufferP2PAMD");
+		const ulong safe_offset_source=min(offset_source, source.range()), safe_offset_destination=min(offset_destination, range()), safe_length=min(length, min(source.range()-safe_offset_source, range()-safe_offset_destination));
+		vector<cl_event> cl_event_waitlist;
+		if(event_waitlist!=nullptr) for(uint i=0u; i<(uint)event_waitlist->size(); i++) cl_event_waitlist.push_back(event_waitlist->at(i)());
+		cl_event cl_event_returned = nullptr;
+		if(event_returned!=nullptr) cl_event_returned = (*event_returned)();
+		p2p_copy_amd(cl_queue(), source.get_cl_buffer()(), device_buffer(), safe_offset_source*sizeof(T), safe_offset_destination*sizeof(T), safe_length*sizeof(T), cl_event_waitlist.size(), cl_event_waitlist.data(), &cl_event_returned);
+	}
 };
 
 class Kernel {

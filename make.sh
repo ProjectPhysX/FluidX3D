@@ -5,6 +5,8 @@ rm -f ./bin/FluidX3D # prevent execution of old version if compiling fails
 
 #g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL -I./src/X11/include -L./src/X11/lib -lX11 # compile on Linux with X11
 
+#g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I/opt/rocm-5.2.0/include -L/opt/rocm-5.2.0/lib -lOpenCL # compile on Linux (without X11)
+
 g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL # compile on Linux (without X11)
 #g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -framework OpenCL # compile on macOS (without X11)
 #g++ ./src/*.cpp -o ./bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L/system/vendor/lib64 -lOpenCL # compile on Android (without X11)

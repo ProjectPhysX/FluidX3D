@@ -544,6 +544,8 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint 
 	const uint Hx=Dx>1u, Hy=Dy>1u, Hz=Dz>1u; // halo offsets
 	const vector<Device_Info>& device_infos = smart_device_selection(D);
 	sanity_checks_constructor(device_infos, Nx, Ny, Nz, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+	for(uint i=0u; i<D; i++) for(uint j=0u; j<i; j++) allow_p2p_communication = allow_p2p_communication&&(device_infos[i].cl_context()==device_infos[j].cl_context()); // check if P2P is supported
+	if(D>1u) print_info(allow_p2p_communication ? "All selected devices are from the same vendor; multi-GPU peer-to-peer communication is enabled if the OpenCL runtime driver supports it." : "Selected devices are from multiple different vendors; multi-GPU peer-to-peer communication is not supported.");
 	lbm = new LBM_Domain*[D];
 	for(uint d=0u; d<D; d++) { // { thread* threads=new thread[D]; for(uint d=0u; d<D; d++) threads[d]=thread([=]() {
 		const uint x=((uint)d%(Dx*Dy))%Dx, y=((uint)d%(Dx*Dy))/Dx, z=(uint)d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
@@ -742,7 +744,7 @@ void LBM::do_time_step() { // call kernel_stream_collide to perform one LBM time
 #ifdef PARTICLES
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_integrate_particles(); // intgegrate particles forward in time and couple particles to fluid
 #endif // PARTICLES
-	if(get_D()==1u) for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // this additional domain synchronization barrier is only required in single-GPU, as communication calls already provide all necessary synchronization barriers in multi-GPU
+	if(get_D()==1u||allow_p2p_communication) for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // this additional domain synchronization barrier is only required in single-GPU, as communication calls already provide all necessary synchronization barriers in multi-GPU
 	for(uint d=0u; d<get_D(); d++) lbm[d]->increment_time_step();
 }
 
@@ -1019,6 +1021,9 @@ void LBM_Domain::allocate_transfer(Device& device) { // allocate all memory for 
 	transfer_buffer_p = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
 	transfer_buffer_m = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u));
 
+	transfer_buffer_p_receive = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
+	transfer_buffer_m_receive = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u));
+
 	kernel_transfer[enum_transfer_field::fi              ][0] = Kernel(device, 0u, "transfer_extract_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
 	kernel_transfer[enum_transfer_field::fi              ][1] = Kernel(device, 0u, "transfer__insert_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
 	kernel_transfer[enum_transfer_field::rho_u_flags     ][0] = Kernel(device, 0u, "transfer_extract_rho_u_flags"     , 0u, t, transfer_buffer_p, transfer_buffer_m, rho, u, flags);
@@ -1051,33 +1056,269 @@ void LBM_Domain::enqueue_transfer_insert_field(Kernel& kernel_transfer_insert_fi
 	transfer_buffer_m.enqueue_write_to_device(0ull, kernel_transfer_insert_field.range()*(ulong)bytes_per_cell); // PCIe copy (-)
 	kernel_transfer_insert_field.set_parameters(0u, direction, get_t()).enqueue_run(); // selective in-VRAM copy
 }
+void LBM_Domain::enqueue_transfer_extract_field_p2p(Kernel& kernel_transfer_extract_field, const uint direction, const vector<Event>* event_waitlist, Event* event_returned) {
+	kernel_transfer_extract_field.set_ranges(get_area(direction)); // direction: x=0, y=1, z=2
+	kernel_transfer_extract_field.set_parameters(0u, direction, get_t()).enqueue_run(1u, event_waitlist, event_returned); // selective in-VRAM copy
+}
+void LBM_Domain::enqueue_transfer_insert_field_p2p(Kernel& kernel_transfer_insert_field, const uint direction, Memory<char>& transfer_buffer_p, Memory<char>& transfer_buffer_m, const vector<Event>* event_waitlist, Event* event_returned) {
+	kernel_transfer_insert_field.set_ranges(get_area(direction)); // direction: x=0, y=1, z=2
+	kernel_transfer_insert_field.set_parameters(0u, direction, get_t(), transfer_buffer_p, transfer_buffer_m).enqueue_run(1u, event_waitlist, event_returned); // selective in-VRAM copy
+}
+void LBM_Domain::enqueue_waitlist(const vector<Event>* event_waitlist) {
+	device.barrier(event_waitlist);
+}
 void LBM::communicate_field(const enum_transfer_field field, const uint bytes_per_cell) {
-	if(Dx>1u) { // communicate in x-direction
-		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 0u, bytes_per_cell); // selective in-VRAM copy (x) + PCIe copy
-		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
-		for(uint d=0u; d<get_D(); d++) {
-			const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
-			lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[dxp]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+	if(allow_p2p_communication) {
+
+
+
+		// variant 1: supposed P2P communication (implicit migration)
+
+		vector<vector<Event>> domain_event_waitlists_next(get_D(), vector<Event>(0));
+		if(Dx>1u) { // communicate in x-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 0u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (x)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx, dxm=((x+Dx-1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dxp][0], domain_event_waitlists[dxm][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 0u, lbm[dxp]->transfer_buffer_m, lbm[dxm]->transfer_buffer_p, &event_waitlist, &event_returned); // P2P copy + selective in-VRAM copy (x)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx, dxm=((x+Dx-1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dxp][1], domain_event_waitlists[dxm][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
 		}
-		for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 0u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (x)
-	}
-	if(Dy>1u) { // communicate in y-direction
-		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 1u, bytes_per_cell); // selective in-VRAM copy (y) + PCIe copy
-		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
-		for(uint d=0u; d<get_D(); d++) {
-			const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
-			lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[dyp]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+		if(Dy>1u) { // communicate in y-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 1u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (y)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx, dym=x+(((y+Dy-1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dyp][0], domain_event_waitlists[dym][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 1u, lbm[dyp]->transfer_buffer_m, lbm[dym]->transfer_buffer_p, &event_waitlist, &event_returned); // P2P copy + selective in-VRAM copy (y)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx, dym=x+(((y+Dy-1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dyp][1], domain_event_waitlists[dym][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
 		}
-		for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 1u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (y)
-	}
-	if(Dz>1u) { // communicate in z-direction
-		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 2u, bytes_per_cell); // selective in-VRAM copy (z) + PCIe copy
-		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
-		for(uint d=0u; d<get_D(); d++) {
-			const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
-			lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[dzp]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+		if(Dz>1u) { // communicate in z-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 2u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (z)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx, dzm=x+(y+((z+Dz-1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dzp][0], domain_event_waitlists[dzm][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 2u, lbm[dzp]->transfer_buffer_m, lbm[dzm]->transfer_buffer_p, &event_waitlist, &event_returned); // P2P copy + selective in-VRAM copy (z)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx, dzm=x+(y+((z+Dz-1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dzp][1], domain_event_waitlists[dzm][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
 		}
-		for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 2u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (z)
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_waitlist(&domain_event_waitlists_next[d]);/**/
+
+
+
+		// variant 2: supposed P2P communication (explicit migration)
+
+		/*vector<vector<Event>> domain_event_waitlists_next(get_D(), vector<Event>(0));
+		if(Dx>1u) { // communicate in x-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 0u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (x)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx, dxm=((x+Dx-1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dxp][0], domain_event_waitlists[dxm][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+
+				const vector<cl::Memory> buffers = { lbm[dxp]->transfer_buffer_m.get_cl_buffer(), lbm[dxm]->transfer_buffer_p.get_cl_buffer() };
+				lbm[d]->get_device().get_cl_queue().enqueueMigrateMemObjects(buffers, 0, &event_waitlist, &event_returned);
+
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 0u, lbm[dxp]->transfer_buffer_m, lbm[dxm]->transfer_buffer_p, nullptr, &event_returned); // P2P copy + selective in-VRAM copy (x)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx, dxm=((x+Dx-1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dxp][1], domain_event_waitlists[dxm][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
+		}
+		if(Dy>1u) { // communicate in y-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 1u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (y)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx, dym=x+(((y+Dy-1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dyp][0], domain_event_waitlists[dym][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+
+				const vector<cl::Memory> buffers = { lbm[dyp]->transfer_buffer_m.get_cl_buffer(), lbm[dym]->transfer_buffer_p.get_cl_buffer() };
+				lbm[d]->get_device().get_cl_queue().enqueueMigrateMemObjects(buffers, 0, &event_waitlist, &event_returned);
+
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 1u, lbm[dyp]->transfer_buffer_m, lbm[dym]->transfer_buffer_p, nullptr, &event_returned); // P2P copy + selective in-VRAM copy (y)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx, dym=x+(((y+Dy-1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dyp][1], domain_event_waitlists[dym][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
+		}
+		if(Dz>1u) { // communicate in z-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 2u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (z)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx, dzm=x+(y+((z+Dz-1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dzp][0], domain_event_waitlists[dzm][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+
+				const vector<cl::Memory> buffers = { lbm[dzp]->transfer_buffer_m.get_cl_buffer(), lbm[dzm]->transfer_buffer_p.get_cl_buffer() };
+				lbm[d]->get_device().get_cl_queue().enqueueMigrateMemObjects(buffers, 0, &event_waitlist, &event_returned);
+
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 2u, lbm[dzp]->transfer_buffer_m, lbm[dzm]->transfer_buffer_p, nullptr, &event_returned); // P2P copy + selective in-VRAM copy (z)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx, dzm=x+(y+((z+Dz-1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dzp][1], domain_event_waitlists[dzm][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
+		}
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_waitlist(&domain_event_waitlists_next[d]);/**/
+
+
+
+		// variant 3: explicit P2P communication for AMD GPUs
+
+		/*vector<vector<Event>> domain_event_waitlists_next(get_D(), vector<Event>(0));
+		if(Dx>1u) { // communicate in x-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 0u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (x)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx, dxm=((x+Dx-1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dxp][0], domain_event_waitlists[dxm][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+
+				const ulong capacity = lbm[d]->get_area(0u)*(ulong)bytes_per_cell;
+				lbm[d]->transfer_buffer_p_receive.enqueue_p2p_copy_amd(lbm[dxp]->transfer_buffer_m, 0ull, 0ull, capacity, &event_waitlist, nullptr);
+				lbm[d]->transfer_buffer_m_receive.enqueue_p2p_copy_amd(lbm[dxm]->transfer_buffer_p, 0ull, 0ull, capacity, &event_waitlist, nullptr);
+
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 0u, lbm[d]->transfer_buffer_p_receive, lbm[d]->transfer_buffer_m_receive, nullptr, &event_returned); // P2P copy + selective in-VRAM copy (x)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx, dxm=((x+Dx-1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dxp][1], domain_event_waitlists[dxm][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
+		}
+		if(Dy>1u) { // communicate in y-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 1u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (y)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx, dym=x+(((y+Dy-1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dyp][0], domain_event_waitlists[dym][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+
+				const ulong capacity = lbm[d]->get_area(1u)*(ulong)bytes_per_cell;
+				lbm[d]->transfer_buffer_p_receive.enqueue_p2p_copy_amd(lbm[dyp]->transfer_buffer_m, 0ull, 0ull, capacity, &event_waitlist, nullptr);
+				lbm[d]->transfer_buffer_m_receive.enqueue_p2p_copy_amd(lbm[dym]->transfer_buffer_p, 0ull, 0ull, capacity, &event_waitlist, nullptr);
+
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 1u, lbm[d]->transfer_buffer_p_receive, lbm[d]->transfer_buffer_m_receive, nullptr, &event_returned); // P2P copy + selective in-VRAM copy (y)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx, dym=x+(((y+Dy-1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dyp][1], domain_event_waitlists[dym][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
+		}
+		if(Dz>1u) { // communicate in z-direction
+			vector<vector<Event>> domain_event_waitlists(get_D(), vector<Event>(0));
+			for(uint d=0u; d<get_D(); d++) {
+				Event event_returned;
+				lbm[d]->enqueue_transfer_extract_field_p2p(lbm[d]->kernel_transfer[field][0], 2u, &domain_event_waitlists_next[d], &event_returned); // selective in-VRAM copy (z)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx, dzm=x+(y+((z+Dz-1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				vector<Event> event_waitlist = { domain_event_waitlists[dzp][0], domain_event_waitlists[dzm][0] }; // wait for selective in-VRAM copy on neighboring domains to finish
+				Event event_returned;
+
+				const ulong capacity = lbm[d]->get_area(2u)*(ulong)bytes_per_cell;
+				lbm[d]->transfer_buffer_p_receive.enqueue_p2p_copy_amd(lbm[dzp]->transfer_buffer_m, 0ull, 0ull, capacity, &event_waitlist, nullptr);
+				lbm[d]->transfer_buffer_m_receive.enqueue_p2p_copy_amd(lbm[dzm]->transfer_buffer_p, 0ull, 0ull, capacity, &event_waitlist, nullptr);
+
+				lbm[d]->enqueue_transfer_insert_field_p2p(lbm[d]->kernel_transfer[field][1], 2u, lbm[d]->transfer_buffer_p_receive, lbm[d]->transfer_buffer_m_receive, nullptr, &event_returned); // P2P copy + selective in-VRAM copy (z)
+				domain_event_waitlists[d].push_back(event_returned);
+			}
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx, dzm=x+(y+((z+Dz-1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				domain_event_waitlists_next[d] = { domain_event_waitlists[dzp][1], domain_event_waitlists[dzm][1] }; // wait for selective in-VRAM copy on neighboring domains to finish
+			}
+		}
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_waitlist(&domain_event_waitlists_next[d]);/**/
+
+
+
+	} else { // no P2P (explicit copy over PCIe and CPU memory)
+		if(Dx>1u) { // communicate in x-direction
+			for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 0u, bytes_per_cell); // selective in-VRAM copy (x) + PCIe copy
+			for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dxp=((x+1u)%Dx)+(y+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[dxp]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+			}
+			for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 0u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (x)
+		}
+		if(Dy>1u) { // communicate in y-direction
+			for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 1u, bytes_per_cell); // selective in-VRAM copy (y) + PCIe copy
+			for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dyp=x+(((y+1u)%Dy)+z*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[dyp]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+			}
+			for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 1u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (y)
+		}
+		if(Dz>1u) { // communicate in z-direction
+			for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_transfer_extract_field(lbm[d]->kernel_transfer[field][0], 2u, bytes_per_cell); // selective in-VRAM copy (z) + PCIe copy
+			for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // domain synchronization barrier
+			for(uint d=0u; d<get_D(); d++) {
+				const uint x=(d%(Dx*Dy))%Dx, y=(d%(Dx*Dy))/Dx, z=d/(Dx*Dy), dzp=x+(y+((z+1u)%Dz)*Dy)*Dx; // d = x+(y+z*Dy)*Dx
+				lbm[d]->transfer_buffer_p.exchange_host_buffer(lbm[dzp]->transfer_buffer_m.exchange_host_buffer(lbm[d]->transfer_buffer_p.data())); // CPU pointer swaps
+			}
+			for(uint d=0u; d<get_D(); d++) lbm[d]-> enqueue_transfer_insert_field(lbm[d]->kernel_transfer[field][1], 2u, bytes_per_cell); // PCIe copy + selective in-VRAM copy (z)
+		}
 	}
 }
 

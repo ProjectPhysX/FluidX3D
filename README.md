@@ -85,7 +85,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - each domain (GPU) can hold up to 4.29 billion (2³², 1624³) lattice points (225 GB memory)
   - GPUs don't have to be identical (not even from the same vendor), but similar VRAM capacity/bandwidth is recommended
 
-<details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (simplified)</summary>
+<details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (cross-vendor, simplified)</summary>
 
 ```diff
 ++   .-----------------------------------------------------------------.   ++
@@ -123,7 +123,73 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 ||   -------------------------------------------------------------> time   ||
 ```
 
-</details><details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (detailed)</summary>
+</details><details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (peer-to-peer, simplified)</summary>
+
+```diff
+++   .-----------------------------------------------------------------.   ++
+++   |                              GPU 0                              |   ++
+++   |                          LBM Domain 0                           |   ++
+++   '-----------------------------------------------------------------'   ++
+++              |     selective                            ´/\             ++
+++             \|/   in-VRAM copy                          /               ++
+++        .-------------------------------------------.   /                ++
+++        |         GPU 0 - Transfer Buffer 0         |  /                 ++
+++        '-------------------------------------------' /                  ++
+!!                                                   \ /                   !!
+!!                           peer-to-peer RDMA copy   X                    !!
+!!                                                   / \                   !!
+++        .-------------------------------------------. \                  ++
+++        |         GPU 1 - Transfer Buffer 1         |  \                 ++
+++        '-------------------------------------------'   \                ++
+++             /|\    selective                            \               ++
+++              |    in-VRAM copy                          _\/             ++
+++   .-----------------------------------------------------------------.   ++
+++   |                              GPU 1                              |   ++
+++   |                          LBM Domain 1                           |   ++
+++   '-----------------------------------------------------------------'   ++
+##                                                :            :           ##
+##                                   event-driven domain synchronization   ##
+##                                                :            :           ##
+||   -------------------------------------------------------------> time   ||
+```
+
+</details><details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (AMD peer-to-peer, simplified)</summary>
+
+```diff
+++   .-----------------------------------------------------------------.   ++
+++   |                              GPU 0                              |   ++
+++   |                          LBM Domain 0                           |   ++
+++   '-----------------------------------------------------------------'   ++
+++              |                 selective                /|\             ++
+++             \|/               in-VRAM copy               |              ++
+++        .-----------------------------.                   |              ++
+++        |    GPU 0 - Send Buffer 0    |                   |              ++
+++        '-------------------------.==='-------------------------.        ++
+++                               \  |  GPU 0 - Receive Buffer 0   |        ++
+++                                \ '-----------------------------'        ++
+!!                                 \  ´/\                                  !!
+!!                                  \ /                                    !!
+!!                     peer-to-peer  X  copy                               !!
+!!                                  / \                                    !!
+!!                                 /  _\/                                  !!
+++                                / .-----------------------------.        ++
+++                               /  |  GPU 1 - Receive Buffer 1   |        ++
+++        .-------------------------'===.-------------------------'        ++
+++        |    GPU 1 - Send Buffer 1    |                   |              ++
+++        '-----------------------------'                   |              ++
+++             /|\                selective                 |              ++
+++              |                in-VRAM copy              \|/             ++
+++   .-----------------------------------------------------------------.   ++
+++   |                              GPU 1                              |   ++
+++   |                          LBM Domain 1                           |   ++
+++   '-----------------------------------------------------------------'   ++
+##                            :           :                                ##
+##                  event-driven domain synchronization                    ##
+##                            :           :                                ##
+||   -------------------------------------------------------------> time   ||
+```
+
+</details><details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (cross-vendor, detailed)</summary>
 
 ```diff
 ++   .-----------------------------------------------------------------.   ++
@@ -166,6 +232,43 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 ##              |                     |                     |              ##
 ##              |      domain synchronization barriers      |              ##
 ##              |                     |                     |              ##
+||   -------------------------------------------------------------> time   ||
+```
+
+</details><details><summary>&nbsp; &nbsp; &nbsp; &nbsp;&#9900;&nbsp; domain communication architecture (peer-to-peer, detailed)</summary>
+
+```diff
+++   .-----------------------------------------------------------------.   ++
+++   |                              GPU 0                              |   ++
+++   |                          LBM Domain 0                           |   ++
+++   '-----------------------------------------------------------------'   ++
+++     |  selective in- ´/\  |  selective in- ´/\  |  selective in- ´/\    ++
+++    \|/ VRAM copy (X) /   \|/ VRAM copy (Y) /   \|/ VRAM copy (Z) /      ++
+++   .-----------------/---.-----------------/---.-----------------/---.   ++
+++   |    GPU 0 - TB 0X+   |    GPU 0 - TB 0Y+   |    GPU 0 - TB 0Z+   |   ++
+++   |    GPU 0 - TB 0X-   |    GPU 0 - TB 0Y-   |    GPU 0 - TB 0Z-   |   ++
+++   '--------------/------'--------------/------'--------------/------'   ++
+!!            \    /                \    /                \    /           !!
+!!    P2P RDMA \  /         P2P RDMA \  /         P2P RDMA \  /            !!
+!!     copy (X) \/           copy (Y) \/           copy (Z) \/             !!
+!!              /\                    /\                    /\             !!
+++   .------------\-------..------------\--------..-----------\--------.   ++
+++   |   GPU 1 - TB 1X-   ||    GPU 3 - TB 3Y-   ||   GPU 5 - TB 5Z-   |   ++
+++   :==============\=====::==============\======::=============\======:   ++
+++   |   GPU 2 - TB 2X+   ||    GPU 4 - TB 4Y+   ||   GPU 6 - TB 6Z+   |   ++
+++   '----------------\---''----------------\----''---------------\----'   ++
+++    /|\ selective in-\    /|\ selective in-\    /|\ selective in-\       ++
+++     | VRAM copy (X) _\/   | VRAM copy (Y) _\/   | VRAM copy (Z) _\/     ++
+++   .--------------------..---------------------..--------------------.   ++
+++   |        GPU 1       ||        GPU 3        ||        GPU 5       |   ++
+++   |    LBM Domain 1    ||    LBM Domain 3     ||    LBM Domain 5    |   ++
+++   :====================::=====================::====================:   ++
+++   |        GPU 2       ||        GPU 4        ||        GPU 6       |   ++
+++   |    LBM Domain 2    ||    LBM Domain 4     ||    LBM Domain 6    |   ++
+++   '--------------------''---------------------''--------------------'   ++
+##          :             :       :              :      :              :   ##
+##          :           event-driven domain synchronization            :   ##
+##          :             :       :              :      :              :   ##
 ||   -------------------------------------------------------------> time   ||
 ```
 
