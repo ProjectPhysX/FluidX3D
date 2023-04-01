@@ -104,7 +104,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
     (illustration: density ρ, velocity u, flags f, DDFs A; each symbol = 1 Byte)
     ```
     - allows for 19 Million cells per 1 GB VRAM
-    - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092): removes redundant copy `B` of density distribution functions (DDFs) in memory; almost cuts memory demand in half and slightly increases performance due to implicit bounce-back boundaries; offers optimal memory access patterns for single-cell in-place streaming
+    - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092): eliminates redundant copy `B` of density distribution functions (DDFs) in memory; almost cuts memory demand in half and slightly increases performance due to implicit bounce-back boundaries; offers optimal memory access patterns for single-cell in-place streaming
     - [decoupled arithmetic precision (FP32) and memory precision (FP32 or FP16S or FP16C)](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats): all arithmetic is done in FP32 for compatibility on all hardware, but DDFs in memory can be compressed to FP16S or FP16C: almost cuts memory demand in half again and almost doubles performance, without impacting overall accuracy for most setups
 - multi-GPU support on a single node (PC/laptop/server) via domain decomposition
   - allows pooling VRAM from multiple GPUs for much larger grid resolution
@@ -425,6 +425,7 @@ Multi-GPU benchmarks are done at the largest possible grid resolution with a cub
 |                               |                    |             |              |                        |                         |                         |
 | 1x Nvidia Tesla K40m          |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 | 2x Nvidia Tesla K40m          |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
+| 3x Tesla K40m + 1x Titan Xp   |              17.16 |          48 |         1154 |            3117 (2.8x) |             5174 (2.8x) |             3127 (3.4x) |
 |                               |                    |             |              |                        |                         |                         |
 | 1x Nvidia RTX A6000           |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
 | 2x Nvidia RTX A6000           |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
