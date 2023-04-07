@@ -184,7 +184,7 @@ void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, con
 	Memory<float3> p1(device, mesh->triangle_number, 1u, mesh->p1);
 	Memory<float3> p2(device, mesh->triangle_number, 1u, mesh->p2);
 	Memory<float> bounding_box_and_velocity(device, 16u);
-	const float x0=mesh->pmin.x, y0=mesh->pmin.y, z0=mesh->pmin.z, x1=mesh->pmax.x, y1=mesh->pmax.y, z1=mesh->pmax.z; // use bounding box of mesh to speed up voxelization
+	const float x0=mesh->pmin.x-2.0f, y0=mesh->pmin.y-2.0f, z0=mesh->pmin.z-2.0f, x1=mesh->pmax.x+2.0f, y1=mesh->pmax.y+2.0f, z1=mesh->pmax.z+2.0f; // use bounding box of mesh to speed up voxelization; add tolerance of 2 cells for re-voxelization of moving objects
 	bounding_box_and_velocity[ 0] = as_float(mesh->triangle_number);
 	bounding_box_and_velocity[ 1] = x0;
 	bounding_box_and_velocity[ 2] = y0;
