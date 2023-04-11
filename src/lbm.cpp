@@ -445,12 +445,14 @@ string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define def_background_color " +to_string(GRAPHICS_BACKGROUND_COLOR)+""
 	"\n	#define def_screen_width "     +to_string(camera.width)+"u"
 	"\n	#define def_screen_height "    +to_string(camera.height)+"u"
-	"\n	#define def_n "                +to_string(1.333f)+"f" // refractive index of water
 	"\n	#define def_scale_u "          +to_string(1.0f/(0.57735027f*(GRAPHICS_U_MAX)))+"f"
 	"\n	#define def_scale_Q_min "      +to_string(GRAPHICS_Q_CRITERION)+"f"
 	"\n	#define def_scale_F "          +to_string(GRAPHICS_BOUNDARY_FORCE_SCALE)+"f"
 	"\n	#define def_streamline_sparse "+to_string(GRAPHICS_STREAMLINE_SPARSE)+"u"
 	"\n	#define def_streamline_length "+to_string(GRAPHICS_STREAMLINE_LENGTH)+"u"
+	"\n	#define def_n "                +to_string(1.333f)+"f" // refractive index of water for raytracing graphics
+	"\n	#define def_attenuation "      +to_string(ln(GRAPHICS_RAYTRACING_TRANSMITTANCE)/(float)max(max(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()))+"f" // (negative) attenuation parameter for raytracing graphics
+	"\n	#define def_absorption_color " +to_string(GRAPHICS_RAYTRACING_COLOR)+"" // absorption color of fluid for raytracing graphics
 
 	"\n	#define COLOR_S (127<<16|127<<8|127)" // (stationary or moving) solid boundary
 	"\n	#define COLOR_E (  0<<16|255<<8|  0)" // equilibrium boundary (inflow/outflow)

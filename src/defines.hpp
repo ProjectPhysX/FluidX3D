@@ -36,6 +36,8 @@
 #define GRAPHICS_BOUNDARY_FORCE_SCALE 100.0f // scaling factor for visualization of forces on solid boundaries if VOLUME_FORCE is enabled and lbm.calculate_force_on_boundaries(); is called (default: 100.0f)
 #define GRAPHICS_STREAMLINE_SPARSE 4 // set how many streamlines there are every x lattice points
 #define GRAPHICS_STREAMLINE_LENGTH 128 // set maximum length of streamlines
+#define GRAPHICS_RAYTRACING_TRANSMITTANCE 0.25f // transmitted light fraction in raytracing graphics ("0.25f" = 1/4 of light is transmitted and 3/4 is absorbed along longest box side length, "1.0f" = no absorption)
+#define GRAPHICS_RAYTRACING_COLOR 0x005F7F // absorption color of fluid in raytracing graphics
 
 
 

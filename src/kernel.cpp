@@ -599,7 +599,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	camray.direction = p1-p0;
 	return camray;
 }
-)+R(uint skybox_bottom(const ray r, const uint skybox_color) {
+)+R(uint skybox_bottom(const ray r, const int c1, const int c2, const uint skybox_color) {
 	const float3 p0=(float3)(0.0f, 0.0f, -0.5f*(float)def_Nz), p1=(float3)(1.0f, 0.0f, -0.5f*(float)def_Nz), p2=(float3)(0.0f, 1.0f, -0.5f*(float)def_Nz);
 	const float distance = intersect_plane(r, p0, p1, p2);
 	if(distance>0.0f) { // ray intersects with bottom
@@ -609,7 +609,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 		int a = abs((int)floor(scale*intersection.x));
 		int b = abs((int)floor(scale*intersection.y));
 		const float r = scale*sqrt(sq(intersection.x)+sq(intersection.y));
-		return color_mix((a%2==b%2)*0xFFFFFF, skybox_color, clamp(2.0f/r, 0.0f, 1.0f));
+		const int w = (a%2==b%2);
+		return color_mix(w*c1+(1-w)*c2, color_mix(c1, c2, 0.5f), clamp(10.0f/r, 0.0f, 1.0f));
 	} else {
 		return skybox_color;
 	}
@@ -626,25 +627,28 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(uint skybox_color_sunset(const float x, const float y) {
 	return color_mix(255<<16|175<<8|55, y<0.5f ? 55<<16|111<<8|255 : 0, 2.0f*(0.5f-fabs(y-0.5f)));
 }
-)+R(uint skybox_color_grid(const float x, const float y) {
-	int a = (int)(36.0f*x);
-	int b = (int)(18.0f*y);
-	return 0xFFFFFF*(a%2==b%2);
+)+R(uint skybox_color_grid(const float x, const float y, const int c1, const int c2) {
+	int a = (int)(72.0f*x);
+	int b = (int)(36.0f*y);
+	const int w = (a%2==b%2);
+	return w*c1+(1-w)*c2;
 }
 )+R(uint skybox_color(const ray r, const global int* skybox) {
-	//const float x = fma(atan2(r.direction.x, r.direction.y),  0.5f/3.1415927f, 0.5f);
-	//const float y = fma(asin (r.direction.z               ), -1.0f/3.1415927f, 0.5f);
-	//return color_mix(skybox_color_hsv(x, y), skybox_color_grid(x, y), 0.95f-0.33f*(2.0f*(0.5f-fabs(y-0.5f))));
-	//return skybox_color_sunset(x, y);
-	const float fu = (float)def_skybox_width *fma(atan2(r.direction.x, r.direction.y),  0.5f/3.1415927f, 0.5f);
-	const float fv = (float)def_skybox_height*fma(asin (r.direction.z               ), -1.0f/3.1415927f, 0.5f);
+	const float3 direction = normalize(r.direction); // to avoid artifacts from asin(direction.z)
+	//const float x = fma(atan2(direction.x, direction.y),  0.5f/3.1415927f, 0.5f);
+	//const float y = fma(asin (direction.z             ), -1.0f/3.1415927f, 0.5f);
+	//return skybox_color_bw(x, y);
+	//return color_mix(skybox_color_hsv(x, y), skybox_color_grid(x, y, 0xFFFFFF, 0x000000), 0.95f-0.33f*(2.0f*(0.5f-fabs(y-0.5f))));
+	//return skybox_bottom(r, 0xFFFFFF, 0xF0F0F0, skybox_color_grid(x, y, 0xFFFFFF, 0xF0F0F0));
+	const float fu = (float)def_skybox_width *fma(atan2(direction.x, direction.y),  0.5f/3.1415927f, 0.5f);
+	const float fv = (float)def_skybox_height*fma(asin (direction.z             ), -1.0f/3.1415927f, 0.5f);
 	const int ua=clamp((int)fu, 0, (int)def_skybox_width-1), va=clamp((int)fv, 0, (int)def_skybox_height-1), ub=(ua+1)%def_skybox_width, vb=min(va+1, (int)def_skybox_height-1); // bilinear interpolation positions
 	const uint s00=skybox[ua+va*def_skybox_width], s01=skybox[ua+vb*def_skybox_width], s10=skybox[ub+va*def_skybox_width], s11=skybox[ub+vb*def_skybox_width];
 	const float u1=fu-(float)ua, v1=fv-(float)va, u0=1.0f-u1, v0=1.0f-v1; // interpolation factors
 	return color_mix(color_mix(s00, s01, v0), color_mix(s10, s11, v0), u0); // perform bilinear interpolation
 }
-)+R(uint last_ray_reflectivity(const ray reflection, const ray transmission, const uint last_color, const float reflectivity, const global int* skybox) {
-	return color_mix(skybox_color(reflection, skybox), skybox_color(transmission, skybox), reflectivity);
+)+R(uint last_ray_reflectivity(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global int* skybox) {
+	return color_mix(skybox_color(reflection, skybox), color_mix(skybox_color(transmission, skybox), def_absorption_color, transmissivity), reflectivity);
 }
 )+R(float ray_grid_traverse(const ray r, const global float* phi, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
 	const float3 pa = r.origin;
@@ -739,34 +743,38 @@ string opencl_c_container() { return R( // ########################## begin of O
 	ray_reflect->direction = reflect(ray_in.direction, normal);
 	return true;
 }
-)+R(bool raytrace_phi(const ray ray_in, ray* ray_reflect, ray* ray_transmit, float* reflectivity, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) {
+)+R(bool raytrace_phi(const ray ray_in, ray* ray_reflect, ray* ray_transmit, float* reflectivity, float* transmissivity, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) {
 	float3 normal;
 	float d = ray_grid_traverse(ray_in, phi, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
 	if(d==-1.0f) return false; // no intersection found
+	const float ray_in_normal = dot(ray_in.direction, normal);
+	const bool is_inside = ray_in_normal>0.0f; // camera is in fluid
 	ray_reflect->origin = ray_in.origin+(d-0.0003163f)*ray_in.direction; // start intersection points a bit in front triangle to avoid self-reflection
 	ray_reflect->direction = reflect(ray_in.direction, normal); // compute reflection ray
 	ray ray_internal; // compute internal ray and transmission ray
 	ray_internal.origin = ray_in.origin+(d+0.0003163f)*ray_in.direction; // start intersection points a bit behind triangle to avoid self-transmission
 	ray_internal.direction = refract(ray_in.direction, normal, def_n);
-	const bool is_inside = dot(ray_in.direction, normal)>0.0f; // camera is in fluid
+	const float wr = clamp(sq(cb(2.0f*acospi(fabs(ray_in_normal)))), 0.0f, 1.0f); // increase reflectivity if ray intersects surface at shallow angle
 	if(is_inside) { // swap ray_reflect and ray_internal
 		const float3 ray_internal_origin = ray_internal.origin;
-		ray_internal.origin = ray_reflect->origin; // start intersection points a bit in front triangle to avoid self-reflection
+		ray_internal.origin = ray_reflect->origin;
 		ray_internal.direction = ray_reflect->direction;
-		ray_reflect->origin = ray_internal_origin; // start intersection points a bit behind triangle to avoid self-transmission
-		ray_reflect->direction = refract(ray_in.direction, -normal, 1.0f/def_n);
+		ray_reflect->origin = ray_internal_origin; // re-use internal ray origin
+		ray_reflect->direction = refract(ray_in.direction, -normal, 1.0f/def_n); // compute refraction again: refract out of fluid
+		if(sq(1.0f/def_n)-1.0f+sq(ray_in_normal)>=0.0f) { // refraction through Snell's window
+			ray_transmit->origin = ray_reflect->origin; // reflection ray and transmission ray are the same
+			ray_transmit->direction = ray_reflect->direction;
+			*reflectivity = 0.0f;
+			*transmissivity = exp(def_attenuation*d); // Beer-Lambert law
+			return true;
+		}
 	}
-	const float wr = sq(cb(2.0f*acospi(fabs(dot(ray_in.direction, normal))))); // increase reflectivity if ray intersects surface at shallow angle
-	*reflectivity = clamp(is_inside ? 1.0f-wr : wr, 0.0f, 1.0f); // ray_reflect and ray_transmit are switched if camera is in fluid
-	d = ray_grid_traverse(ray_internal, phi, flags, &normal, Nx, Ny, Nz);
-	if(d!=-1.0f) { // internal ray intersects isosurface
-		const float3 intersection_point = ray_internal.origin+(d+0.0003163f)*ray_internal.direction; // start intersection points a bit behind triangle to avoid self-transmission
-		ray_transmit->origin = intersection_point;
-		ray_transmit->direction = refract(ray_internal.direction, -normal, 1.0f/def_n);
-	} else { // internal ray does not intersect again
-		ray_transmit->origin = ray_internal.origin;
-		ray_transmit->direction = ray_internal.direction;
-	}
+	float d_internal = d;
+	d = ray_grid_traverse(ray_internal, phi, flags, &normal, Nx, Ny, Nz); // 2nd ray-grid traversal call: refraction (camera outside) or total internal reflection (camera inside)
+	ray_transmit->origin = d!=-1.0f ? ray_internal.origin+(d+0.0003163f)*ray_internal.direction : ray_internal.origin; // start intersection points a bit behind triangle to avoid self-transmission
+	ray_transmit->direction = d!=-1.0f ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
+	*reflectivity = is_inside ? 0.0f : wr; // is_inside means camera is inside fluid, so this is a total internal reflection down here
+	*transmissivity = d!=-1.0f ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
 	return true;
 }
 )+R(bool is_above_plane(const float3 point, const float3 plane_p, const float3 plane_n) {
@@ -2597,25 +2605,24 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 }
 
-)+R(int raytrace_phi_next_ray(const ray reflection, const ray transmission, const int pixelcolor, const float reflectivity, const global float* phi, const global uchar* flags, const global int* skybox) {
-	int color_reflect=pixelcolor, color_transmit=pixelcolor;
+)+R(int raytrace_phi_next_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global float* phi, const global uchar* flags, const global int* skybox) {
+	int color_reflect=0, color_transmit=0;
 	ray reflection_next, transmission_next;
-	float reflection_reflectivity, transmission_reflectivity;
-	if(raytrace_phi(reflection, &reflection_next, &transmission_next, &reflection_reflectivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
-		color_reflect = last_ray_reflectivity(reflection_next, transmission_next, color_reflect, reflection_reflectivity, skybox);
+	float reflection_reflectivity, reflection_transmissivity, transmission_reflectivity, transmission_transmissivity;
+	if(raytrace_phi(reflection, &reflection_next, &transmission_next, &reflection_reflectivity, &reflection_transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
+		color_reflect = last_ray_reflectivity(reflection_next, transmission_next, reflection_reflectivity, reflection_transmissivity, skybox);
 	} else {
 		color_reflect = skybox_color(reflection, skybox);
 	}
-	if(raytrace_phi(transmission, &reflection_next, &transmission_next, &transmission_reflectivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
-		color_transmit = last_ray_reflectivity(reflection_next, transmission_next, color_transmit, transmission_reflectivity, skybox);
+	if(raytrace_phi(transmission, &reflection_next, &transmission_next, &transmission_reflectivity, &transmission_transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
+		color_transmit = last_ray_reflectivity(reflection_next, transmission_next, transmission_reflectivity, transmission_transmissivity, skybox);
 	} else {
 		color_transmit = skybox_color(transmission, skybox);
 	}
-	return color_mix(color_reflect, color_transmit, reflectivity);
+	return color_mix(color_reflect, color_mix(color_transmit, def_absorption_color, transmissivity), reflectivity);
 }
-
-)+R(int raytrace_phi_next_ray_mirror(const ray reflection, const int pixelcolor, const global float* phi, const global uchar* flags, const global int* skybox) {
-	int color_reflect = pixelcolor;
+)+R(int raytrace_phi_next_ray_mirror(const ray reflection, const global float* phi, const global uchar* flags, const global int* skybox) {
+	int color_reflect = 0;
 	ray reflection_next;
 	if(raytrace_phi_mirror(reflection, &reflection_next, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
 		color_reflect = skybox_color(reflection_next, skybox);
@@ -2637,20 +2644,20 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	ray camray = get_camray(x, y, camera_cache);
-	int pixelcolor = 0;
 	const float distance = intersect_cuboid(camray, (float3)(0.0f, 0.0f, 0.0f), (float)def_Nx, (float)def_Ny, (float)def_Nz);
 	camray.origin = camray.origin+fmax(distance, 0.0f)*camray.direction;
 	ray reflection, transmission; // reflection and transmission
-	float reflectivity;
-	if(raytrace_phi(camray, &reflection, &transmission, &reflectivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
-		pixelcolor = last_ray_reflectivity(reflection, transmission, pixelcolor, reflectivity, skybox); // 1 ray pass
-		//pixelcolor = raytrace_phi_next_ray(reflection, transmission, pixelcolor, reflectivity, phi, flags, skybox); // 2 ray passes
+	float reflectivity, transmissivity;
+	int pixelcolor = 0;
+	if(raytrace_phi(camray, &reflection, &transmission, &reflectivity, &transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
+		pixelcolor = last_ray_reflectivity(reflection, transmission, reflectivity, transmissivity, skybox); // 1 ray pass
+		//pixelcolor = raytrace_phi_next_ray(reflection, transmission, reflectivity, transmissivity, phi, flags, skybox); // 2 ray passes
 	} else {
 		pixelcolor = skybox_color(camray, skybox);
 	}
 	//if(raytrace_phi_mirror(camray, &reflection, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) { // reflection only
 	//	//pixelcolor = skybox_color(reflection, skybox); // 1 ray pass
-	//	pixelcolor = raytrace_phi_next_ray_mirror(reflection, pixelcolor, phi, flags, skybox); // 2 ray passes
+	//	pixelcolor = raytrace_phi_next_ray_mirror(reflection, phi, flags, skybox); // 2 ray passes
 	//} else {
 	//	pixelcolor = skybox_color(camray, skybox);
 	//}
