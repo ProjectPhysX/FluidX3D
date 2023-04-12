@@ -3,7 +3,7 @@
 The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper").
 
 <a href="https://youtu.be/o3TPN142HxM"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
-<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/aqG8qZ_Gc4U"><img src="https://img.youtube.com/vi/aqG8qZ_Gc4U/maxresdefault.jpg" width="50%"></img></a>
+<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/3JNVBQyetMA"><img src="https://img.youtube.com/vi/3JNVBQyetMA/maxresdefault.jpg" width="50%"></img></a>
 
 
 <details><summary>Update History</summary>
@@ -316,90 +316,97 @@ In consequence, the arithmetic intensity of this implementation is 2.37 (FP32/FP
 
 If your GPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
 
-| Device                        | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
-| :---------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
-| AMD Instinct MI250 (1 GCD)    |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
-| AMD Radeon VII                |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
-| Nvidia H100 PCIe 80GB         |              51.01 |          80 |         2000 |            11128 (85%) |             20624 (79%) |             13862 (53%) |
-| Nvidia A100 SXM4 80GB         |              19.49 |          80 |         2039 |            10228 (77%) |             18448 (70%) |             11197 (42%) |
-| Nvidia A100 SXM4 40GB         |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
-| Nvidia A100 PCIe 40GB         |              19.49 |          40 |         1555 |             8526 (84%) |             16035 (79%) |             11088 (55%) |
-| Nvidia Tesla V100 16GB        |              14.13 |          16 |          900 |             5128 (87%) |             10325 (88%) |              7683 (66%) |
-| Nvidia Quadro GV100           |              16.66 |          32 |          870 |             3442 (61%) |              6641 (59%) |              5863 (52%) |
-| Nvidia Tesla P100 16GB        |               9.52 |          16 |          732 |             3295 (69%) |              5950 (63%) |              4176 (44%) |
-| Nvidia Tesla P100 12GB        |               9.52 |          12 |          549 |             2427 (68%) |              4141 (58%) |              3999 (56%) |
-| Nvidia Tesla K40m             |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
-| Nvidia Tesla K80  (1 GPU)     |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
-| Nvidia Tesla K20c             |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
-| AMD Radeon RX 7900 XTX        |              61.44 |          24 |          960 |             3665 (58%) |              7644 (61%) |              7716 (62%) |
-| AMD Radeon RX 7900 XT         |              51.61 |          20 |          800 |             3013 (58%) |              5856 (56%) |              5986 (58%) |
-| AMD Radeon RX 6900 XT         |              23.04 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
-| AMD Radeon RX 6800 XT         |              20.74 |          16 |          512 |             2008 (60%) |              4241 (64%) |              4224 (64%) |
-| AMD Radeon RX 5700 XT         |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
-| AMD Radeon RX Vega 64         |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
-| AMD Radeon RX 580 4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
-| AMD Radeon HD 7850            |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
-| Intel Arc A770 LE             |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
-| Intel Arc A750 LE             |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
-| Nvidia GeForce RTX 4090       |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
-| Nvidia GeForce RTX 4080       |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
-| Nvidia GeForce RTX 3090 Ti    |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
-| Nvidia GeForce RTX 3090       |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
-| Nvidia GeForce RTX 3080 Ti    |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
-| Nvidia RTX A6000              |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
-| Nvidia GeForce RTX 3080       |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
-| Nvidia GeForce RTX 3070       |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
-| Nvidia GeForce RTX 3060 Ti    |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
-| Nvidia RTX A5000M             |              16.59 |          16 |          448 |             2228 (76%) |              4461 (77%) |              3662 (63%) |
-| Nvidia GeForce RTX 3060       |              13.17 |          12 |          360 |             2108 (90%) |              4070 (87%) |              3566 (76%) |
-| Nvidia GeForce RTX 3060M      |              10.94 |           6 |          336 |             2019 (92%) |              4012 (92%) |              3572 (82%) |
-| Nvidia GeForce RTX 3050M      |               7.13 |           4 |          192 |             1180 (94%) |              2339 (94%) |              2016 (81%) |
-| Nvidia Quadro RTX 6000        |              16.31 |          24 |          672 |             3307 (75%) |              6836 (78%) |              6879 (79%) |
-| Nvidia Quadro RTX 8000 Pass.  |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
-| Nvidia GeForce RTX 2080 Ti    |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
-| Nvidia GeForce RTX 2080 Sup.  |              11.34 |           8 |          496 |             2434 (75%) |              5284 (82%) |              5087 (79%) |
-| Nvidia Quadro RTX 5000        |              11.15 |          16 |          448 |             2341 (80%) |              4766 (82%) |              4773 (82%) |
-| Nvidia GeForce RTX 2060 Sup.  |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
-| Nvidia Quadro RTX 4000        |               7.12 |           8 |          416 |             2284 (84%) |              4584 (85%) |              4062 (75%) |
-| Nvidia GeForce RTX 2060 KO    |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
-| Nvidia GeForce RTX 2060       |               6.74 |           6 |          336 |             1681 (77%) |              3604 (83%) |              3571 (82%) |
-| Nvidia GeForce GTX 1660 Sup.  |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
-| Nvidia Tesla T4               |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
-| Nvidia GeForce GTX 1660 Ti    |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
-| Nvidia GeForce GTX 1660       |               5.07 |           6 |          192 |             1016 (81%) |              1924 (77%) |              1992 (80%) |
-| Nvidia GeForce GTX 1650M      |               3.20 |           4 |          128 |              706 (84%) |              1214 (73%) |              1400 (84%) |
-| Nvidia Titan Xp               |              12.15 |          12 |          548 |             2919 (82%) |              5495 (77%) |              5375 (76%) |
-| Nvidia GeForce GTX 1080 Ti    |              12.06 |          11 |          484 |             2631 (83%) |              4837 (77%) |              4877 (78%) |
-| Nvidia GeForce GTX 1080       |               9.78 |           8 |          320 |             1623 (78%) |              3100 (75%) |              3182 (77%) |
-| Nvidia GeForce GTX 1060M      |               4.44 |           6 |          192 |              983 (78%) |              1882 (75%) |              1803 (72%) |
-| Nvidia GeForce GTX 1050M Ti   |               2.49 |           4 |          112 |              631 (86%) |              1224 (84%) |              1115 (77%) |
-| Nvidia Quadro P1000           |               1.89 |           4 |           82 |              426 (79%) |               839 (79%) |               778 (73%) |
-| Nvidia GeForce GTX 970        |               4.17 |           4 |          224 |              980 (67%) |              1721 (59%) |              1623 (56%) |
-| Nvidia Quadro M4000           |               2.57 |           8 |          192 |              899 (72%) |              1519 (61%) |              1050 (42%) |
-| Nvidia Tesla M60 (1 GPU)      |               4.82 |           8 |          160 |              853 (82%) |              1571 (76%) |              1557 (75%) |
-| Nvidia GeForce GTX 960M       |               1.51 |           4 |           80 |              442 (84%) |               872 (84%) |               627 (60%) |
-| Nvidia Quadro K2000           |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
-| Nvidia GeForce GT 630 (OEM)   |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
-| Nvidia Quadro NVS 290         |               0.03 |       0.256 |            6 |                1 ( 2%) |                 1 ( 1%) |                 1 ( 1%) |
-| Apple M1 Pro GPU 16C 16GB     |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
-| AMD Radeon Vega 8 (4750G)     |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |
-| AMD Radeon Vega 8 (3500U)     |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
-| Intel UHD Graphics 630        |               0.46 |           7 |           51 |              151 (45%) |               301 (45%) |               187 (28%) |
-| Intel HD Graphics 5500        |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
-| Intel HD Graphics 4600        |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
-| Samsung ARM Mali-G72 MP18     |               0.24 |           4 |           29 |               14 ( 7%) |                17 ( 5%) |                12 ( 3%) |
-| 2x AMD EPYC 9654              |              29.49 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
-| Intel Xeon Phi 7210           |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
-| 4x Intel Xeon E5-4620 v4      |               2.69 |         512 |          273 |              460 (26%) |               275 ( 8%) |               239 ( 7%) |
-| 2x Intel Xeon E5-2630 v4      |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
-| 2x Intel Xeon E5-2623 v4      |               0.67 |          64 |          137 |              125 (14%) |                66 ( 4%) |                59 ( 3%) |
-| 2x Intel Xeon E5-2680 v3      |               1.92 |          64 |          137 |              209 (23%) |               305 (17%) |               281 (16%) |
-| Intel Core i9-10980XE         |               3.23 |         128 |           94 |              286 (47%) |               251 (21%) |               223 (18%) |
-| Intel Core i5-9600            |               0.60 |          16 |           43 |              146 (52%) |               127 (23%) |               147 (27%) |
-| Intel Core i7-8700K           |               0.71 |          16 |           51 |              152 (45%) |               134 (20%) |               116 (17%) |
-| Intel Core i7-7700HQ          |               0.36 |          12 |           38 |               81 (32%) |                82 (16%) |               108 (22%) |
-| Intel Core i7-4770            |               0.44 |          16 |           26 |              104 (62%) |                69 (21%) |                59 (18%) |
-| Intel Core i7-4720HQ          |               0.33 |          16 |           26 |               58 (35%) |                13 ( 4%) |                47 (14%) |
+Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
+
+| Device                                         | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
+| :--------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
+|                                                |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;Instinct&nbsp;MI250&nbsp;(1&nbsp;GCD)  |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
+| 🔴&nbsp;Radeon&nbsp;VII                        |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
+| 🟢&nbsp;H100&nbsp;PCIe&nbsp;80GB                |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |             20624 (79%) |             13862 (53%) |
+| 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |             18448 (70%) |             11197 (42%) |
+| 🟢&nbsp;A100&nbsp;SXM4&nbsp;40GB                |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
+| 🟢&nbsp;A100&nbsp;PCIe&nbsp;40GB                |              19.49 |          40 |         1555 |             8526 (84%) |             16035 (79%) |             11088 (55%) |
+| 🟢&nbsp;Tesla&nbsp;V100&nbsp;16GB               |              14.13 |          16 |          900 |             5128 (87%) |             10325 (88%) |              7683 (66%) |
+| 🟢&nbsp;Quadro&nbsp;GV100                       |              16.66 |          32 |          870 |             3442 (61%) |              6641 (59%) |              5863 (52%) |
+| 🟢&nbsp;Tesla&nbsp;P100&nbsp;16GB               |               9.52 |          16 |          732 |             3295 (69%) |              5950 (63%) |              4176 (44%) |
+| 🟢&nbsp;Tesla&nbsp;P100&nbsp;12GB               |               9.52 |          12 |          549 |             2427 (68%) |              4141 (58%) |              3999 (56%) |
+| 🟢&nbsp;Tesla&nbsp;K40m                         |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
+| 🟢&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)        |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
+| 🟢&nbsp;Tesla&nbsp;K20c                         |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
+|                                                |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XTX      |              61.44 |          24 |          960 |             3665 (58%) |              7644 (61%) |              7716 (62%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XT       |              51.61 |          20 |          800 |             3013 (58%) |              5856 (56%) |              5986 (58%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;6900&nbsp;XT       |              23.04 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;6800&nbsp;XT       |              20.74 |          16 |          512 |             2008 (60%) |              4241 (64%) |              4224 (64%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;5700&nbsp;XT       |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;Vega&nbsp;64       |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;4GB       |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850               |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
+| 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                  |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
+| 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                  |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090              |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
+| 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                  |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080              |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090&nbsp;Ti      |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090              |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;Ti      |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
+| 🟢&nbsp;RTX&nbsp;A6000                          |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080              |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3070              |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060&nbsp;Ti      |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
+| 🟢&nbsp;RTX&nbsp;A5000M                         |              16.59 |          16 |          448 |             2228 (76%) |              4461 (77%) |              3662 (63%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060              |              13.17 |          12 |          360 |             2108 (90%) |              4070 (87%) |              3566 (76%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060M             |              10.94 |           6 |          336 |             2019 (92%) |              4012 (92%) |              3572 (82%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050M             |               7.13 |           4 |          192 |             1180 (94%) |              2339 (94%) |              2016 (81%) |
+| 🟢&nbsp;Quadro&nbsp;RTX&nbsp;6000               |              16.31 |          24 |          672 |             3307 (75%) |              6836 (78%) |              6879 (79%) |
+| 🟢&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pass.    |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti      |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Sup.    |              11.34 |           8 |          496 |             2434 (75%) |              5284 (82%) |              5087 (79%) |
+| 🟢&nbsp;Quadro&nbsp;RTX&nbsp;5000               |              11.15 |          16 |          448 |             2341 (80%) |              4766 (82%) |              4773 (82%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;Sup.    |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
+| 🟢&nbsp;Quadro&nbsp;RTX&nbsp;4000               |               7.12 |           8 |          416 |             2284 (84%) |              4584 (85%) |              4062 (75%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;KO      |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060              |               6.74 |           6 |          336 |             1681 (77%) |              3604 (83%) |              3571 (82%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Sup.    |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
+| 🟢&nbsp;Tesla&nbsp;T4                           |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Ti      |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660              |               5.07 |           6 |          192 |             1016 (81%) |              1924 (77%) |              1992 (80%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1650M             |               3.20 |           4 |          128 |              706 (84%) |              1214 (73%) |              1400 (84%) |
+| 🟢&nbsp;Titan&nbsp;Xp                           |              12.15 |          12 |          548 |             2919 (82%) |              5495 (77%) |              5375 (76%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1080&nbsp;Ti      |              12.06 |          11 |          484 |             2631 (83%) |              4837 (77%) |              4877 (78%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1080              |               9.78 |           8 |          320 |             1623 (78%) |              3100 (75%) |              3182 (77%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1060M             |               4.44 |           6 |          192 |              983 (78%) |              1882 (75%) |              1803 (72%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1050M Ti          |               2.49 |           4 |          112 |              631 (86%) |              1224 (84%) |              1115 (77%) |
+| 🟢&nbsp;Quadro&nbsp;P1000                       |               1.89 |           4 |           82 |              426 (79%) |               839 (79%) |               778 (73%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;970               |               4.17 |           4 |          224 |              980 (67%) |              1721 (59%) |              1623 (56%) |
+| 🟢&nbsp;Quadro&nbsp;M4000                       |               2.57 |           8 |          192 |              899 (72%) |              1519 (61%) |              1050 (42%) |
+| 🟢&nbsp;Tesla&nbsp;M60&nbsp;(1&nbsp;GPU)        |               4.82 |           8 |          160 |              853 (82%) |              1571 (76%) |              1557 (75%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;960M              |               1.51 |           4 |           80 |              442 (84%) |               872 (84%) |               627 (60%) |
+| 🟢&nbsp;Quadro&nbsp;K2000                       |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
+| 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)     |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
+| 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                |               0.03 |       0.256 |            6 |                1 ( 2%) |                 1 ( 1%) |                 1 ( 1%) |
+|                                                |                    |             |              |                        |                         |                         |
+| 🟣&nbsp;M1&nbsp;Pro&nbsp;GPU&nbsp;16C&nbsp;16GB |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
+| 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(4750G)  |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |
+| 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(3500U)  |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
+| 🔵&nbsp;UHD&nbsp;Graphics&nbsp;630            |               0.46 |           7 |           51 |              151 (45%) |               301 (45%) |               187 (28%) |
+| 🔵&nbsp;HD&nbsp;Graphics&nbsp;5500            |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
+| 🔵&nbsp;HD&nbsp;Graphics&nbsp;4600            |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
+| 🟡&nbsp;ARM&nbsp;Mali-G72&nbsp;MP18             |               0.24 |           4 |           29 |               14 ( 7%) |                17 ( 5%) |                12 ( 3%) |
+|                                                |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                |              29.49 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
+| 🔵&nbsp;Xeon&nbsp;Phi&nbsp;7210               |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
+| 🔵&nbsp;4x&nbsp;Xeon&nbsp;E5-4620&nbsp;v4     |               2.69 |         512 |          273 |              460 (26%) |               275 ( 8%) |               239 ( 7%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2630&nbsp;v4     |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2623&nbsp;v4     |               0.67 |          64 |          137 |              125 (14%) |                66 ( 4%) |                59 ( 3%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2680&nbsp;v3     |               1.92 |          64 |          137 |              209 (23%) |               305 (17%) |               281 (16%) |
+| 🔵&nbsp;Core&nbsp;i9-10980XE                  |               3.23 |         128 |           94 |              286 (47%) |               251 (21%) |               223 (18%) |
+| 🔵&nbsp;Core&nbsp;i5-9600                     |               0.60 |          16 |           43 |              146 (52%) |               127 (23%) |               147 (27%) |
+| 🔵&nbsp;Core&nbsp;i7-8700K                    |               0.71 |          16 |           51 |              152 (45%) |               134 (20%) |               116 (17%) |
+| 🔵&nbsp;Core&nbsp;i7-7700HQ                   |               0.36 |          12 |           38 |               81 (32%) |                82 (16%) |               108 (22%) |
+| 🔵&nbsp;Core&nbsp;i7-4770                     |               0.44 |          16 |           26 |              104 (62%) |                69 (21%) |                59 (18%) |
+| 🔵&nbsp;Core&nbsp;i7-4720HQ                   |               0.33 |          16 |           26 |               58 (35%) |                13 ( 4%) |                47 (14%) |
 
 
 
@@ -407,39 +414,41 @@ If your GPU is not on the list yet, you can report your benchmarks [here](https:
 
 Multi-GPU benchmarks are done at the largest possible grid resolution with a cubic domain, and either 2x1x1, 2x2x1 or 2x2x2 of these cubic domains together. The percentages in brackets are single-GPU roofline model efficiency, and the multiplicator numbers in brackets are scaling factors relative to benchmarked single-GPU performance.
 
-| Device                        | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
-| :---------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
-|                               |                    |             |              |                        |                         |                         |
-| 1x AMD Instinct MI250 (1 GCD) |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
-| 1x AMD Instinct MI250 (2 GCD) |              90.52 |         128 |         3277 |            9460 (1.7x) |            14313 (1.6x) |            17338 (2.0x) |
-| 2x AMD Instinct MI250 (4 GCD) |             181.04 |         256 |         6554 |           16925 (3.0x) |            29163 (3.2x) |            29627 (3.5x) |
-| 4x AMD Instinct MI250 (8 GCD) |             362.08 |         512 |        13107 |           27350 (4.9x) |            52258 (5.8x) |            53521 (6.3x) |
-|                               |                    |             |              |                        |                         |                         |
-| 1x AMD Radeon VII             |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
-| 2x AMD Radeon VII             |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
-| 4x AMD Radeon VII             |              55.32 |          64 |         4096 |           12911 (2.6x) |            24273 (3.1x) |            17080 (3.2x) |
-| 8x AMD Radeon VII             |             110.64 |         128 |         8192 |           21946 (4.5x) |            30826 (4.0x) |            24572 (4.7x) |
-|                               |                    |             |              |                        |                         |                         |
-| 1x Nvidia A100 SXM4 40GB      |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
-| 2x Nvidia A100 SXM4 40GB      |              38.98 |          80 |         3110 |           13629 (1.6x) |            24620 (1.5x) |            18850 (1.7x) |
-| 4x Nvidia A100 SXM4 40GB      |              77.96 |         160 |         6220 |           17978 (2.1x) |            30604 (1.9x) |            30627 (2.7x) |
-|                               |                    |             |              |                        |                         |                         |
-| 1x Nvidia Tesla K40m          |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
-| 2x Nvidia Tesla K40m          |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
-| 3x Tesla K40m + 1x Titan Xp   |              17.16 |          48 |         1154 |            3117 (2.8x) |             5174 (2.8x) |             3127 (3.4x) |
-|                               |                    |             |              |                        |                         |                         |
-| 1x Nvidia RTX A6000           |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
-| 2x Nvidia RTX A6000           |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
-| 4x Nvidia RTX A6000           |             160.00 |         192 |         3072 |           14314 (3.2x) |            27915 (3.2x) |            27227 (3.2x) |
-| 8x Nvidia RTX A6000           |             320.00 |         384 |         6144 |           19311 (4.4x) |            40063 (4.5x) |            39004 (4.6x) |
-|                               |                    |             |              |                        |                         |                         |
-| 1x Nvidia Quadro RTX 8000 Pa. |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
-| 2x Nvidia Quadro RTX 8000 Pa. |              29.86 |          96 |         1248 |            4767 (1.8x) |             9607 (1.8x) |            10214 (1.8x) |
-|                               |                    |             |              |                        |                         |                         |
-| 1x Nvidia GeForce RTX 2080 Ti |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
-| 2x Nvidia GeForce RTX 2080 Ti |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
-| 4x Nvidia GeForce RTX 2080 Ti |              53.80 |          44 |         2464 |            9117 (2.9x) |            18415 (2.7x) |            18598 (2.7x) |
-| 7x RTX 2080 Ti + 1x A100 40GB |             107.60 |          88 |         4928 |           16146 (5.1x) |            33732 (5.0x) |            33857 (4.9x) |
+Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
+
+| Device                                                         | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
+| :------------------------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI250&nbsp;(1&nbsp;GCD)          |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI250&nbsp;(2&nbsp;GCD)          |              90.52 |         128 |         3277 |            9460 (1.7x) |            14313 (1.6x) |            17338 (2.0x) |
+| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI250&nbsp;(4&nbsp;GCD)          |             181.04 |         256 |         6554 |           16925 (3.0x) |            29163 (3.2x) |            29627 (3.5x) |
+| 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI250&nbsp;(8&nbsp;GCD)          |             362.08 |         512 |        13107 |           27350 (4.9x) |            52258 (5.8x) |            53521 (6.3x) |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;1x&nbsp;Radeon&nbsp;VII                                |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
+| 🔴&nbsp;2x&nbsp;Radeon&nbsp;VII                                |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
+| 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                |              55.32 |          64 |         4096 |           12911 (2.6x) |            24273 (3.1x) |            17080 (3.2x) |
+| 🔴&nbsp;8x&nbsp;Radeon&nbsp;VII                                |             110.64 |         128 |         8192 |           21946 (4.5x) |            30826 (4.0x) |            24572 (4.7x) |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
+| 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |           13629 (1.6x) |            24620 (1.5x) |            18850 (1.7x) |
+| 🟢&nbsp;4x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              77.96 |         160 |         6220 |           17978 (2.1x) |            30604 (1.9x) |            30627 (2.7x) |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K40m                                 |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
+| 🟢&nbsp;2x&nbsp;Tesla&nbsp;K40m                                 |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
+| 🟢&nbsp;3x&nbsp;K40m&nbsp;+&nbsp;1x&nbsp;Titan&nbsp;Xp          |              17.16 |          48 |         1154 |            3117 (2.8x) |             5174 (2.8x) |             3127 (3.4x) |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;RTX&nbsp;A6000                                  |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
+| 🟢&nbsp;2x&nbsp;RTX&nbsp;A6000                                  |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
+| 🟢&nbsp;4x&nbsp;RTX&nbsp;A6000                                  |             160.00 |         192 |         3072 |           14314 (3.2x) |            27915 (3.2x) |            27227 (3.2x) |
+| 🟢&nbsp;8x&nbsp;RTX&nbsp;A6000                                  |             320.00 |         384 |         6144 |           19311 (4.4x) |            40063 (4.5x) |            39004 (4.6x) |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
+| 🟢&nbsp;2x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              29.86 |          96 |         1248 |            4767 (1.8x) |             9607 (1.8x) |            10214 (1.8x) |
+|                                                                |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
+| 🟢&nbsp;2x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
+| 🟢&nbsp;4x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              53.80 |          44 |         2464 |            9117 (2.9x) |            18415 (2.7x) |            18598 (2.7x) |
+| 🟢&nbsp;7x&nbsp;2080&nbsp;Ti&nbsp;+&nbsp;1x&nbsp;A100&nbsp;40GB |             107.60 |          88 |         4928 |           16146 (5.1x) |            33732 (5.0x) |            33857 (4.9x) |
 
 
 
