@@ -3,7 +3,7 @@
 The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper").
 
 <a href="https://youtu.be/o3TPN142HxM"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
-<a href="https://youtu.be/NQPgumd3Ei8"><img src="https://img.youtube.com/vi/NQPgumd3Ei8/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/aqG8qZ_Gc4U"><img src="https://img.youtube.com/vi/aqG8qZ_Gc4U/maxresdefault.jpg" width="50%"></img></a>
+<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/aqG8qZ_Gc4U"><img src="https://img.youtube.com/vi/aqG8qZ_Gc4U/maxresdefault.jpg" width="50%"></img></a>
 
 
 <details><summary>Update History</summary>
@@ -61,10 +61,13 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
 
 ## Compute Features
 
-- CFD model: lattice Boltzmann method (LBM)
-  <details><summary>&#9900; &nbsp;streaming (part 2/2)</summary><p align="center"><i>f</i><sub>0</sub><sup>temp</sup>(<i>x</i>,<i>t</i>) = <i>f</i><sub>0</sub>(<i>x</i>, <i>t</i>)<br><i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>) = <i>f</i><sub>(<i>t</i>%2 ? <i>i</i> : (<i>i</i>%2 ? <i>i</i>+1 : <i>i</i>-1))</sub>(<i>i</i>%2 ? <i>x</i> : <i>x</i>-<i>e<sub>i</sub></i>, <i>t</i>) &nbsp; for &nbsp; <i>i</i> &isin; [1, <i>q</i>-1]</p></details>
-  <details><summary>&#9900; &nbsp;collision</summary><p align="center"><i>&rho;</i>(<i>x</i>,<i>t</i>) = (&Sigma;<sub><i>i</i></sub> <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>)) + 1<br><br><i>u</i>(<i>x</i>,<i>t</i>) = <sup>1</sup>&#8725;<sub><i>&rho;</i>(<i>x</i>,<i>t</i>)</sub> &Sigma;<sub><i>i</i></sub> <i>c<sub>i</sub></i> <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>)<br><br><i>f<sub>i</sub></i><sup>eq-shifted</sup>(<i>x</i>,<i>t</i>) = <i>w<sub>i</sub></i> <i>&rho;</i> · (<sup>(<i>u</i><sub>°</sub><i>c<sub>i</sub></i>)<sup>2</sup></sup>&#8725;<sub>(2<i>c</i><sup>4</sup>)</sub> - <sup>(<i>u</i><sub>°</sub><i>u</i>)</sup>&#8725;<sub>(2c<sup>2</sup>)</sub> + <sup>(<i>u</i><sub>°</sub><i>c<sub>i</sub></i>)</sup>&#8725;<sub><i>c</i><sup>2</sup></sub>) + <i>w<sub>i</sub></i> (<i>&rho;</i>-1)<br><br><i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>) + <i>&Omega;<sub>i</sub></i>(<i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>), <i>f<sub>i</sub></i><sup>eq-shifted</sup>(<i>x</i>,<i>t</i>), <i>&tau;</i>)</p></details>
-  <details><summary>&#9900; &nbsp;streaming (part 1/2)</summary><p align="center"><i>f</i><sub>0</sub>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f</i><sub>0</sub><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>)<br><i>f</i><sub>(<i>t</i>%2 ? (<i>i</i>%2 ? <i>i</i>+1 : <i>i</i>-1) : <i>i</i>)</sub>(<i>i</i>%2 ? <i>x</i>+<i>e<sub>i</sub></i> : <i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) &nbsp; for &nbsp; <i>i</i> &isin; [1, <i>q</i>-1]</p></details>
+- <details><summary>CFD model: lattice Boltzmann method (LBM)</summary>
+
+  - streaming (part 2/2)<p align="center"><i>f</i><sub>0</sub><sup>temp</sup>(<i>x</i>,<i>t</i>) = <i>f</i><sub>0</sub>(<i>x</i>, <i>t</i>)<br><i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>) = <i>f</i><sub>(<i>t</i>%2 ? <i>i</i> : (<i>i</i>%2 ? <i>i</i>+1 : <i>i</i>-1))</sub>(<i>i</i>%2 ? <i>x</i> : <i>x</i>-<i>e<sub>i</sub></i>, <i>t</i>) &nbsp; for &nbsp; <i>i</i> &isin; [1, <i>q</i>-1]</p>
+  - collision<p align="center"><i>&rho;</i>(<i>x</i>,<i>t</i>) = (&Sigma;<sub><i>i</i></sub> <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>)) + 1<br><br><i>u</i>(<i>x</i>,<i>t</i>) = <sup>1</sup>&#8725;<sub><i>&rho;</i>(<i>x</i>,<i>t</i>)</sub> &Sigma;<sub><i>i</i></sub> <i>c<sub>i</sub></i> <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>)<br><br><i>f<sub>i</sub></i><sup>eq-shifted</sup>(<i>x</i>,<i>t</i>) = <i>w<sub>i</sub></i> <i>&rho;</i> · (<sup>(<i>u</i><sub>°</sub><i>c<sub>i</sub></i>)<sup>2</sup></sup>&#8725;<sub>(2<i>c</i><sup>4</sup>)</sub> - <sup>(<i>u</i><sub>°</sub><i>u</i>)</sup>&#8725;<sub>(2c<sup>2</sup>)</sub> + <sup>(<i>u</i><sub>°</sub><i>c<sub>i</sub></i>)</sup>&#8725;<sub><i>c</i><sup>2</sup></sub>) + <i>w<sub>i</sub></i> (<i>&rho;</i>-1)<br><br><i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>) + <i>&Omega;<sub>i</sub></i>(<i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>,<i>t</i>), <i>f<sub>i</sub></i><sup>eq-shifted</sup>(<i>x</i>,<i>t</i>), <i>&tau;</i>)</p>
+  - streaming (part 1/2)<p align="center"><i>f</i><sub>0</sub>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f</i><sub>0</sub><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>)<br><i>f</i><sub>(<i>t</i>%2 ? (<i>i</i>%2 ? <i>i</i>+1 : <i>i</i>-1) : <i>i</i>)</sub>(<i>i</i>%2 ? <i>x</i>+<i>e<sub>i</sub></i> : <i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) &nbsp; for &nbsp; <i>i</i> &isin; [1, <i>q</i>-1]</p>
+
+</details>
 
 <!-- markdown equations don't render properly in mobile browser
   - streaming (part 2/2):
@@ -82,128 +85,119 @@ $$j=t\\%2\\ ?\\ (i\\%2\\ ?\\ i+1\\ :\\ i-1)\\ :\\ i\\ \textrm{for}\\ i\in[1,q-1]
 $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{temp}(\vec{x},\\ t+\Delta t)$$
  -->
 
-- peak performance on GPUs (datacenter/gaming/professional/laptop), validated with roofline model
-- optimized to minimize memory demand:
-  - traditional LBM (D3Q19) with FP64 requires ~344 Bytes/cell
-    ```
-    🟧🟧🟧🟧🟧🟧🟧🟧🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦
-    🟨🟨🟨🟨🟨🟨🟨🟨🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-    🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-    🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-    🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-    🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-    🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
-    🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
-    🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
-    🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
-    🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥
+- <details><summary>optimized to minimize VRAM footprint to 1/6 of other LBM codes</summary>
 
-    (density 🟧, velocity 🟦, flags 🟨, 2 copies of DDFs 🟩/🟥; each square = 1 Byte)
-    ```
+  - traditional LBM (D3Q19) with FP64 requires ~344 Bytes/cell<br>
+    - 🟧🟧🟧🟧🟧🟧🟧🟧🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟨🟨🟨🟨🟨🟨🟨🟨🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥<br>(density 🟧, velocity 🟦, flags 🟨, 2 copies of DDFs 🟩/🟥; each square = 1 Byte)
     - allows for 3 Million cells per 1 GB VRAM
-  - FluidX3D (D3Q19) requires only 55 Bytes/cell with [Esoteric-Pull](https://doi.org/10.3390/computation10060092)+[FP16](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)
-    ```
-    🟧🟧🟧🟧🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟨🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-    🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-
-    (density 🟧, velocity 🟦, flags 🟨, DDFs 🟩; each square = 1 Byte)
-    ```
+  - FluidX3D (D3Q19) requires only 55 Bytes/cell with [Esoteric-Pull](https://doi.org/10.3390/computation10060092)+[FP16](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)<br>
+    - 🟧🟧🟧🟧🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟨🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩<br>(density 🟧, velocity 🟦, flags 🟨, DDFs 🟩; each square = 1 Byte)
     - allows for 19 Million cells per 1 GB VRAM
     - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092): eliminates redundant copy `B` of density distribution functions (DDFs) in memory; almost cuts memory demand in half and slightly increases performance due to implicit bounce-back boundaries; offers optimal memory access patterns for single-cell in-place streaming
     - [decoupled arithmetic precision (FP32) and memory precision (FP32 or FP16S or FP16C)](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats): all arithmetic is done in FP32 for compatibility on all hardware, but DDFs in memory can be compressed to FP16S or FP16C: almost cuts memory demand in half again and almost doubles performance, without impacting overall accuracy for most setups
-- multi-GPU support on a single node (PC/laptop/server) via domain decomposition
-  - allows pooling VRAM from multiple GPUs for much larger grid resolution
-  - each domain (GPU) can hold up to 4.29 billion (2³², 1624³) lattice points (225 GB memory)
-  - GPUs don't have to be identical (not even from the same vendor), but similar VRAM capacity/bandwidth is recommended
-  <details><summary>&#9900; &nbsp;domain communication architecture (simplified)</summary>
+  - large cost saving: comparison of maximum single-GPU grid resolution for D3Q19 LBM
 
-  ```diff
-  ++   .-----------------------------------------------------------------.   ++
-  ++   |                              GPU 0                              |   ++
-  ++   |                          LBM Domain 0                           |   ++
-  ++   '-----------------------------------------------------------------'   ++
-  ++              |                 selective                /|\             ++
-  ++             \|/               in-VRAM copy               |              ++
-  ++        .-------------------------------------------------------.        ++
-  ++        |               GPU 0 - Transfer Buffer 0               |        ++
-  ++        '-------------------------------------------------------'        ++
-  !!                            |     PCIe     /|\                           !!
-  !!                           \|/    copy      |                            !!
-  @@        .-------------------------.   .-------------------------.        @@
-  @@        | CPU - Transfer Buffer 0 |   | CPU - Transfer Buffer 1 |        @@
-  @@        '-------------------------'\ /'-------------------------'        @@
-  @@                           pointer  X   swap                             @@
-  @@        .-------------------------./ \.-------------------------.        @@
-  @@        | CPU - Transfer Buffer 1 |   | CPU - Transfer Buffer 0 |        @@
-  @@        '-------------------------'   '-------------------------'        @@
-  !!                           /|\    PCIe      |                            !!
-  !!                            |     copy     \|/                           !!
-  ++        .-------------------------------------------------------.        ++
-  ++        |               GPU 1 - Transfer Buffer 1               |        ++
-  ++        '-------------------------------------------------------'        ++
-  ++             /|\                selective                 |              ++
-  ++              |                in-VRAM copy              \|/             ++
-  ++   .-----------------------------------------------------------------.   ++
-  ++   |                              GPU 1                              |   ++
-  ++   |                          LBM Domain 1                           |   ++
-  ++   '-----------------------------------------------------------------'   ++
-  ##                                    |                                    ##
-  ##                      domain synchronization barrier                     ##
-  ##                                    |                                    ##
-  ||   -------------------------------------------------------------> time   ||
-  ```
-
-  </details><details><summary>&#9900; &nbsp;domain communication architecture (detailed)</summary>
-
-  ```diff
-  ++   .-----------------------------------------------------------------.   ++
-  ++   |                              GPU 0                              |   ++
-  ++   |                          LBM Domain 0                           |   ++
-  ++   '-----------------------------------------------------------------'   ++
-  ++     |  selective in- /|\  |  selective in- /|\  |  selective in- /|\    ++
-  ++    \|/ VRAM copy (X)  |  \|/ VRAM copy (Y)  |  \|/ VRAM copy (Z)  |     ++
-  ++   .---------------------.---------------------.---------------------.   ++
-  ++   |    GPU 0 - TB 0X+   |    GPU 0 - TB 0Y+   |    GPU 0 - TB 0Z+   |   ++
-  ++   |    GPU 0 - TB 0X-   |    GPU 0 - TB 0Y-   |    GPU 0 - TB 0Z-   |   ++
-  ++   '---------------------'---------------------'---------------------'   ++
-  !!          | PCIe /|\            | PCIe /|\            | PCIe /|\         !!
-  !!         \|/ copy |            \|/ copy |            \|/ copy |          !!
-  @@   .---------. .---------.---------. .---------.---------. .---------.   @@
-  @@   | CPU 0X+ | | CPU 1X- | CPU 0Y+ | | CPU 3Y- | CPU 0Z+ | | CPU 5Z- |   @@
-  @@   | CPU 0X- | | CPU 2X+ | CPU 0Y- | | CPU 4Y+ | CPU 0Z- | | CPU 6Z+ |   @@
-  @@   '---------\ /---------'---------\ /---------'---------\ /---------'   @@
-  @@      pointer X swap (X)    pointer X swap (Y)    pointer X swap (Z)     @@
-  @@   .---------/ \---------.---------/ \---------.---------/ \---------.   @@
-  @@   | CPU 1X- | | CPU 0X+ | CPU 3Y- | | CPU 0Y+ | CPU 5Z- | | CPU 0Z+ |   @@
-  @@   | CPU 2X+ | | CPU 0X- | CPU 4Y+ | | CPU 0Y- | CPU 6Z+ | | CPU 0Z- |   @@
-  @@   '---------' '---------'---------' '---------'---------' '---------'   @@
-  !!         /|\ PCIe |            /|\ PCIe |            /|\ PCIe |          !!
-  !!          | copy \|/            | copy \|/            | copy \|/         !!
-  ++   .--------------------..---------------------..--------------------.   ++
-  ++   |   GPU 1 - TB 1X-   ||    GPU 3 - TB 3Y-   ||   GPU 5 - TB 5Z-   |   ++
-  ++   :====================::=====================::====================:   ++
-  ++   |   GPU 2 - TB 2X+   ||    GPU 4 - TB 4Y+   ||   GPU 6 - TB 6Z+   |   ++
-  ++   '--------------------''---------------------''--------------------'   ++
-  ++    /|\ selective in-  |  /|\ selective in-  |  /|\ selective in-  |     ++
-  ++     |  VRAM copy (X) \|/  |  VRAM copy (Y) \|/  |  VRAM copy (Z) \|/    ++
-  ++   .--------------------..---------------------..--------------------.   ++
-  ++   |        GPU 1       ||        GPU 3        ||        GPU 5       |   ++
-  ++   |    LBM Domain 1    ||    LBM Domain 3     ||    LBM Domain 5    |   ++
-  ++   :====================::=====================::====================:   ++
-  ++   |        GPU 2       ||        GPU 4        ||        GPU 6       |   ++
-  ++   |    LBM Domain 2    ||    LBM Domain 4     ||    LBM Domain 6    |   ++
-  ++   '--------------------''---------------------''--------------------'   ++
-  ##              |                     |                     |              ##
-  ##              |      domain synchronization barriers      |              ##
-  ##              |                     |                     |              ##
-  ||   -------------------------------------------------------------> time   ||
-  ```
+    | GPU&nbsp;VRAM&nbsp;capacity      | 1&nbsp;GB | 2&nbsp;GB | 3&nbsp;GB | 4&nbsp;GB | 6&nbsp;GB | 8&nbsp;GB | 10&nbsp;GB | 11&nbsp;GB | 12&nbsp;GB | 16&nbsp;GB | 20&nbsp;GB | 24&nbsp;GB | 32&nbsp;GB | 40&nbsp;GB | 48&nbsp;GB | 64&nbsp;GB | 80&nbsp;GB | 94&nbsp;GB | 128&nbsp;GB | 192&nbsp;GB | 256&nbsp;GB |
+    | :------------------------------- | --------: | --------: | --------: | --------: | --------: | --------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ----------: | ----------: | ----------: |
+    | approximate&nbsp;GPU&nbsp;price  | $25<br>GT&nbsp;210 | $25<br>GTX&nbsp;950 | $12<br>GTX&nbsp;1060 | $50<br>GT&nbsp;730 | $35<br>GTX&nbsp;1060 | $70<br>RX&nbsp;470 | $500<br>RTX&nbsp;3080 | $240<br>GTX&nbsp;1080&nbsp;Ti | $75<br>Tesla&nbsp;M40 | $75<br>Instinct&nbsp;MI25 | $900<br>RX&nbsp;7900&nbsp;XT | $205<br>Tesla&nbsp;P40 | $600<br>Instinct&nbsp;MI60 | $5500<br>A100 | $2400<br>RTX&nbsp;8000 | $31k<br>Instinct&nbsp;MI210 | $11k<br>A100 | >$40k<br>H100&nbsp;NVL | ?<br>Max&nbsp;Series&nbsp;1550 | - | - |
+    | traditional&nbsp;LBM&nbsp;(FP64) |      144³ |      182³ |      208³ |      230³ |      262³ |      288³ |       312³ |       322³ |       330³ |       364³ |       392³ |       418³ |       460³ |       494³ |       526³ |       578³ |       624³ |       658³ |        730³ |        836³ |        920³ |
+    | FluidX3D&nbsp;(FP32/FP32)        |      224³ |      282³ |      322³ |      354³ |      406³ |      448³ |       482³ |       498³ |       512³ |       564³ |       608³ |       646³ |       710³ |       766³ |       814³ |       896³ |       966³ |      1018³ |       1130³ |       1292³ |       1422³ |
+    | FluidX3D&nbsp;(FP32/FP16)        |      266³ |      336³ |      384³ |      424³ |      484³ |      534³ |       574³ |       594³ |       610³ |       672³ |       724³ |       770³ |       848³ |       912³ |       970³ |      1068³ |      1150³ |      1214³ |       1346³ |       1540³ |       1624³ |
 
   </details>
+- <details><summary>cross-vendor multi-GPU support on a single PC/laptop/server</summary>
+
+  - domain decomposition allows pooling VRAM from multiple GPUs for much larger grid resolution
+  - each domain (GPU) can hold up to 4.29 billion (2³², 1624³) lattice points (225 GB memory)
+  - GPUs don't have to be identical (not even from the same vendor), but similar VRAM capacity/bandwidth is recommended
+  - domain communication architecture (simplified)
+    ```diff
+    ++   .-----------------------------------------------------------------.   ++
+    ++   |                              GPU 0                              |   ++
+    ++   |                          LBM Domain 0                           |   ++
+    ++   '-----------------------------------------------------------------'   ++
+    ++              |                 selective                /|\             ++
+    ++             \|/               in-VRAM copy               |              ++
+    ++        .-------------------------------------------------------.        ++
+    ++        |               GPU 0 - Transfer Buffer 0               |        ++
+    ++        '-------------------------------------------------------'        ++
+    !!                            |     PCIe     /|\                           !!
+    !!                           \|/    copy      |                            !!
+    @@        .-------------------------.   .-------------------------.        @@
+    @@        | CPU - Transfer Buffer 0 |   | CPU - Transfer Buffer 1 |        @@
+    @@        '-------------------------'\ /'-------------------------'        @@
+    @@                           pointer  X   swap                             @@
+    @@        .-------------------------./ \.-------------------------.        @@
+    @@        | CPU - Transfer Buffer 1 |   | CPU - Transfer Buffer 0 |        @@
+    @@        '-------------------------'   '-------------------------'        @@
+    !!                           /|\    PCIe      |                            !!
+    !!                            |     copy     \|/                           !!
+    ++        .-------------------------------------------------------.        ++
+    ++        |               GPU 1 - Transfer Buffer 1               |        ++
+    ++        '-------------------------------------------------------'        ++
+    ++             /|\                selective                 |              ++
+    ++              |                in-VRAM copy              \|/             ++
+    ++   .-----------------------------------------------------------------.   ++
+    ++   |                              GPU 1                              |   ++
+    ++   |                          LBM Domain 1                           |   ++
+    ++   '-----------------------------------------------------------------'   ++
+    ##                                    |                                    ##
+    ##                      domain synchronization barrier                     ##
+    ##                                    |                                    ##
+    ||   -------------------------------------------------------------> time   ||
+    ```
+  - domain communication architecture (detailed)
+    ```diff
+    ++   .-----------------------------------------------------------------.   ++
+    ++   |                              GPU 0                              |   ++
+    ++   |                          LBM Domain 0                           |   ++
+    ++   '-----------------------------------------------------------------'   ++
+    ++     |  selective in- /|\  |  selective in- /|\  |  selective in- /|\    ++
+    ++    \|/ VRAM copy (X)  |  \|/ VRAM copy (Y)  |  \|/ VRAM copy (Z)  |     ++
+    ++   .---------------------.---------------------.---------------------.   ++
+    ++   |    GPU 0 - TB 0X+   |    GPU 0 - TB 0Y+   |    GPU 0 - TB 0Z+   |   ++
+    ++   |    GPU 0 - TB 0X-   |    GPU 0 - TB 0Y-   |    GPU 0 - TB 0Z-   |   ++
+    ++   '---------------------'---------------------'---------------------'   ++
+    !!          | PCIe /|\            | PCIe /|\            | PCIe /|\         !!
+    !!         \|/ copy |            \|/ copy |            \|/ copy |          !!
+    @@   .---------. .---------.---------. .---------.---------. .---------.   @@
+    @@   | CPU 0X+ | | CPU 1X- | CPU 0Y+ | | CPU 3Y- | CPU 0Z+ | | CPU 5Z- |   @@
+    @@   | CPU 0X- | | CPU 2X+ | CPU 0Y- | | CPU 4Y+ | CPU 0Z- | | CPU 6Z+ |   @@
+    @@   '---------\ /---------'---------\ /---------'---------\ /---------'   @@
+    @@      pointer X swap (X)    pointer X swap (Y)    pointer X swap (Z)     @@
+    @@   .---------/ \---------.---------/ \---------.---------/ \---------.   @@
+    @@   | CPU 1X- | | CPU 0X+ | CPU 3Y- | | CPU 0Y+ | CPU 5Z- | | CPU 0Z+ |   @@
+    @@   | CPU 2X+ | | CPU 0X- | CPU 4Y+ | | CPU 0Y- | CPU 6Z+ | | CPU 0Z- |   @@
+    @@   '---------' '---------'---------' '---------'---------' '---------'   @@
+    !!         /|\ PCIe |            /|\ PCIe |            /|\ PCIe |          !!
+    !!          | copy \|/            | copy \|/            | copy \|/         !!
+    ++   .--------------------..---------------------..--------------------.   ++
+    ++   |   GPU 1 - TB 1X-   ||    GPU 3 - TB 3Y-   ||   GPU 5 - TB 5Z-   |   ++
+    ++   :====================::=====================::====================:   ++
+    ++   |   GPU 2 - TB 2X+   ||    GPU 4 - TB 4Y+   ||   GPU 6 - TB 6Z+   |   ++
+    ++   '--------------------''---------------------''--------------------'   ++
+    ++    /|\ selective in-  |  /|\ selective in-  |  /|\ selective in-  |     ++
+    ++     |  VRAM copy (X) \|/  |  VRAM copy (Y) \|/  |  VRAM copy (Z) \|/    ++
+    ++   .--------------------..---------------------..--------------------.   ++
+    ++   |        GPU 1       ||        GPU 3        ||        GPU 5       |   ++
+    ++   |    LBM Domain 1    ||    LBM Domain 3     ||    LBM Domain 5    |   ++
+    ++   :====================::=====================::====================:   ++
+    ++   |        GPU 2       ||        GPU 4        ||        GPU 6       |   ++
+    ++   |    LBM Domain 2    ||    LBM Domain 4     ||    LBM Domain 6    |   ++
+    ++   '--------------------''---------------------''--------------------'   ++
+    ##              |                     |                     |              ##
+    ##              |      domain synchronization barriers      |              ##
+    ##              |                     |                     |              ##
+    ||   -------------------------------------------------------------> time   ||
+    ```
+
+  </details>
+- [peak performance on GPUs](#single-gpu-benchmarks) (datacenter/gaming/professional/laptop), validated with roofline model
 - [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) and other algebraic optimization to minimize round-off error
 - velocity sets: D2Q9, D3Q15, D3Q19 (default), D3Q27
 - collision operators: single-relaxation-time (SRT/BGK) (default), two-relaxation-time (TRT)
-- only 8 flag bits per lattice point (can be used independently / at the same time):
+- <details><summary>only 8 flag bits per lattice point (can be used independently / at the same time)</summary>
+
   - `TYPE_S` (stationary or moving) solid boundaries
   - `TYPE_E` equilibrium boundaries (inflow/outflow)
   - `TYPE_T` temperature boundaries
@@ -212,6 +206,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - `TYPE_G` free surface (gas)
   - `TYPE_X` remaining for custom use or further extensions
   - `TYPE_Y` remaining for custom use or further extensions
+
+  </details>
 
 
 
@@ -444,35 +440,6 @@ Multi-GPU benchmarks are done at the largest possible grid resolution with a cub
 | 2x Nvidia GeForce RTX 2080 Ti |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
 | 4x Nvidia GeForce RTX 2080 Ti |              53.80 |          44 |         2464 |            9117 (2.9x) |            18415 (2.7x) |            18598 (2.7x) |
 | 7x RTX 2080 Ti + 1x A100 40GB |             107.60 |          88 |         4928 |           16146 (5.1x) |            33732 (5.0x) |            33857 (4.9x) |
-
-
-
-## Maximum Single-Domain Grid Resolution for D3Q19 LBM
-
-| Memory | FP32/FP32 | FP32/FP16 |
-| -----: | --------: | --------: |
-|   1 GB |      224³ |      266³ |
-|   2 GB |      282³ |      336³ |
-|   3 GB |      322³ |      384³ |
-|   4 GB |      354³ |      424³ |
-|   6 GB |      406³ |      484³ |
-|   8 GB |      448³ |      534³ |
-|  10 GB |      482³ |      574³ |
-|  11 GB |      498³ |      594³ |
-|  12 GB |      512³ |      610³ |
-|  16 GB |      564³ |      672³ |
-|  20 GB |      608³ |      724³ |
-|  24 GB |      646³ |      770³ |
-|  32 GB |      710³ |      848³ |
-|  40 GB |      766³ |      912³ |
-|  48 GB |      814³ |      970³ |
-|  64 GB |      896³ |     1068³ |
-|  80 GB |      966³ |     1150³ |
-|  96 GB |     1026³ |     1222³ |
-| 128 GB |     1130³ |     1346³ |
-| 192 GB |     1292³ |     1540³ |
-| 256 GB |     1422³ |     1624³ |
-| 384 GB |     1624³ |     1624³ |
 
 
 
