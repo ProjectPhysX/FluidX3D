@@ -95,6 +95,18 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
     - allows for 19 Million cells per 1 GB VRAM
     - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092): eliminates redundant copy `B` of density distribution functions (DDFs) in memory; almost cuts memory demand in half and slightly increases performance due to implicit bounce-back boundaries; offers optimal memory access patterns for single-cell in-place streaming
     - [decoupled arithmetic precision (FP32) and memory precision (FP32 or FP16S or FP16C)](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats): all arithmetic is done in FP32 for compatibility on all hardware, but DDFs in memory can be compressed to FP16S or FP16C: almost cuts memory demand in half again and almost doubles performance, without impacting overall accuracy for most setups
+    - <details><summary>only 8 flag bits per lattice point (can be used independently / at the same time)</summary>
+
+      - `TYPE_S` (stationary or moving) solid boundaries
+      - `TYPE_E` equilibrium boundaries (inflow/outflow)
+      - `TYPE_T` temperature boundaries
+      - `TYPE_F` free surface (fluid)
+      - `TYPE_I` free surface (interface)
+      - `TYPE_G` free surface (gas)
+      - `TYPE_X` remaining for custom use or further extensions
+      - `TYPE_Y` remaining for custom use or further extensions
+
+      </details>
   - large cost saving: comparison of maximum single-GPU grid resolution for D3Q19 LBM
 
     | GPU&nbsp;VRAM&nbsp;capacity      | 1&nbsp;GB | 2&nbsp;GB | 3&nbsp;GB | 4&nbsp;GB | 6&nbsp;GB | 8&nbsp;GB | 10&nbsp;GB | 11&nbsp;GB | 12&nbsp;GB | 16&nbsp;GB | 20&nbsp;GB | 24&nbsp;GB | 32&nbsp;GB | 40&nbsp;GB | 48&nbsp;GB | 64&nbsp;GB | 80&nbsp;GB | 94&nbsp;GB | 128&nbsp;GB | 192&nbsp;GB | 256&nbsp;GB |
@@ -196,18 +208,6 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) and other algebraic optimization to minimize round-off error
 - velocity sets: D2Q9, D3Q15, D3Q19 (default), D3Q27
 - collision operators: single-relaxation-time (SRT/BGK) (default), two-relaxation-time (TRT)
-- <details><summary>only 8 flag bits per lattice point (can be used independently / at the same time)</summary>
-
-  - `TYPE_S` (stationary or moving) solid boundaries
-  - `TYPE_E` equilibrium boundaries (inflow/outflow)
-  - `TYPE_T` temperature boundaries
-  - `TYPE_F` free surface (fluid)
-  - `TYPE_I` free surface (interface)
-  - `TYPE_G` free surface (gas)
-  - `TYPE_X` remaining for custom use or further extensions
-  - `TYPE_Y` remaining for custom use or further extensions
-
-  </details>
 
 
 
