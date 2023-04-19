@@ -65,16 +65,12 @@ struct Device_Info {
 		cores = to_uint((float)compute_units*(nvidia+amd+intel+apple+arm)); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 		tflops = 1E-6f*(float)cores*(float)ipc*(float)clock_frequency; // estimated device floating point performance in TeraFLOPs/s
 		if(intel==8.0f) { // fix wrong global memory reporting for Intel Arc GPUs
-			if(contains_any(name, {"A770", "0x56a0"})&&(memory==12992u)) memory = 16240u; // fix wrong (80% on Windows) memory reporting on Intel Arc A770 16GB
-			if(contains_any(name, {"A770", "0x56a0"})&&(memory== 6476u)) memory =  8096u; // fix wrong (80% on Windows) memory reporting on Intel Arc A770 8GB
-			if(contains_any(name, {"A750", "0x56a1"})&&(memory== 6476u)) memory =  8096u; // fix wrong (80% on Windows) memory reporting on Intel Arc A750 8GB
-			if(contains_any(name, {"A580", "0x56a2"})&&(memory== 6476u)) memory =  8096u; // fix wrong (80% on Windows) memory reporting on Intel Arc A580 8GB
-			if(contains_any(name, {"A380", "0x56a5"})&&(memory== 4844u)) memory =  6056u; // fix wrong (80% on Windows) memory reporting on Intel Arc A380 6GB
-			if(contains_any(name, {"A770", "0x56a0"})&&(memory==15473u)) memory = 16288u; // fix wrong (95% on Linux) memory reporting on Intel Arc A770 16GB
-			if(contains_any(name, {"A770", "0x56a0"})&&(memory== 7721u)) memory =  8128u; // fix wrong (95% on Linux) memory reporting on Intel Arc A770 8GB
-			if(contains_any(name, {"A750", "0x56a1"})&&(memory== 7721u)) memory =  8128u; // fix wrong (95% on Linux) memory reporting on Intel Arc A750 8GB
-			if(contains_any(name, {"A580", "0x56a2"})&&(memory== 7721u)) memory =  8128u; // fix wrong (95% on Linux) memory reporting on Intel Arc A580 8GB
-			if(contains_any(name, {"A380"  "0x56a5"})&&(memory== 5783u)) memory =  6088u; // fix wrong (95% on Linux) memory reporting on Intel Arc A380 6GB
+			if((contains(name, "A770")&&memory>=12602u&&memory<13416u)||(contains_any(name, {"A770", "A750", "A580"})&&memory>=6286u&&memory<6693u)||(contains(name, "A380")&&memory>=4705u&&memory<5010u)) { // 77.5%-82.5% reporting -> /0.8
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*5ull/4ull)/1048576ull); // fix wrong (80% on Windows) memory reporting on Intel Arc
+			}
+			if((contains_any(name, {"A770", "0x56a0"})&&memory>=15041u&&memory<15855u)||(contains_any(name, {"A770", "A750", "A580", "0x56a0", "0x56a1", "0x56a2"})&&memory>=7503u&&memory<7910u)||(contains_any(name, {"A380", "0x56a5"})&&memory>=5616u&&memory<5921u)) { // 92.5%-97.5% reporting -> /0.95
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // fix wrong (95% on Linux) memory reporting on Intel Arc
+			}
 		}
 		intel_gpu_above_4gb_patch = (intel==8.0f)&&(memory>4096); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
 	}
