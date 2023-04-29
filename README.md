@@ -61,7 +61,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
 </details>
 
 
-## Compute Features
+## Compute Features - Getting the Memory Problem under Control
 
 - <details><summary>CFD model: lattice Boltzmann method (LBM)</summary>
 
@@ -211,39 +211,41 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - [peak performance on GPUs](#single-gpu-benchmarks) (datacenter/gaming/professional/laptop), validated with roofline model
 - [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) and other algebraic optimization to minimize round-off error
 
+- <details><summary>powerful model extensions</summary>
+
+  - [boundary types](https://doi.org/10.15495/EPub_UBT_00005400)
+    - stationary mid-grid bounce-back boundaries (stationary solid boundaries)
+    - moving mid-grid bounce-back boundaries (moving solid boundaries)
+    - equilibrium boundaries (non-reflective inflow/outflow)
+    - temperature boundaries (fixed temperature)
+  - global force per volume (Guo forcing), can be modified on-the-fly
+  - local force per volume (force field)
+    - optional computation of forces from the fluid on solid boundaries
+  - state-of-the-art [free surface LBM](https://doi.org/10.3390/computation10060092) (FSLBM) implementation:
+    - [volume-of-fluid model](https://doi.org/10.15495/EPub_UBT_00005400)
+    - [fully analytic PLIC](https://doi.org/10.3390/computation10020021) for efficient curvature calculation
+    - improved mass conservation
+    - ultra efficient implementation with only [4 kernels](https://doi.org/10.3390/computation10060092) additionally to `stream_collide()` kernel
+  - thermal LBM to simulate thermal convection
+    - D3Q7 subgrid for thermal DDFs
+    - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092) for thermal DDFs
+    - optional [FP16S or FP16C compression](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) for thermal DDFs with [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)
+  - Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
+    <p align="center"><i>&Pi;<sub>&alpha;&beta;</sub></i> = &Sigma;<sub><i>i</i></sub> <i>e<sub>i&alpha;</sub></i> <i>e<sub>i&beta;</sub></i> (<i>f<sub>i</sub></i>   - <i>f<sub>i</sub></i><sup>eq-shifted</sup>)<br><br>Q = &Sigma;<sub><i>&alpha;&beta;</i></sub>   <i>&Pi;<sub>&alpha;&beta;</sub></i><sup>2</sup><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;______________________<br>&tau; = &frac12; (&tau;<sub>0</sub> + &radic; &tau;<sub>0</sub><sup>2</sup> + <sup>(16&radic;2)</sup>&#8725;<sub>(<i>3&pi;</i><sup>2</sup>)</sub> <sup>&radic;Q</sup>&#8725;<sub><i>&rho;</i></sub> )</p>
+  - particles with immersed-boundary method (either passive or 2-way-coupled, only supported with single-GPU)
+
+  </details>
 
 
-## Optional Compute Extensions
 
-- [boundary types](https://doi.org/10.15495/EPub_UBT_00005400)
-  - stationary mid-grid bounce-back boundaries (stationary solid boundaries)
-  - moving mid-grid bounce-back boundaries (moving solid boundaries)
-  - equilibrium boundaries (non-reflective inflow/outflow)
-  - temperature boundaries (fixed temperature)
-- global force per volume (Guo forcing), can be modified on-the-fly
-- local force per volume (force field)
-  - optional computation of forces from the fluid on solid boundaries
-- state-of-the-art [free surface LBM](https://doi.org/10.3390/computation10060092) (FSLBM) implementation:
-  - [volume-of-fluid model](https://doi.org/10.15495/EPub_UBT_00005400)
-  - [fully analytic PLIC](https://doi.org/10.3390/computation10020021) for efficient curvature calculation
-  - improved mass conservation
-  - ultra efficient implementation with only [4 kernels](https://doi.org/10.3390/computation10060092) additionally to `stream_collide()` kernel
-- thermal LBM to simulate thermal convection
-  - D3Q7 subgrid for thermal DDFs
-  - in-place streaming with [Esoteric-Pull](https://doi.org/10.3390/computation10060092) for thermal DDFs
-  - optional [FP16S or FP16C compression](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) for thermal DDFs with [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)
-- Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
-  <details><summary>&#9900; &nbsp;equations</summary><p align="center"><i>&Pi;<sub>&alpha;&beta;</sub></i> = &Sigma;<sub><i>i</i></sub> <i>e<sub>i&alpha;</sub></i> <i>e<sub>i&beta;</sub></i> (<i>f<sub>i</sub></i> - <i>f<sub>i</sub></i><sup>eq-shifted</sup>)<br><br>Q = &Sigma;<sub><i>&alpha;&beta;</i></sub> <i>&Pi;<sub>&alpha;&beta;</sub></i><sup>2</sup><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;______________________<br>&tau; = &frac12; (&tau;<sub>0</sub> + &radic; &tau;<sub>0</sub><sup>2</sup> + <sup>(16&radic;2)</sup>&#8725;<sub>(<i>3&pi;</i><sup>2</sup>)</sub> <sup>&radic;Q</sup>&#8725;<sub><i>&rho;</i></sub> )</p></details>
-- particles with immersed-boundary method (either passive or 2-way-coupled, only supported with single-GPU)
+## Solving the Visualization Problem
 
-
-
-## Graphics Features
-
-- on Windows and Linux: real time [interactive rasterization and raytracing graphics](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL)
-- on Windows and Linux (even in WSL and/or remote through SSH): real time interactive ASCII console graphics
-- rendering is fully parallelized for multi-GPU via seamless domain decomposition rasterization
-- with interactive graphics mode disabled, image resolution can be as large as VRAM allows for (132 Megapixel (16K) and above)
+- FluidX3D can do simulations so large that storing the volumetric data for later rendering becomes unmanageable (like 120GB for a single frame, hundreds of TeraByte for a video)
+- instead, FluidX3D allows [rendering raw simulation data directly in VRAM](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL), so no large volumetric files have to be exported to the hard disk (see my [technical talk](https://youtu.be/pD8JWAZ2f8o))
+- the rendering is so fast that it works interactively in real time for both rasterization and raytracing
+- if no monitor is available (like on a remote Linux server), there is an ASCII rendering mode to interactively visualize the simulation in the terminal (even in WSL and/or through SSH)
+- rendering is fully multi-GPU-parallelized via seamless domain decomposition rasterization
+- with interactive graphics mode disabled, image resolution can be as large as VRAM allows for (4K/8K/16K and above)
 - (interacitive) visualization modes:
   - flags (and force vectors on solid boundary cells if the extension is used)
   - velocity field
@@ -251,6 +253,24 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - velocity-colored Q-criterion isosurface
   - rasterized free surface with [marching-cubes](http://paulbourke.net/geometry/polygonise/)
   - [raytraced free surface](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL) with fast ray-grid traversal and marching-cubes, either 1-4 rays/pixel or 1-10 rays/pixel
+
+
+
+## Solving the Compatibility Problem
+
+- FluidX3D is written in OpenCL 1.2, so it runs on any hardware from any vendor (Nvidia, AMD, Intel, ...):
+  - world's fastest datacenter GPUs, like H100, A100, MI250(X), MI210, MI100, V100(S), P100, ...
+  - gaming GPUs (desktop or laptop), like Nvidia GeForce, AMD Radeon, Intel Arc
+  - professional/workstation GPUs, like Nvidia Quadro, AMD Radeon Pro / FirePro
+  - integrated GPUs
+  - Intel Xeon Phi (requires installation of the [Intel OpenCL CPU Runtime ("oclcpuexp")](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler))
+  - Intel/AMD CPUs (requires installation of the [Intel OpenCL CPU Runtime ("oclcpuexp")](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler))
+  - even smartphone ARM GPUs
+- supports parallelization across multiple GPUs on a single PC/laptop/server with PCIe communication, no SLI/Crossfire/NVLink/InfinityFabric or MPI installation required; the GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth is recommended
+- works in Windows and Linux with C++17, with limited support also for MacOS and Android
+- supports importing and voxelizing triangle meshes from binary `.stl` files, with fast GPU voxelization
+- supports exporting volumetric data as binary `.vtk` files with `lbm.<field>.write_device_to_vtk();`
+- supports exporting rendered frames as `.png`/`.qoi`/`.bmp` files with `lbm.graphics.write_frame();`, encoding is handled in parallel on the CPU while the simulation on GPU can continue without delay
 
 
 
@@ -289,24 +309,6 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 
 
 
-## Compatibility
-
-- works in Windows, Linux and Android with C++17
-- runs on any hardware that supports OpenCL 1.2, from any vendor (Nvidia, AMD, Intel, ...):
-  - world's fastest datacenter GPUs like H100, A100, MI250(X), MI210, MI100, V100(S), P100, ...
-  - gaming GPUs (desktop or laptop)
-  - "professional"/workstation GPUs
-  - integrated GPUs
-  - Xeon Phi
-  - CPUs
-  - even smartphone ARM GPUs
-- supports parallelization across multiple GPUs on a single node (PC/laptop/server) with PCIe communication, no SLI/Crossfire/NVLink/InfinityFabric or MPI installation required; the GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth is recommended
-- supports importing and voxelizing triangle meshes from binary `.stl` files, with fast GPU voxelization
-- supports exporting volumetric data as binary `.vtk` files
-- supports exporting rendered frames as `.png`/`.qoi`/`.bmp` files; time-consuming image encoding is handled in parallel on the CPU while the simulation on GPU can continue without delay
-
-
-
 ## Single-GPU Benchmarks
 
 Here are [performance benchmarks](https://doi.org/10.3390/computation10060092) on various hardware in MLUPs/s, or how many million lattice points are updated per second. The settings used for the benchmark are D3Q19 SRT with no extensions enabled (only LBM with implicit mid-grid bounce-back boundaries) and the setup consists of an empty cubic box with sufficient size (typically 256³). Without extensions, a single lattice point requires:
@@ -329,7 +331,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |             18448 (70%) |             11197 (42%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;40GB                |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;40GB                |              19.49 |          40 |         1555 |             8526 (84%) |             16035 (79%) |             11088 (55%) |
-| 🟢&nbsp;Tesla&nbsp;V100&nbsp;16GB               |              14.13 |          16 |          900 |             5128 (87%) |             10325 (88%) |              7683 (66%) |
+| 🟢&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB     |              15.67 |          32 |          900 |             4471 (76%) |              8947 (77%) |              7217 (62%) |
+| 🟢&nbsp;Tesla&nbsp;V100&nbsp;PCIe&nbsp;16GB     |              14.13 |          16 |          900 |             5128 (87%) |             10325 (88%) |              7683 (66%) |
 | 🟢&nbsp;Quadro&nbsp;GV100                       |              16.66 |          32 |          870 |             3442 (61%) |              6641 (59%) |              5863 (52%) |
 | 🟢&nbsp;Titan&nbsp;V                            |              14.90 |          12 |          653 |             3601 (84%) |              7253 (86%) |              6957 (82%) |
 | 🟢&nbsp;Tesla&nbsp;P100&nbsp;16GB               |               9.52 |          16 |          732 |             3295 (69%) |              5950 (63%) |              4176 (44%) |
@@ -434,9 +437,18 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                 |              55.32 |          64 |         4096 |      12911&nbsp;(2.6x) |            24273 (3.1x) |            17080 (3.2x) |
 | 🔴&nbsp;8x&nbsp;Radeon&nbsp;VII                                 |             110.64 |         128 |         8192 |      21946&nbsp;(4.5x) |            30826 (4.0x) |            24572 (4.7x) |
 |                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8543 (84%) |             15917 (79%) |              8748 (43%) |
+| 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |      14311&nbsp;(1.7x) |            23707 (1.5x) |            15512 (1.8x) |
+| 🟢&nbsp;4x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              77.96 |         160 |         6220 |      23411&nbsp;(2.7x) |            42400 (2.7x) |            29017 (3.3x) |
+| 🟢&nbsp;8x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |             155.92 |         320 |        12440 |      37619&nbsp;(4.4x) |            72965 (4.6x) |            63009 (7.2x) |
+|                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8522 (84%) |             16013 (79%) |             11251 (56%) |
 | 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |      13629&nbsp;(1.6x) |            24620 (1.5x) |            18850 (1.7x) |
 | 🟢&nbsp;4x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              77.96 |         160 |         6220 |      17978&nbsp;(2.1x) |            30604 (1.9x) |            30627 (2.7x) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              15.67 |          32 |          900 |             4471 (76%) |              8947 (77%) |              7217 (62%) |
+| 🟢&nbsp;2x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              31.34 |          64 |         1800 |            7953 (1.8x) |            15469 (1.7x) |            12932 (1.8x) |
+| 🟢&nbsp;4x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              62.68 |         128 |         3600 |      13135&nbsp;(2.9x) |            26527 (3.0x) |            22686 (3.1x) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K40m                                 |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 | 🟢&nbsp;2x&nbsp;Tesla&nbsp;K40m                                 |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
