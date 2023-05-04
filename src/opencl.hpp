@@ -98,8 +98,9 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 	for(uint i=0u; i<(uint)cl_platforms.size(); i++) {
 		vector<cl::Device> cl_devices;
 		cl_platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &cl_devices);
-		cl::Context cl_context(cl_devices);
+		//cl::Context cl_context(cl_devices); // same cl::Context for all devices (allocates extra VRAM on all other unused Nvidia GPUs)
 		for(uint j=0u; j<(uint)cl_devices.size(); j++) {
+			cl::Context cl_context(cl_devices[j]); // separate cl::Context for each device
 			devices.push_back(Device_Info(cl_devices[j], cl_context, id++));
 		}
 	}
