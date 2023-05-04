@@ -3927,13 +3927,13 @@ inline void write_line(const string& filename, const string& content="") {
 	file.write(s.c_str(), s.length());
 	file.close();
 }
-template<typename T> inline void write_file(const string& filename, const uint n, const T* y, const string& header="") {
+template<typename T> inline void write_file(const string& filename, const string& header, const uint n, const T* y) {
 	string s = header;
 	if(length(s)>0u && !ends_with(s, "\n")) s += "\n";
 	for(uint i=0u; i<n; i++) s += to_string(i)+"\t"+to_string(y[i])+"\n";
 	write_file(filename, s);
 }
-template<typename T, typename U> inline void write_file(const string& filename, const uint n, const T* x, const U* y, const string& header="") {
+template<typename T, typename U> inline void write_file(const string& filename, const string& header, const uint n, const T* x, const U* y) {
 	string s = header;
 	if(length(s)>0u && !ends_with(s, "\n")) s += "\n";
 	for(uint i=0u; i<n; i++) s += to_string(x[i])+"\t"+to_string(y[i])+"\n";

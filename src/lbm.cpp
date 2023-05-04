@@ -102,7 +102,7 @@ void LBM_Domain::allocate(Device& device) {
 
 #ifdef PARTICLES
 	particles = Memory<float>(device, (ulong)particles_N, 3u);
-	kernel_integrate_particles = Kernel(device, (ulong)particles_N, "integrate_particles", particles, u);
+	kernel_integrate_particles = Kernel(device, (ulong)particles_N, "integrate_particles", particles, u, 1.0f);
 #ifdef FORCE_FIELD
 	kernel_integrate_particles.add_parameters(F, fx, fy, fz);
 #endif // FORCE_FIELD
@@ -150,17 +150,17 @@ void LBM_Domain::enqueue_update_moving_boundaries() { // mark/unmark nodes next 
 }
 #endif // MOVING_BOUNDARIES
 #ifdef PARTICLES
-void LBM_Domain::enqueue_integrate_particles() { // intgegrate particles forward in time and couple particles to fluid
+void LBM_Domain::enqueue_integrate_particles(const uint time_step_multiplicator) { // intgegrate particles forward in time and couple particles to fluid
 #ifdef FORCE_FIELD
 	if(particles_rho!=1.0f) kernel_reset_force_field.enqueue_run(); // only reset force field if particles have buoyancy and apply forces on fluid
-	kernel_integrate_particles.set_parameters(3u, fx, fy, fz);
+	kernel_integrate_particles.set_parameters(4u, fx, fy, fz);
 #endif // FORCE_FIELD
-	kernel_integrate_particles.enqueue_run();
+	kernel_integrate_particles.set_parameters(2u, (float)time_step_multiplicator).enqueue_run();
 }
 #endif // PARTICLES
 
-void LBM_Domain::increment_time_step() {
-	t++; // increment time step
+void LBM_Domain::increment_time_step(const uint steps) {
+	t += (ulong)steps; // increment time step
 #ifdef UPDATE_FIELDS
 	t_last_update_fields = t;
 #endif // UPDATE_FIELDS
@@ -830,18 +830,18 @@ void LBM::update_moving_boundaries() { // mark/unmark nodes next to TYPE_S nodes
 #endif // MOVING_BOUNDARIES
 
 #if defined(PARTICLES)&&!defined(FORCE_FIELD)
-void LBM::integrate_particles(const ulong steps) { // intgegrate passive tracer particles forward in time in stationary flow field
+void LBM::integrate_particles(const ulong steps, const uint time_step_multiplicator) { // intgegrate passive tracer particles forward in time in stationary flow field
 	info.append(steps, get_t());
 	Clock clock;
-	for(ulong i=1ull; i<=steps; i++) {
+	for(ulong i=1ull; i<=steps; i+=(ulong)time_step_multiplicator) {
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
 		while(!key_P&&running) sleep(0.016);
 		if(!running) break;
 #endif // INTERACTIVE_GRAPHICS_ASCII || INTERACTIVE_GRAPHICS
 		clock.start();
-		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_integrate_particles();
+		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_integrate_particles(time_step_multiplicator);
 		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
-		for(uint d=0u; d<get_D(); d++) lbm[d]->increment_time_step();
+		for(uint d=0u; d<get_D(); d++) lbm[d]->increment_time_step(time_step_multiplicator);
 		info.update(clock.stop());
 	}
 }

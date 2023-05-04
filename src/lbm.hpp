@@ -99,10 +99,10 @@ public:
 	void enqueue_update_moving_boundaries(); // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
 #endif // MOVING_BOUNDARIES
 #ifdef PARTICLES
-	void enqueue_integrate_particles(); // intgegrates particles forward in time and couples particles to fluid
+	void enqueue_integrate_particles(const uint time_step_multiplicator=1u); // intgegrates particles forward in time and couples particles to fluid
 #endif // PARTICLES
 
-	void increment_time_step(); // increment time step
+	void increment_time_step(const uint steps=1u); // increment time step
 	void reset_time_step(); // reset time step
 	void finish_queue();
 
@@ -387,7 +387,7 @@ public:
 	void update_moving_boundaries(); // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
 #endif // MOVING_BOUNDARIES
 #if defined(PARTICLES)&&!defined(FORCE_FIELD)
-	void integrate_particles(const ulong steps=max_ulong); // intgegrate passive tracer particles forward in time in stationary flow field
+	void integrate_particles(const ulong steps=max_ulong, const uint time_step_multiplicator=1u); // intgegrate passive tracer particles forward in time in stationary flow field
 #endif // PARTICLES&&!FORCE_FIELD
 
 	uint get_Nx() const { return Nx; } // get (global) lattice dimensions in x-direction

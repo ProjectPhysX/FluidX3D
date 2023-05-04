@@ -1922,7 +1922,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // FORCE_FIELD
 
 )+"#ifdef PARTICLES"+R(
-)+R(kernel void integrate_particles)+"("+R(global float* particles, const global float* u // ) {
+)+R(kernel void integrate_particles)+"("+R(global float* particles, const global float* u, const float time_step_multiplicator // ) {
 )+"#ifdef FORCE_FIELD"+R(
 	, volatile global float* F, const float fx, const float fy, const float fz
 )+"#endif"+R( // FORCE_FIELD
@@ -1937,7 +1937,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		spread_force(F, p0, Fn); // do force spreading
 	}
 )+"#endif"+R( // FORCE_FIELD
-	const float3 un = interpolate_u(mirror_position(p0), u); // trilinear interpolation of velocity at point p
+	const float3 un = interpolate_u(mirror_position(p0), u)*time_step_multiplicator; // trilinear interpolation of velocity at point p
 	const float3 p = mirror_position(p0+un); // advect particles
 	particles[                           n] = p.x;
 	particles[    def_particles_N+(ulong)n] = p.y;
