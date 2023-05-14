@@ -1,4 +1,4 @@
-Copyright (c) 2022-2023 Moritz Lehmann
+Copyright (c) 2022-2023 Dr. Moritz Lehmann
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to use this software for public research, education or personal use, and to alter it and redistribute it freely, subject to the following restrictions:
 
