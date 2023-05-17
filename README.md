@@ -345,6 +345,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XT        |              51.61 |          20 |          800 |             3013 (58%) |              5856 (56%) |              5986 (58%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6900&nbsp;XT        |              23.04 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6800&nbsp;XT        |              20.74 |          16 |          512 |             2008 (60%) |              4241 (64%) |              4224 (64%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;6700M               |              10.60 |          10 |          320 |             1194 (57%) |              2388 (57%) |              2429 (58%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;5700&nbsp;XT        |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;Vega&nbsp;64        |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;4GB        |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
