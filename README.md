@@ -283,7 +283,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
    - Set the initial condition in a loop that iterates over the entire lattice by writing to `lbm.rho[n]`/`lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]`/`lbm.flags[n]`.
    - Call `lbm.run();` to initialize and execute the setup (infinite time steps) or `lbm.run(time_steps);` to execute only a specific number of time steps.
    - As long as the `lbm` object is in scope, you can access the memory. As soon as it goes out of scope, all memory associated to the current simulation is freed again.
-3. When done with the setup, on Windows in Visual Studio Community select "Release" and "x64" and hit compile+run, or on Linux execute `chmod +x make.sh` and `./make.sh`; this will automatically select the fastest installed GPU(s). Alternatively, you can add the device ID(s) as command-line arguments, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D 1 3` to run the executable on devices 1 and 3. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
+3. On Windows in Visual Studio Community select `Release` and `x64` and click compile+run, or on Linux run `chmod +x make.sh` and `./make.sh`; this will automatically select the fastest installed GPU(s). Alternatively, you can add the device ID(s) as command-line arguments, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D 1 3` to run the executable on devices 1 and 3. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
 4. Keyboard/mouse controls with `INTERACTIVE_GRAPHICS`/`INTERACTIVE_GRAPHICS_ASCII` enabled:
    - <kbd>P</kbd>: start/pause the simulation
    - <kbd>H</kbd>: show/hide help
@@ -349,6 +349,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;5700&nbsp;XT        |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;Vega&nbsp;64        |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;4GB        |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
+| 🔴&nbsp;Radeon&nbsp;R9&nbsp;390X                |               5.91 |           8 |          384 |             1733 (69%) |              2217 (44%) |              1722 (35%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                   |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                   |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
