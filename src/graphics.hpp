@@ -1,8 +1,8 @@
 #pragma once
 
 #define WINDOW_NAME "FluidX3D"
-//#define CONSOLE_GRAPHICS
-//#define WINDOWS_GRAPHICS
+//#define INTERACTIVE_GRAPHICS
+//#define INTERACTIVE_GRAPHICS_ASCII
 //#define GRAPHICS
 
 #include "defines.hpp"
