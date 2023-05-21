@@ -337,6 +337,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🟢&nbsp;Titan&nbsp;V                            |              14.90 |          12 |          653 |             3601 (84%) |              7253 (86%) |              6957 (82%) |
 | 🟢&nbsp;Tesla&nbsp;P100&nbsp;16GB               |               9.52 |          16 |          732 |             3295 (69%) |              5950 (63%) |              4176 (44%) |
 | 🟢&nbsp;Tesla&nbsp;P100&nbsp;12GB               |               9.52 |          12 |          549 |             2427 (68%) |              4141 (58%) |              3999 (56%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;TITAN             |               4.71 |           6 |          288 |             1460 (77%) |              2500 (67%) |              1113 (30%) |
 | 🟢&nbsp;Tesla&nbsp;K40m                         |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 | 🟢&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)        |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 | 🟢&nbsp;Tesla&nbsp;K20c                         |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
@@ -392,6 +393,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🟢&nbsp;Quadro&nbsp;M4000                       |               2.57 |           8 |          192 |              899 (72%) |              1519 (61%) |              1050 (42%) |
 | 🟢&nbsp;Tesla&nbsp;M60&nbsp;(1&nbsp;GPU)        |               4.82 |           8 |          160 |              853 (82%) |              1571 (76%) |              1557 (75%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;960M              |               1.51 |           4 |           80 |              442 (84%) |               872 (84%) |               627 (60%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;680&nbsp;4GB      |               3.33 |           4 |          192 |              783 (62%) |              1274 (51%) |               814 (33%) |
 | 🟢&nbsp;Quadro&nbsp;K2000                       |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)     |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                |               0.03 |       0.256 |            6 |                1 ( 2%) |                 1 ( 1%) |                 1 ( 1%) |
