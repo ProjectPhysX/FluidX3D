@@ -33,7 +33,7 @@
 #define GRAPHICS_BACKGROUND_COLOR 0x000000 // set background color; black background (default) = 0x000000, white background = 0xFFFFFF
 #define GRAPHICS_U_MAX 0.2f // maximum velocity for velocity coloring in units of LBM lattice speed of sound (c=1/sqrt(3)) (default: 0.2f)
 #define GRAPHICS_Q_CRITERION 0.0001f // Q-criterion value for Q-criterion isosurface visualization (default: 0.0001f)
-#define GRAPHICS_BOUNDARY_FORCE_SCALE 100.0f // scaling factor for visualization of forces on solid boundaries if VOLUME_FORCE is enabled and lbm.calculate_force_on_boundaries(); is called (default: 100.0f)
+#define GRAPHICS_F_MAX 0.002f // maximum force in LBM units for visualization of forces on solid boundaries if VOLUME_FORCE is enabled and lbm.calculate_force_on_boundaries(); is called (default: 0.002f)
 #define GRAPHICS_STREAMLINE_SPARSE 4 // set how many streamlines there are every x lattice points
 #define GRAPHICS_STREAMLINE_LENGTH 128 // set maximum length of streamlines
 #define GRAPHICS_RAYTRACING_TRANSMITTANCE 0.25f // transmitted light fraction in raytracing graphics ("0.25f" = 1/4 of light is transmitted and 3/4 is absorbed along longest box side length, "1.0f" = no absorption)

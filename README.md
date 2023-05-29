@@ -4,6 +4,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
 
 <a href="https://youtu.be/-MkRBeQkLk8"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
 <a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/3JNVBQyetMA"><img src="https://img.youtube.com/vi/3JNVBQyetMA/maxresdefault.jpg" width="50%"></img></a>
+(click on images to show videos on YouTube)
 
 
 <details><summary>Update History</summary>
@@ -57,6 +58,17 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug where moving objects during re-voxelization would leave an erroneous trail of solid grid cells behind
 - v2.6 (16.04.2023)
   - patched OpenCL issues of Intel Arc GPUs: now VRAM allocations >4GB are possible and correct VRAM capacity is reported
+- v2.7 (29.05.2023)
+  - added slice visualization (key <kbd>2</kbd> / key <kbd>3</kbd> modes, then switch through slice modes with key <kbd>T</kbd>, move slice with keys <kbd>Q</kbd>/<kbd>E</kbd>)
+  - made flag wireframe / solid surface visualization kernels toggleable with key <kbd>1</kbd>
+  - added surface pressure visualization (key <kbd>1</kbd> when `FORCE_FIELD` is enabled and `lbm.calculate_force_on_boundaries();` is called)
+  - added binary `.vtk` export function for meshes with `lbm.write_mesh_to_vtk(Mesh* mesh);`
+  - added `time_step_multiplicator` for `integrate_particles()` function in PARTICLES extension
+  - made correction of wrong memory reporting on Intel Arc more robust
+  - fixed bug in `write_file()` template functions
+  - reverted back to separate `cl::Context` for each OpenCL device, as the shared Context otherwise would allocate extra VRAM on all other unused Nvidia GPUs
+  - removed Debug and x86 configurations from Visual Studio solution file (one less complication for compiling)
+  - fixed bug that particles could get too close to walls and get stuck, or leave the fluid phase (added boundary force)
 
 </details>
 
@@ -247,9 +259,9 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - rendering is fully multi-GPU-parallelized via seamless domain decomposition rasterization
 - with interactive graphics mode disabled, image resolution can be as large as VRAM allows for (4K/8K/16K and above)
 - (interacitive) visualization modes:
-  - flags (and force vectors on solid boundary cells if the extension is used)
-  - velocity field
-  - streamlines
+  - flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)
+  - velocity field (with slice mode)
+  - streamlines (with slice mode)
   - velocity-colored Q-criterion isosurface
   - rasterized free surface with [marching-cubes](http://paulbourke.net/geometry/polygonise/)
   - [raytraced free surface](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL) with fast ray-grid traversal and marching-cubes, either 1-4 rays/pixel or 1-10 rays/pixel
@@ -283,17 +295,19 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
    - Set the initial condition in a loop that iterates over the entire lattice by writing to `lbm.rho[n]`/`lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]`/`lbm.flags[n]`.
    - Call `lbm.run();` to initialize and execute the setup (infinite time steps) or `lbm.run(time_steps);` to execute only a specific number of time steps.
    - As long as the `lbm` object is in scope, you can access the memory. As soon as it goes out of scope, all memory associated to the current simulation is freed again.
-3. On Windows in Visual Studio Community and click compile+run, or on Linux run `chmod +x make.sh` and `./make.sh`; this will automatically select the fastest installed GPU(s). Alternatively, you can add the device ID(s) as command-line arguments, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D 1 3` to run the executable on devices 1 and 3. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
+3. On Windows in Visual Studio Community click compile+run, or on Linux run `chmod +x make.sh` and `./make.sh`; this will automatically select the fastest installed GPU(s). Alternatively, you can add the device ID(s) as command-line arguments, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D 1 3` to run the executable on devices 1 and 3. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
 4. Keyboard/mouse controls with `INTERACTIVE_GRAPHICS`/`INTERACTIVE_GRAPHICS_ASCII` enabled:
    - <kbd>P</kbd>: start/pause the simulation
    - <kbd>H</kbd>: show/hide help
-   - <kbd>1</kbd>: flags (and force vectors on solid boundary cells if the extension is used)
+   - <kbd>1</kbd>: flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)
    - <kbd>2</kbd>: velocity field
    - <kbd>3</kbd>: streamlines
    - <kbd>4</kbd>: vorticity / velocity-colored Q-criterion isosurface
    - <kbd>5</kbd>: rasterized free surface
    - <kbd>6</kbd>: raytraced free surface
    - <kbd>7</kbd>: particles
+   - <kbd>T</kbd>: toggle slice visualization mode
+   - <kbd>Q</kbd>/<kbd>E</kbd>: move slice in slice visualization mode
    - <kbd>Mouse</kbd> or <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>: rotate camera
    - <kbd>Scrollwheel</kbd> or <kbd>+</kbd>/<kbd>-</kbd>: zoom (centered camera mode) or camera movement speed (free camera mode)
    - <kbd>Mouseclick</kbd> or <kbd>U</kbd>: toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>
@@ -398,6 +412,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)     |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                |               0.03 |       0.256 |            6 |                1 ( 2%) |                 1 ( 1%) |                 1 ( 1%) |
 |                                                 |                    |             |              |                        |                         |                         |
+| 🟣&nbsp;M2&nbsp;Max&nbsp;GPU&nbsp;38C&nbsp;32GB |               9.73 |          22 |          400 |             2405 (92%) |              4641 (89%) |              2444 (47%) |
 | 🟣&nbsp;M1&nbsp;Max&nbsp;GPU&nbsp;24C&nbsp;32GB |               6.14 |          22 |          400 |             2369 (91%) |              4496 (87%) |              2777 (53%) |
 | 🟣&nbsp;M1&nbsp;Pro&nbsp;GPU&nbsp;16C&nbsp;16GB |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
 | 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(4750G)    |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |

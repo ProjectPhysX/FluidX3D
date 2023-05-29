@@ -102,7 +102,7 @@ void LBM_Domain::allocate(Device& device) {
 
 #ifdef PARTICLES
 	particles = Memory<float>(device, (ulong)particles_N, 3u);
-	kernel_integrate_particles = Kernel(device, (ulong)particles_N, "integrate_particles", particles, u, 1.0f);
+	kernel_integrate_particles = Kernel(device, (ulong)particles_N, "integrate_particles", particles, u, flags, 1.0f);
 #ifdef FORCE_FIELD
 	kernel_integrate_particles.add_parameters(F, fx, fy, fz);
 #endif // FORCE_FIELD
@@ -153,9 +153,9 @@ void LBM_Domain::enqueue_update_moving_boundaries() { // mark/unmark nodes next 
 void LBM_Domain::enqueue_integrate_particles(const uint time_step_multiplicator) { // intgegrate particles forward in time and couple particles to fluid
 #ifdef FORCE_FIELD
 	if(particles_rho!=1.0f) kernel_reset_force_field.enqueue_run(); // only reset force field if particles have buoyancy and apply forces on fluid
-	kernel_integrate_particles.set_parameters(4u, fx, fy, fz);
+	kernel_integrate_particles.set_parameters(5u, fx, fy, fz);
 #endif // FORCE_FIELD
-	kernel_integrate_particles.set_parameters(2u, (float)time_step_multiplicator).enqueue_run();
+	kernel_integrate_particles.set_parameters(3u, (float)time_step_multiplicator).enqueue_run();
 }
 #endif // PARTICLES
 
@@ -373,16 +373,18 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
 
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", lbm->flags, camera_parameters, bitmap, zbuffer);
-	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
+	kernel_graphics_flags_mc = Kernel(device, lbm->get_N(), "graphics_flags_mc", lbm->flags, camera_parameters, bitmap, zbuffer);
+	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0);
 #ifndef D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 3D
+	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 3D
 #else // D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer); // 2D
+	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 2D
 #endif // D2Q9
 	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
 
 #ifdef FORCE_FIELD
 	kernel_graphics_flags.add_parameters(lbm->F);
+	kernel_graphics_flags_mc.add_parameters(lbm->F);
 #endif // FORCE_FIELD
 
 #ifdef SURFACE
@@ -410,7 +412,7 @@ bool LBM_Domain::Graphics::update_camera() {
 	}
 	return change; // return false if camera parameters remain unchanged
 }
-void LBM_Domain::Graphics::enqueue_draw_frame() {
+void LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, const int slice_mode, const int slice_x, const int slice_y, const int slice_z) {
 	const bool camera_update = update_camera();
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
 	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return; // don't render a new frame if the scene hasn't changed since last frame
@@ -420,15 +422,16 @@ void LBM_Domain::Graphics::enqueue_draw_frame() {
 	if(camera_update) camera_parameters.enqueue_write_to_device(); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
 	kernel_clear.enqueue_run();
 #ifdef SURFACE
-	if(key_6&&lbm->get_D()==1u) kernel_graphics_raytrace_phi.enqueue_run(); // disable raytracing for multi-GPU (domain decomposition rendering doesn't work for raytracing)
-	if(key_5) kernel_graphics_rasterize_phi.enqueue_run();
+	if((visualization_modes&0b01000000)&&lbm->get_D()==1u) kernel_graphics_raytrace_phi.enqueue_run(); // disable raytracing for multi-GPU (domain decomposition rendering doesn't work for raytracing)
+	if(visualization_modes&0b00100000) kernel_graphics_rasterize_phi.enqueue_run();
 #endif // SURFACE
-	if(key_1) kernel_graphics_flags.enqueue_run();
-	if(key_2) kernel_graphics_field.enqueue_run();
-	if(key_3) kernel_graphics_streamline.enqueue_run();
-	if(key_4) kernel_graphics_q.enqueue_run();
+	if((visualization_modes&0b11)==1||(visualization_modes&0b11)==2) kernel_graphics_flags.enqueue_run();
+	if((visualization_modes&0b11)==2||(visualization_modes&0b11)==3) kernel_graphics_flags_mc.enqueue_run();
+	if(visualization_modes&0b00000100) kernel_graphics_field.set_parameters(5u, slice_mode, slice_x-lbm->Ox, slice_y-lbm->Oy, slice_z-lbm->Oz).enqueue_run();
+	if(visualization_modes&0b00001000) kernel_graphics_streamline.set_parameters(5u, slice_mode, slice_x-lbm->Ox, slice_y-lbm->Oy, slice_z-lbm->Oz).enqueue_run();
+	if(visualization_modes&0b00010000) kernel_graphics_q.enqueue_run();
 #ifdef PARTICLES
-	if(key_7) kernel_graphics_particles.enqueue_run();
+	if(visualization_modes&0b10000000) kernel_graphics_particles.enqueue_run();
 #endif // PARTICLES
 	bitmap.enqueue_read_from_device();
 	if(lbm->get_D()>1u) zbuffer.enqueue_read_from_device();
@@ -447,7 +450,7 @@ string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define def_screen_height "    +to_string(camera.height)+"u"
 	"\n	#define def_scale_u "          +to_string(1.0f/(0.57735027f*(GRAPHICS_U_MAX)))+"f"
 	"\n	#define def_scale_Q_min "      +to_string(GRAPHICS_Q_CRITERION)+"f"
-	"\n	#define def_scale_F "          +to_string(GRAPHICS_BOUNDARY_FORCE_SCALE)+"f"
+	"\n	#define def_scale_F "          +to_string(1.0f/(GRAPHICS_F_MAX))+"f"
 	"\n	#define def_streamline_sparse "+to_string(GRAPHICS_STREAMLINE_SPARSE)+"u"
 	"\n	#define def_streamline_length "+to_string(GRAPHICS_STREAMLINE_LENGTH)+"u"
 	"\n	#define def_n "                +to_string(1.333f)+"f" // refractive index of water for raytracing graphics
@@ -891,6 +894,40 @@ void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // rem
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_unvoxelize_mesh_on_device(mesh, flag);
 	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
 }
+void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path) { // write mesh to binary .vtk file
+	const string header_1 = "# vtk DataFile Version 3.0\nData\nBINARY\nDATASET POLYDATA\nPOINTS "+to_string(3u*mesh->triangle_number)+" float\n";
+	const string header_2 = "POLYGONS "+to_string(mesh->triangle_number)+" "+to_string(4u*mesh->triangle_number)+"\n";
+	float* points = new float[9u*mesh->triangle_number];
+	int* triangles = new int[4u*mesh->triangle_number];
+	for(uint i=0u; i<mesh->triangle_number; i++) {
+		points[9u*i   ] = reverse_bytes(mesh->p0[i].x-center().x);
+		points[9u*i+1u] = reverse_bytes(mesh->p0[i].y-center().y);
+		points[9u*i+2u] = reverse_bytes(mesh->p0[i].z-center().z);
+		points[9u*i+3u] = reverse_bytes(mesh->p1[i].x-center().x);
+		points[9u*i+4u] = reverse_bytes(mesh->p1[i].y-center().y);
+		points[9u*i+5u] = reverse_bytes(mesh->p1[i].z-center().z);
+		points[9u*i+6u] = reverse_bytes(mesh->p2[i].x-center().x);
+		points[9u*i+7u] = reverse_bytes(mesh->p2[i].y-center().y);
+		points[9u*i+8u] = reverse_bytes(mesh->p2[i].z-center().z);
+		triangles[4u*i   ] = reverse_bytes(3); // 3 vertices per triangle
+		triangles[4u*i+1u] = reverse_bytes(3*(int)i  ); // vertex 0
+		triangles[4u*i+2u] = reverse_bytes(3*(int)i+1); // vertex 1
+		triangles[4u*i+3u] = reverse_bytes(3*(int)i+2); // vertex 2
+	}
+	const string filename = default_filename(path, "mesh", ".vtk", get_t());
+	create_folder(filename);
+	std::ofstream file(filename, std::ios::out|std::ios::binary);
+	file.write(header_1.c_str(), header_1.length()); // write non-binary file header
+	file.write((char*)points, 4u*9u*mesh->triangle_number); // write binary data
+	file.write(header_2.c_str(), header_2.length()); // write non-binary file header
+	file.write((char*)triangles, 4u*4u*mesh->triangle_number); // write binary data
+	file.close();
+	delete[] points;
+	delete[] triangles;
+	info.allow_rendering = false; // temporarily disable interactive rendering
+	print_info("File \""+filename+"\" saved.");
+	info.allow_rendering = true;
+}
 void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
 	const Mesh* mesh = read_stl(path, this->size(), center, rotation, size);
 	flags.write_to_device();
@@ -911,12 +948,37 @@ void LBM::voxelize_stl(const string& path, const float size, const uchar flag) {
 #ifdef GRAPHICS
 int* LBM::Graphics::draw_frame() {
 #ifndef UPDATE_FIELDS
-	if(key_2||key_3||key_4) {
+	if(visualization_modes&0b00011100) {
 		for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->enqueue_update_fields(); // only call update_fields() if the time step has changed since the last rendered frame
 		//for(uint d=0u; d<lbm->get_D(); d++) lbm->communicate_rho_u_flags();
 	}
 #endif // UPDATE_FIELDS
-	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->graphics.enqueue_draw_frame();
+
+	if(key_1) { visualization_modes = (visualization_modes&~0b11)|(((visualization_modes&0b11)+1)%4); key_1 = false; }
+	if(key_2) { visualization_modes ^= 0b00000100; key_2 = false; }
+	if(key_3) { visualization_modes ^= 0b00001000; key_3 = false; }
+	if(key_4) { visualization_modes ^= 0b00010000; key_4 = false; }
+	if(key_5) { visualization_modes ^= 0b00100000; key_5 = false; }
+	if(key_6) { visualization_modes ^= 0b01000000; key_6 = false; }
+	if(key_7) { visualization_modes ^= 0b10000000; key_7 = false; }
+
+	if(key_T) {
+		slice_mode = (slice_mode+1)%8; key_T = false;
+	}
+	if(slice_mode==1u) {
+		if(key_Q) { slice_x = clamp(slice_x-1, 0, (int)lbm->get_Nx()-1); key_Q = false; }
+		if(key_E) { slice_x = clamp(slice_x+1, 0, (int)lbm->get_Nx()-1); key_E = false; }
+	}
+	if(slice_mode==2u) {
+		if(key_Q) { slice_y = clamp(slice_y-1, 0, (int)lbm->get_Ny()-1); key_Q = false; }
+		if(key_E) { slice_y = clamp(slice_y+1, 0, (int)lbm->get_Ny()-1); key_E = false; }
+	}
+	if(slice_mode==3u) {
+		if(key_Q) { slice_z = clamp(slice_z-1, 0, (int)lbm->get_Nz()-1); key_Q = false; }
+		if(key_E) { slice_z = clamp(slice_z+1, 0, (int)lbm->get_Nz()-1); key_E = false; }
+	}
+
+	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->graphics.enqueue_draw_frame(visualization_modes, slice_mode, slice_x, slice_y, slice_z);
 	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->finish_queue();
 	int* bitmap = lbm->lbm[0]->graphics.get_bitmap();
 	int* zbuffer = lbm->lbm[0]->graphics.get_zbuffer();

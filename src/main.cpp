@@ -40,16 +40,34 @@ void main_label(const double frametime) {
 #endif // PARTICLES
 			const int ox=2, oy=2;
 			int i = 0;
+
+			const int mode = info.lbm->graphics.visualization_modes;
+			string mode_1 = (mode&3)==0 ? "inactive" : (mode&3)==1 ? " flags  " : (mode&3)==2 ? "  both  " : " solid  ";
+			string mode_2 = mode&0b00000100 ? " active " : "inactive";
+			string mode_3 = mode&0b00001000 ? " active " : "inactive";
+			string mode_4 = mode&0b00010000 ? " active " : "inactive";
+			string mode_5 = surface ? (mode&0b00100000 ? " active " : "inactive") : "disabled";
+			string mode_6 = surface&&info.lbm->get_D()==1u ? (mode&0b01000000 ? " active " : "inactive") : "disabled";
+			string mode_7 = particles ? (mode&0b10000000 ? " active " : "inactive") : "disabled";
+
+			const int sl = info.lbm->graphics.slice_mode;
+			const string sx = "x="+alignr(4u, info.lbm->graphics.slice_x);
+			const string sy = "y="+alignr(4u, info.lbm->graphics.slice_y);
+			const string sz = "z="+alignr(4u, info.lbm->graphics.slice_z);
+			string slice = sl==0 ? "      disabled      " : sl==1 ? sx+"|      |      " : sl==2 ? "      |"+sy+"|      " : sl==3 ? "      |      |"+sz : sl==4 ? sx+"|      |"+sz : sl==5 ? sx+"|"+sy+"|"+sz : sl==6 ? "      |"+sy+"|"+sz : sx+"|"+sy+"|      ";
+
 			draw_label(ox, oy+i, "Keyboard/Mouse Controls: ", c); i+=2*FONT_HEIGHT;
 			draw_label(ox, oy+i, "P ("+string(key_P?"running ":" paused ")+"): start/pause simulation", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "H ("+string(key_H?" shown  ":" hidden ")+"): show/hide help", c); i+=2*FONT_HEIGHT;
-			draw_label(ox, oy+i, "1 ("+string(key_1?" active ":"inactive")+"): flags (and force vectors on solid boundary nodes if the extension is used)", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "2 ("+string(key_2?" active ":"inactive")+"): velocity field", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "3 ("+string(key_3?" active ":"inactive")+"): streamlines", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "4 ("+string(key_4?" active ":"inactive")+"): vorticity / velocity-colored Q-criterion isosurface", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "5 ("+string(surface ? (key_5?" active ":"inactive") : "disabled")+"): rasterized free surface", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "6 ("+string(surface&&info.lbm->get_D()==1u ? (key_6?" active ":"inactive") : "disabled")+"): raytraced free surface", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "7 ("+string(particles ? (key_7?" active ":"inactive") : "disabled")+"): particles", c); i+=2*FONT_HEIGHT;
+			draw_label(ox, oy+i, "1 ("+mode_1+"): flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "2 ("+mode_2+"): velocity field", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "3 ("+mode_3+"): streamlines", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "4 ("+mode_4+"): vorticity / velocity-colored Q-criterion isosurface", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "5 ("+mode_5+"): rasterized free surface", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "6 ("+mode_6+"): raytraced free surface", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "7 ("+mode_7+"): particles", c); i+=2*FONT_HEIGHT;
+			draw_label(ox, oy+i, "T: ("+slice+"): toggle slice visualization mode", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "Q/E: move slice in slice visualization mode", c); i+=2*FONT_HEIGHT;
 			draw_label(ox, oy+i, "Mouse or I/J/K/L (rx="+alignr(4u, to_int(fmod(degrees(camera.rx)+90.0+360.0, 360.0)-180.0))+", ry="+alignr(3u, to_int(180.0-degrees(camera.ry)))+"): rotate camera", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Scrollwheel or +/- ("+to_string(camera.free ? (float)camera.free_camera_velocity : camera.zoom*(float)fmax(fmax(info.lbm->get_Nx(), info.lbm->get_Ny()), info.lbm->get_Nz())/(float)min(camera.width, camera.height), 3u)+"): zoom (centered camera mode) or camera movement speed (free camera mode)", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Mouseclick or U: toggle rotation with Mouse and angle snap rotation with I/J/K/L", c); i+=FONT_HEIGHT;
