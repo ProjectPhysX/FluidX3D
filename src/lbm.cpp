@@ -623,6 +623,9 @@ void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, con
 	}
 	if(nu==0.0f) print_error("Viscosity cannot be 0. Change it in setup.cpp."); // sanity checks for viscosity
 	else if(nu<0.0f) print_error("Viscosity cannot be negative. Remove the \"-\" in setup.cpp.");
+#ifdef D2Q9
+	if(Nz!=1u) print_error("D2Q9 is the 2D velocity set. You have to set Nz=1u in the LBM constructor! Currently you have set Nz="+to_string(Nz)+"u.");
+#endif // D2Q9
 #if !defined(SRT)&&!defined(TRT)
 	print_error("No LBM collision operator selected. Uncomment either \"#define SRT\" or \"#define TRT\" in defines.hpp");
 #elif defined(SRT)&&defined(TRT)
