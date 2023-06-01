@@ -1260,7 +1260,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float center_offset = plic_cube(phit[0], by); // calculate z-offset PLIC of center point only once
 	for(uint i=1u; i<9u; i++) { // iterate over neighbors, no loop unrolling here (50% better perfoemance without loop unrolling)
 		if(phit[i]>0.0f&&phit[i]<1.0f) { // limit neighbors to interface nodes
-			const float3 ei = (float3)(c_D2Q9(i), c_D2Q9(9+i), 0.0f); // assume neighbor normal vector is the same as center normal vector
+			const float3 ei = (float3)(c(i), c(9u+i), 0.0f); // assume neighbor normal vector is the same as center normal vector
 			const float offset = plic_cube(phit[i], by)-center_offset;
 			p[number++] = (float2)(dot(ei, bx), dot(ei, by)+offset); // do coordinate system transformation into (x, f(x)) and apply PLIC pffsets
 		}
