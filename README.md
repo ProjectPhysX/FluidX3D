@@ -334,7 +334,7 @@ In consequence, the arithmetic intensity of this implementation is 2.37 (FP32/FP
 
 If your GPU/CPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
 
-Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
+Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung, 🟤 Glenfly
 
 | Device                                           | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :----------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
@@ -416,6 +416,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 | 🟢&nbsp;Quadro&nbsp;K2000                        |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)      |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |       0.256 |            6 |                1 ( 2%) |                 1 ( 1%) |                 1 ( 1%) |
+| 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
 | 🟣&nbsp;M2&nbsp;Max&nbsp;GPU&nbsp;38C&nbsp;32GB  |               9.73 |          22 |          400 |             2405 (92%) |              4641 (89%) |              2444 (47%) |
 | 🟣&nbsp;M1&nbsp;Max&nbsp;GPU&nbsp;24C&nbsp;32GB  |               6.14 |          22 |          400 |             2369 (91%) |              4496 (87%) |              2777 (53%) |
@@ -457,7 +458,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
 
 Multi-GPU benchmarks are done at the largest possible grid resolution with a cubic domain, and either 2x1x1, 2x2x1 or 2x2x2 of these cubic domains together. The percentages in brackets are single-GPU roofline model efficiency, and the multiplicator numbers in brackets are scaling factors relative to benchmarked single-GPU performance.
 
-Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung
+Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung, 🟤 Glenfly
 
 | Device                                                          | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :-------------------------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
