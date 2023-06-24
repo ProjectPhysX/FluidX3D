@@ -15,10 +15,10 @@
 
 #define BENCHMARK // disable all extensions and setups and run benchmark setup instead
 
-//#define VOLUME_FORCE // enables global force per volume in one direction, specified in the LBM class constructor; the force can be changed on-the-fly between time steps at no performance cost
+//#define VOLUME_FORCE // enables global force per volume in one direction (equivalent to a pressure gradient); specified in the LBM class constructor; the force can be changed on-the-fly between time steps at no performance cost
 //#define FORCE_FIELD // enables computing the forces on solid boundaries with lbm.calculate_force_on_boundaries(); and enables setting the force for each lattice point independently (enable VOLUME_FORCE too); allocates an extra 12 Bytes/node
-//#define MOVING_BOUNDARIES // enables moving solids: set solid nodes to TYPE_S and set their velocity u unequal to zero
 //#define EQUILIBRIUM_BOUNDARIES // enables fixing the velocity/density by marking nodes with TYPE_E; can be used for inflow/outflow; does not reflect shock waves
+//#define MOVING_BOUNDARIES // enables moving solids: set solid nodes to TYPE_S and set their velocity u unequal to zero
 //#define SURFACE // enables free surface LBM: mark fluid nodes with TYPE_F; at initialization the TYPE_I interface and TYPE_G gas domains will automatically be completed; allocates an extra 12 Bytes/node
 //#define TEMPERATURE // enables temperature extension; set fixed-temperature nodes with TYPE_T (similar to EQUILIBRIUM_BOUNDARIES); allocates an extra 32 (FP32) or 18 (FP16) Bytes/node
 //#define SUBGRID // enables Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
@@ -28,9 +28,10 @@
 //#define INTERACTIVE_GRAPHICS_ASCII // enable interactive graphics in ASCII mode the console; start/pause the simulation by pressing P
 //#define GRAPHICS // run FluidX3D in the console, but still enable graphics functionality for writing rendered frames to the hard drive
 
-#define GRAPHICS_FRAME_WIDTH 3840 // set frame width if only GRAPHICS is enabled
-#define GRAPHICS_FRAME_HEIGHT 2160 // set frame height if only GRAPHICS is enabled
+#define GRAPHICS_FRAME_WIDTH 1920 // set frame width if only GRAPHICS is enabled
+#define GRAPHICS_FRAME_HEIGHT 1080 // set frame height if only GRAPHICS is enabled
 #define GRAPHICS_BACKGROUND_COLOR 0x000000 // set background color; black background (default) = 0x000000, white background = 0xFFFFFF
+#define GRAPHICS_TRANSPARENCY 0.7f // optional: comment/uncomment this line to disable/enable semi-transparent rendering (looks better but reduces framerate), number represents transparency (equal to 1-opacity) (default: 0.7f)
 #define GRAPHICS_U_MAX 0.2f // maximum velocity for velocity coloring in units of LBM lattice speed of sound (c=1/sqrt(3)) (default: 0.2f)
 #define GRAPHICS_Q_CRITERION 0.0001f // Q-criterion value for Q-criterion isosurface visualization (default: 0.0001f)
 #define GRAPHICS_F_MAX 0.002f // maximum force in LBM units for visualization of forces on solid boundaries if VOLUME_FORCE is enabled and lbm.calculate_force_on_boundaries(); is called (default: 0.002f)
@@ -51,6 +52,15 @@
 #define TYPE_G 0b00100000 // gas
 #define TYPE_X 0b01000000 // reserved type X
 #define TYPE_Y 0b10000000 // reserved type Y
+
+#define VIS_FLAG_LATTICE  0b00000001 // lbm.graphics.visualization_modes = VIS_...|VIS_...|VIS_...;
+#define VIS_FLAG_SURFACE  0b00000010
+#define VIS_FIELD         0b00000100
+#define VIS_STREAMLINES   0b00001000
+#define VIS_Q_CRITERION   0b00010000
+#define VIS_PHI_RASTERIZE 0b00100000
+#define VIS_PHI_RAYTRACE  0b01000000
+#define VIS_PARTICLES     0b10000000
 
 #if defined(FP16S) || defined(FP16C)
 #define fpxx ushort
@@ -87,4 +97,5 @@
 
 #if defined(INTERACTIVE_GRAPHICS) || defined(INTERACTIVE_GRAPHICS_ASCII)
 #define GRAPHICS
+#define UPDATE_FIELDS // to prevent flickering artifacts in interactive graphics
 #endif // INTERACTIVE_GRAPHICS || INTERACTIVE_GRAPHICS_ASCII

@@ -11,7 +11,7 @@ void main_label(const double frametime) {
 			const int ox=camera.width-37*(FONT_WIDTH)-1, oy=camera.height-11*(FONT_HEIGHT)-1;
 			int i = 0;
 			const float Re = info.lbm->get_Re_max();
-			const double pn=(double)info.lbm->get_N(), mt=(double)info.device_transfer;
+			const double pn=(double)info.lbm->get_N(), mt=(double)bandwidth_bytes_per_cell_device();
 			draw_label(ox, oy+i, "Resolution "     +alignr(26u, to_string(info.lbm->get_Nx())+"x"+to_string(info.lbm->get_Ny())+"x"+to_string(info.lbm->get_Nz())+" = "+to_string(info.lbm->get_N())), c); i+=FONT_HEIGHT;
 			//draw_label(ox, oy+i, "Volume Force "   +alignr(16u, /****************************************/ info.lbm->get_fx())+","+alignr(15, info.lbm->get_fy())+", "+alignr(15, info.lbm->get_fz()), c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Kin. Viscosity " +alignr(22u, /************************************************************************************************/ to_string(info.lbm->get_nu(), 8u)), c); i+=FONT_HEIGHT;
@@ -42,13 +42,13 @@ void main_label(const double frametime) {
 			int i = 0;
 
 			const int mode = info.lbm->graphics.visualization_modes;
-			string mode_1 = (mode&3)==0 ? "inactive" : (mode&3)==1 ? " flags  " : (mode&3)==2 ? "  both  " : " solid  ";
-			string mode_2 = mode&0b00000100 ? " active " : "inactive";
-			string mode_3 = mode&0b00001000 ? " active " : "inactive";
-			string mode_4 = mode&0b00010000 ? " active " : "inactive";
-			string mode_5 = surface ? (mode&0b00100000 ? " active " : "inactive") : "disabled";
-			string mode_6 = surface&&info.lbm->get_D()==1u ? (mode&0b01000000 ? " active " : "inactive") : "disabled";
-			string mode_7 = particles ? (mode&0b10000000 ? " active " : "inactive") : "disabled";
+			string mode_1 = (mode&3)==0 ? "inactive" : (mode&3)==VIS_FLAG_LATTICE ? " flags  " : (mode&3)==VIS_FLAG_SURFACE ? " solid  " : "  both  ";
+			string mode_2 = mode&VIS_FIELD ? " active " : "inactive";
+			string mode_3 = mode&VIS_STREAMLINES ? " active " : "inactive";
+			string mode_4 = mode&VIS_Q_CRITERION ? " active " : "inactive";
+			string mode_5 = surface ? (mode&VIS_PHI_RASTERIZE ? " active " : "inactive") : "disabled";
+			string mode_6 = surface&&info.lbm->get_D()==1u ? (mode&VIS_PHI_RAYTRACE ? " active " : "inactive") : "disabled";
+			string mode_7 = particles ? (mode&VIS_PARTICLES ? " active " : "inactive") : "disabled";
 
 			const int sl = info.lbm->graphics.slice_mode;
 			const string sx = "x="+alignr(4u, info.lbm->graphics.slice_x);

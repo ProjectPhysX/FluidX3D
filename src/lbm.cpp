@@ -1,5 +1,4 @@
 #include "lbm.hpp"
-#include "graphics.hpp"
 
 
 
@@ -22,6 +21,57 @@ const uint velocity_set = 27u;
 const uint dimensions = 3u;
 const uint transfers = 9u;
 #endif // D3Q27
+
+uint bytes_per_cell_host() { // returns the number of Bytes per cell allocated in host memory
+	uint bytes_per_cell = 17u; // rho, u, flags
+#ifdef FORCE_FIELD
+	bytes_per_cell += 12u; // F
+#endif // FORCE_FIELD
+#ifdef SURFACE
+	bytes_per_cell += 4u; // phi
+#endif // SURFACE
+#ifdef TEMPERATURE
+	bytes_per_cell += 4u; // T
+#endif // TEMPERATURE
+	return bytes_per_cell;
+}
+uint bytes_per_cell_device() { // returns the number of Bytes per cell allocated in device memory
+	uint bytes_per_cell = velocity_set*sizeof(fpxx)+17u; // fi, rho, u, flags
+#ifdef FORCE_FIELD
+	bytes_per_cell += 12u; // F
+#endif // FORCE_FIELD
+#ifdef SURFACE
+	bytes_per_cell += 12u; // phi, mass, flags
+#endif // SURFACE
+#ifdef TEMPERATURE
+	bytes_per_cell += 7u*sizeof(fpxx)+4u; // gi, T
+#endif // TEMPERATURE
+	return bytes_per_cell;
+}
+uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per cell per time step from/to device memory
+	uint bandwidth_bytes_per_cell = velocity_set*2u*sizeof(fpxx)+1u; // lattice.set()*2*fi, flags
+#ifdef UPDATE_FIELDS
+	bandwidth_bytes_per_cell += 16u; // rho, u
+#endif // UPDATE_FIELDS
+#ifdef FORCE_FIELD
+	bandwidth_bytes_per_cell += 12u; // F
+#endif // FORCE_FIELD
+#if defined(MOVING_BOUNDARIES)||defined(SURFACE)||defined(TEMPERATURE)
+	bandwidth_bytes_per_cell += (velocity_set-1u)*1u; // neighbor flags have to be loaded
+#endif // MOVING_BOUNDARIES, SURFACE or TEMPERATURE
+#ifdef SURFACE
+	bandwidth_bytes_per_cell += (1u+(2u*velocity_set-1u)*sizeof(fpxx)+8u+(velocity_set-1u)*4u) + 1u + 1u + (4u+velocity_set+4u+4u+4u); // surface_0 (flags, fi, mass, massex), surface_1 (flags), surface_2 (flags), surface_3 (rho, flags, mass, massex, phi)
+#endif // SURFACE
+#ifdef TEMPERATURE
+	bandwidth_bytes_per_cell += 7u*2u*sizeof(fpxx)+4u; // 2*gi, T
+#endif // TEMPERATURE
+	return bandwidth_bytes_per_cell;
+}
+uint3 resolution(const float3 box_aspect_ratio, const uint memory) { // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	float memory_required = (box_aspect_ratio.x*box_aspect_ratio.y*box_aspect_ratio.z)*(float)bytes_per_cell_device()/1048576.0f; // in MB
+	float scaling = cbrt((float)memory/memory_required);
+	return uint3(to_uint(scaling*box_aspect_ratio.x), to_uint(scaling*box_aspect_ratio.y), to_uint(scaling*box_aspect_ratio.z));
+}
 
 string default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
 	string time = "00000000"+to_string(t);
@@ -60,10 +110,10 @@ LBM_Domain::LBM_Domain(const Device_Info& device_info, const uint Nx, const uint
 
 void LBM_Domain::allocate(Device& device) {
 	const ulong N = get_N();
+	fi = Memory<fpxx>(device, N, velocity_set, false);
 	rho = Memory<float>(device, N, 1u, true, true, 1.0f);
 	u = Memory<float>(device, N, 3u);
 	flags = Memory<uchar>(device, N);
-	fi = Memory<fpxx>(device, N, velocity_set, false);
 	kernel_initialize = Kernel(device, N, "initialize", fi, rho, u, flags);
 	kernel_stream_collide = Kernel(device, N, "stream_collide", fi, rho, u, flags, t, fx, fy, fz);
 	kernel_update_fields = Kernel(device, N, "update_fields", fi, rho, u, flags, t, fx, fy, fz);
@@ -82,8 +132,8 @@ void LBM_Domain::allocate(Device& device) {
 
 #ifdef SURFACE
 	phi = Memory<float>(device, N);
-	mass = Memory<float>(device, N);
-	massex = Memory<float>(device, N);
+	mass = Memory<float>(device, N, 1u, false);
+	massex = Memory<float>(device, N, 1u, false);
 	kernel_initialize.add_parameters(mass, massex, phi);
 	kernel_stream_collide.add_parameters(mass);
 	kernel_surface_0 = Kernel(device, N, "surface_0", fi, rho, u, flags, mass, massex, phi, t, fx, fy, fz);
@@ -93,8 +143,8 @@ void LBM_Domain::allocate(Device& device) {
 #endif // SURFACE
 
 #ifdef TEMPERATURE
-	T = Memory<float>(device, N, 1u, true, true, 1.0f);
 	gi = Memory<fpxx>(device, N, 7u, false);
+	T = Memory<float>(device, N, 1u, true, true, 1.0f);
 	kernel_initialize.add_parameters(gi, T);
 	kernel_stream_collide.add_parameters(gi, T);
 	kernel_update_fields.add_parameters(gi, T);
@@ -412,29 +462,30 @@ bool LBM_Domain::Graphics::update_camera() {
 	}
 	return change; // return false if camera parameters remain unchanged
 }
-void LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, const int slice_mode, const int slice_x, const int slice_y, const int slice_z) {
+bool LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, const int slice_mode, const int slice_x, const int slice_y, const int slice_z) {
 	const bool camera_update = update_camera();
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
-	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_frame) return; // don't render a new frame if the scene hasn't changed since last frame
+	if(!camera_update&&!camera.key_update&&lbm->get_t()==t_last_rendered_frame) return false; // don't render a new frame if the scene hasn't changed since last frame
 #endif // INTERACTIVE_GRAPHICS||INTERACTIVE_GRAPHICS_ASCII
-	t_last_frame = lbm->get_t();
+	t_last_rendered_frame = lbm->get_t();
 	camera.key_update = false;
 	if(camera_update) camera_parameters.enqueue_write_to_device(); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
 	kernel_clear.enqueue_run();
 #ifdef SURFACE
-	if((visualization_modes&0b01000000)&&lbm->get_D()==1u) kernel_graphics_raytrace_phi.enqueue_run(); // disable raytracing for multi-GPU (domain decomposition rendering doesn't work for raytracing)
-	if(visualization_modes&0b00100000) kernel_graphics_rasterize_phi.enqueue_run();
+	if((visualization_modes&VIS_PHI_RAYTRACE)&&lbm->get_D()==1u) kernel_graphics_raytrace_phi.enqueue_run(); // disable raytracing for multi-GPU (domain decomposition rendering doesn't work for raytracing)
+	if(visualization_modes&VIS_PHI_RASTERIZE) kernel_graphics_rasterize_phi.enqueue_run();
 #endif // SURFACE
-	if((visualization_modes&0b11)==1||(visualization_modes&0b11)==2) kernel_graphics_flags.enqueue_run();
-	if((visualization_modes&0b11)==2||(visualization_modes&0b11)==3) kernel_graphics_flags_mc.enqueue_run();
-	if(visualization_modes&0b00000100) kernel_graphics_field.set_parameters(5u, slice_mode, slice_x-lbm->Ox, slice_y-lbm->Oy, slice_z-lbm->Oz).enqueue_run();
-	if(visualization_modes&0b00001000) kernel_graphics_streamline.set_parameters(5u, slice_mode, slice_x-lbm->Ox, slice_y-lbm->Oy, slice_z-lbm->Oz).enqueue_run();
-	if(visualization_modes&0b00010000) kernel_graphics_q.enqueue_run();
+	if(visualization_modes&VIS_FLAG_LATTICE ) kernel_graphics_flags.enqueue_run();
+	if(visualization_modes&VIS_FLAG_SURFACE ) kernel_graphics_flags_mc.enqueue_run();
+	if(visualization_modes&VIS_FIELD        ) kernel_graphics_field.set_parameters(5u, slice_mode, slice_x-lbm->Ox, slice_y-lbm->Oy, slice_z-lbm->Oz).enqueue_run();
+	if(visualization_modes&VIS_STREAMLINES  ) kernel_graphics_streamline.set_parameters(5u, slice_mode, slice_x-lbm->Ox, slice_y-lbm->Oy, slice_z-lbm->Oz).enqueue_run();
+	if(visualization_modes&VIS_Q_CRITERION  ) kernel_graphics_q.enqueue_run();
 #ifdef PARTICLES
-	if(visualization_modes&0b10000000) kernel_graphics_particles.enqueue_run();
+	if(visualization_modes&VIS_PARTICLES    ) kernel_graphics_particles.enqueue_run();
 #endif // PARTICLES
 	bitmap.enqueue_read_from_device();
 	if(lbm->get_D()>1u) zbuffer.enqueue_read_from_device();
+	return true; // new frame has been rendered
 }
 int* LBM_Domain::Graphics::get_bitmap() { // returns pointer to zbuffer
 	return bitmap.data();
@@ -467,6 +518,10 @@ string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define COLOR_X (255<<16|127<<8|  0)" // reserved type X
 	"\n	#define COLOR_Y (255<<16|255<<8|  0)" // reserved type Y
 	"\n	#define COLOR_P (255<<16|255<<8|191)" // particles
+
+#ifdef GRAPHICS_TRANSPARENCY
+	"\n	#define GRAPHICS_TRANSPARENCY "+to_string(GRAPHICS_TRANSPARENCY)+"f"
+#endif // GRAPHICS_TRANSPARENCY
 
 #ifndef SURFACE
 	"\n	#define def_skybox_width 1u"
@@ -536,23 +591,37 @@ vector<Device_Info> smart_device_selection(const uint D) {
 LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) // single device
 	:LBM(Nx, Ny, Nz, 1u, 1u, 1u, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho) { // delegating constructor
 }
-LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint particles_N, const float particles_rho)
-	:LBM(Nx, Ny, Nz, 1u, 1u, 1u, nu, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, particles_N, particles_rho) { // delegating constructor
-}
 LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx, const float fy, const float fz, const uint particles_N, const float particles_rho)
 	:LBM(Nx, Ny, Nz, 1u, 1u, 1u, nu, fx, fy, fz, 0.0f, 0.0f, 0.0f, particles_N, particles_rho) { // delegating constructor
 }
+LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint particles_N, const float particles_rho)
+	:LBM(Nx, Ny, Nz, 1u, 1u, 1u, nu, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, particles_N, particles_rho) { // delegating constructor
+}
+LBM::LBM(const uint3 N, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho)
+	:LBM(N.x, N.y, N.z, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho) { // delegating constructor
+}
+LBM::LBM(const uint3 N, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) // single device
+	:LBM(N.x, N.y, N.z, 1u, 1u, 1u, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho) { // delegating constructor
+}
+LBM::LBM(const uint3 N, const float nu, const uint particles_N, const float particles_rho)
+	:LBM(N.x, N.y, N.z, 1u, 1u, 1u, nu, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, particles_N, particles_rho) { // delegating constructor
+}
+LBM::LBM(const uint3 N, const float nu, const float fx, const float fy, const float fz, const uint particles_N, const float particles_rho)
+	:LBM(N.x, N.y, N.z, 1u, 1u, 1u, nu, fx, fy, fz, 0.0f, 0.0f, 0.0f, particles_N, particles_rho) { // delegating constructor
+}
 LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // multiple devices
-	this->Nx = Nx; this->Ny = Ny; this->Nz = Nz;
+	const uint NDx=(Nx/Dx)*Dx, NDy=(Ny/Dy)*Dy, NDz=(Nz/Dz)*Dz; // make resolution equally divisible by domains
+	if(NDx!=Nx||NDy!=Ny||NDz!=Nz) print_warning("LBM grid ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+") is not equally divisible in domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+"). Changeing resolution to ("+to_string(NDx)+"x"+to_string(NDy)+"x"+to_string(NDz)+").");
+	this->Nx = NDx; this->Ny = NDy; this->Nz = NDz;
 	this->Dx = Dx; this->Dy = Dy; this->Dz = Dz;
 	const uint D = Dx*Dy*Dz;
 	const uint Hx=Dx>1u, Hy=Dy>1u, Hz=Dz>1u; // halo offsets
 	const vector<Device_Info>& device_infos = smart_device_selection(D);
-	sanity_checks_constructor(device_infos, Nx, Ny, Nz, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+	sanity_checks_constructor(device_infos, this->Nx, this->Ny, this->Nz, Dx, Dy, Dz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
 	lbm = new LBM_Domain*[D];
 	for(uint d=0u; d<D; d++) { // { thread* threads=new thread[D]; for(uint d=0u; d<D; d++) threads[d]=thread([=]() {
 		const uint x=((uint)d%(Dx*Dy))%Dx, y=((uint)d%(Dx*Dy))/Dx, z=(uint)d/(Dx*Dy); // d = x+(y+z*Dy)*Dx
-		lbm[d] = new LBM_Domain(device_infos[d], Nx/Dx+2u*Hx, Ny/Dy+2u*Hy, Nz/Dz+2u*Hz, Dx, Dy, Dz, (int)(x*Nx/Dx)-(int)Hx, (int)(y*Ny/Dy)-(int)Hy, (int)(z*Nz/Dz)-(int)Hz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+		lbm[d] = new LBM_Domain(device_infos[d], this->Nx/Dx+2u*Hx, this->Ny/Dy+2u*Hy, this->Nz/Dz+2u*Hz, Dx, Dy, Dz, (int)(x*this->Nx/Dx)-(int)Hx, (int)(y*this->Ny/Dy)-(int)Hy, (int)(z*this->Nz/Dz)-(int)Hz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
 	} // }); for(uint d=0u; d<D; d++) threads[d].join(); delete[] threads; }
 	{
 		Memory<float>** buffers_rho = new Memory<float>*[D];
@@ -602,19 +671,18 @@ LBM::~LBM() {
 
 void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx, const float fy, const float fz, const float sigma, const float alpha, const float beta, const uint particles_N, const float particles_rho) { // sanity checks on grid resolution and extension support
 	if((ulong)Nx*(ulong)Ny*(ulong)Nz==0ull) print_error("Grid point number is 0: "+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+" = 0.");
-	if(Nx%Dx!=0u || Ny%Dy!=0u || Nz%Dz!=0u) print_error("LBM grid ("+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+") is not equally divisible in domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+").");
 	if(Dx*Dy*Dz==0u) print_error("You specified 0 LBM grid domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+"). There has to be at least 1 domain in every direction. Check your input in LBM constructor.");
 	const uint local_Nx=Nx/Dx+2u*(Dx>1u), local_Ny=Ny/Dy+2u*(Dy>1u), local_Nz=Nz/Dz+2u*(Dz>1u);
 	if((ulong)local_Nx*(ulong)local_Ny*(ulong)local_Nz>=(ulong)max_uint) print_error("Single domain grid resolution is too large: "+to_string(local_Nx)+"x"+to_string(local_Ny)+"x"+to_string(local_Nz)+" > 2^32.");
 	uint memory_available = max_uint; // in MB
 	for(Device_Info device_info : device_infos) memory_available = min(memory_available, device_info.memory);
-	uint memory_required = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*((ulong)velocity_set*sizeof(fpxx)+17ull)/1048576ull); // in MB
+	uint memory_required = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*(ulong)bytes_per_cell_device()/1048576ull); // in MB
 	if(memory_required>memory_available) {
 		float factor = cbrt((float)memory_available/(float)memory_required);
 		const uint maxNx=(uint)(factor*(float)Nx), maxNy=(uint)(factor*(float)Ny), maxNz=(uint)(factor*(float)Nz);
 		string message = "Grid resolution ("+to_string(Nx)+", "+to_string(Ny)+", "+to_string(Nz)+") is too large: "+to_string(Dx*Dy*Dz)+"x "+to_string(memory_required)+" MB required, "+to_string(Dx*Dy*Dz)+"x "+to_string(memory_available)+" MB available. Largest possible resolution is ("+to_string(maxNx)+", "+to_string(maxNy)+", "+to_string(maxNz)+"). Restart the simulation with lower resolution or on different device(s) with more memory.";
 #if !defined(FP16S)&&!defined(FP16C)
-		uint memory_required_fp16 = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*((ulong)velocity_set*2ull+17ull)/1048576ull); // in MB
+		uint memory_required_fp16 = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*(ulong)(bytes_per_cell_device()-velocity_set*2u)/1048576ull); // in MB
 		float factor_fp16 = cbrt((float)memory_available/(float)memory_required_fp16);
 		const uint maxNx_fp16=(uint)(factor_fp16*(float)Nx), maxNy_fp16=(uint)(factor_fp16*(float)Ny), maxNz_fp16=(uint)(factor_fp16*(float)Nz);
 		message += " Consider using FP16S/FP16C memory compression to double maximum grid resolution to a maximum of ("+to_string(maxNx_fp16)+", "+to_string(maxNy_fp16)+", "+to_string(maxNz_fp16)+"); for this, uncomment \"#define FP16S\" or \"#define FP16C\" in defines.hpp.";
@@ -734,8 +802,10 @@ void LBM::do_time_step() { // call kernel_stream_collide to perform one LBM time
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_0();
 #endif // SURFACE
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_stream_collide(); // run LBM stream_collide kernel after domain communication
+#if defined(SURFACE) || defined(GRAPHICS)
+	communicate_rho_u_flags(); // rho/u/flags halo data is required for SURFACE extension, and u halo data is required for Q-criterion rendering
+#endif // SURFACE || GRAPHICS
 #ifdef SURFACE
-	communicate_rho_u_flags();
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_1();
 	communicate_flags();
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_surface_2();
@@ -897,7 +967,7 @@ void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // rem
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_unvoxelize_mesh_on_device(mesh, flag);
 	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
 }
-void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path) { // write mesh to binary .vtk file
+void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path) const { // write mesh to binary .vtk file
 	const string header_1 = "# vtk DataFile Version 3.0\nData\nBINARY\nDATASET POLYDATA\nPOINTS "+to_string(3u*mesh->triangle_number)+" float\n";
 	const string header_2 = "POLYGONS "+to_string(mesh->triangle_number)+" "+to_string(4u*mesh->triangle_number)+"\n";
 	float* points = new float[9u*mesh->triangle_number];
@@ -951,20 +1021,17 @@ void LBM::voxelize_stl(const string& path, const float size, const uchar flag) {
 #ifdef GRAPHICS
 int* LBM::Graphics::draw_frame() {
 #ifndef UPDATE_FIELDS
-	if(visualization_modes&0b00011100) {
+	if(visualization_modes&(VIS_FIELD|VIS_STREAMLINES|VIS_Q_CRITERION)) {
 		for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->enqueue_update_fields(); // only call update_fields() if the time step has changed since the last rendered frame
-		//for(uint d=0u; d<lbm->get_D(); d++) lbm->communicate_rho_u_flags();
 	}
 #endif // UPDATE_FIELDS
-
 	if(key_1) { visualization_modes = (visualization_modes&~0b11)|(((visualization_modes&0b11)+1)%4); key_1 = false; }
-	if(key_2) { visualization_modes ^= 0b00000100; key_2 = false; }
-	if(key_3) { visualization_modes ^= 0b00001000; key_3 = false; }
-	if(key_4) { visualization_modes ^= 0b00010000; key_4 = false; }
-	if(key_5) { visualization_modes ^= 0b00100000; key_5 = false; }
-	if(key_6) { visualization_modes ^= 0b01000000; key_6 = false; }
-	if(key_7) { visualization_modes ^= 0b10000000; key_7 = false; }
-
+	if(key_2) { visualization_modes ^= VIS_FIELD        ; key_2 = false; }
+	if(key_3) { visualization_modes ^= VIS_STREAMLINES  ; key_3 = false; }
+	if(key_4) { visualization_modes ^= VIS_Q_CRITERION  ; key_4 = false; }
+	if(key_5) { visualization_modes ^= VIS_PHI_RASTERIZE; key_5 = false; }
+	if(key_6) { visualization_modes ^= VIS_PHI_RAYTRACE ; key_6 = false; }
+	if(key_7) { visualization_modes ^= VIS_PARTICLES    ; key_7 = false; }
 	if(key_T) {
 		slice_mode = (slice_mode+1)%8; key_T = false;
 	}
@@ -980,20 +1047,24 @@ int* LBM::Graphics::draw_frame() {
 		if(key_Q) { slice_z = clamp(slice_z-1, 0, (int)lbm->get_Nz()-1); key_Q = false; }
 		if(key_E) { slice_z = clamp(slice_z+1, 0, (int)lbm->get_Nz()-1); key_E = false; }
 	}
-
-	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->graphics.enqueue_draw_frame(visualization_modes, slice_mode, slice_x, slice_y, slice_z);
+	bool new_frame = true;
+	for(uint d=0u; d<lbm->get_D(); d++) new_frame = new_frame && lbm->lbm[d]->graphics.enqueue_draw_frame(visualization_modes, slice_mode, slice_x, slice_y, slice_z);
 	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm[d]->finish_queue();
 	int* bitmap = lbm->lbm[0]->graphics.get_bitmap();
 	int* zbuffer = lbm->lbm[0]->graphics.get_zbuffer();
-	for(uint d=1u; d<lbm->get_D(); d++) {
+	for(uint d=1u; d<lbm->get_D()&&new_frame; d++) {
 		const int* bitmap_d = lbm->lbm[d]->graphics.get_bitmap(); // each domain renders its own frame
 		const int* zbuffer_d = lbm->lbm[d]->graphics.get_zbuffer();
 		for(uint i=0u; i<camera.width*camera.height; i++) {
+#ifndef GRAPHICS_TRANSPARENCY
 			const int zdi = zbuffer_d[i];
 			if(zdi>zbuffer[i]) {
 				bitmap[i] = bitmap_d[i]; // overlay frames using their z-buffers
 				zbuffer[i] = zdi;
 			}
+#else // GRAPHICS_TRANSPARENCY
+			bitmap[i] = color_add(bitmap[i], bitmap_d[i]);
+#endif // GRAPHICS_TRANSPARENCY
 		}
 	}
 	return bitmap;
@@ -1013,6 +1084,15 @@ void LBM::Graphics::set_camera_free(const float3& p, const float rx, const float
 	camera.fov = clamp((float)fov, 1E-6f, 179.0f);
 	camera.zoom = 1E16f;
 	camera.pos = p;
+}
+bool LBM::Graphics::next_frame(const ulong total_time_steps, const float video_length_seconds) { // returns true once simulation time has progressed enough to render the next video frame for a 60fps video of specified length
+	const uint new_frame = to_uint((float)lbm->get_t()/(float)total_time_steps*video_length_seconds*60.0f);
+	if(new_frame!=last_exported_frame) {
+		last_exported_frame = new_frame;
+		return true;
+	} else {
+		return false;
+	}
 }
 void LBM::Graphics::print_frame() { // preview current frame in console
 #ifndef INTERACTIVE_GRAPHICS_ASCII

@@ -3,9 +3,8 @@
 The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper").
 
 <a href="https://youtu.be/-MkRBeQkLk8"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
-<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/3JNVBQyetMA"><img src="https://img.youtube.com/vi/3JNVBQyetMA/maxresdefault.jpg" width="50%"></img></a>
+<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/BStzTRmLW7Q"><img src="https://img.youtube.com/vi/BStzTRmLW7Q/maxresdefault.jpg" width="50%"></img></a>
 (click on images to show videos on YouTube)
-
 
 <details><summary>Update History</summary>
 
@@ -69,8 +68,33 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - reverted back to separate `cl::Context` for each OpenCL device, as the shared Context otherwise would allocate extra VRAM on all other unused Nvidia GPUs
   - removed Debug and x86 configurations from Visual Studio solution file (one less complication for compiling)
   - fixed bug that particles could get too close to walls and get stuck, or leave the fluid phase (added boundary force)
+- v2.8 (24.06.2023)
+  - finally added more [documentation](DOCUMENTATION.md)
+  - cleaned up all sample setups in `setup.cpp` for more beginner-friendliness, and added required extensions in `defines.hpp` as comments to all setups
+  - improved loading of composite `.stl` geometries, by adding an option to omit automatic mesh repositioning, added more functionality to `Mesh` struct in `utilities.hpp`
+  - added `uint3 resolution(float3 box_aspect_ratio, uint memory)` function to compute simulation box resolution based on box aspect ratio and VRAM occupation in MB
+  - added `bool lbm.graphics.next_frame(...)` function to export images for a specified video length in the `main_setup` compute loop
+  - added `VIS_...` macros to ease setting visualization modes in headless graphics mode in `lbm.graphics.visualization_modes`
+  - simulation box dimensions are now automatically made equally divisible by domains for multi-GPU simulations
+  - fixed Info/Warning/Error message formatting for loading files and made Info/Warning/Error message labels colored
+  - added Ahmed body setup as an example on how body forces and drag coefficient are computed
+  - added Cessna 172 and Bell 222 setups to showcase loading composite .stl geometries and revoxelization moving parts
+  - added optional semi-transparent rendering mode (`#define GRAPHICS_TRANSPARENCY 0.7f` in `defines.hpp`)
+  - fixed flickering of streamline visualization in interactive graphics
+  - improved smooth positioning of streamlines in slice mode
+  - fixed bug where mass and massex in SURFACE extension were also allocated in CPU RAM (not required)
+  - fixed bug in Q-criterion rendering of halo data in multi-GPU mode, reduced gap width between domains
+  - removed shared memory optimization from mesh voxelization kernel, as it crashes on Nvidia GPUs with new GPU drivers and is incompatible with old OpenCL 1.0 GPUs
+  - fixed raytracing attenuation color when no surface is at the simulation box walls with periodic boundaries
 
 </details>
+
+
+
+## How to get started?
+
+Head over to the [FluidX3D Documentation](DOCUMENTATION.md)!
+
 
 
 ## Compute Features - Getting the Memory Problem under Control
@@ -282,44 +306,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - works in Windows and Linux with C++17, with limited support also for MacOS and Android
 - supports importing and voxelizing triangle meshes from binary `.stl` files, with fast GPU voxelization
 - supports exporting volumetric data as binary `.vtk` files with `lbm.<field>.write_device_to_vtk();`
+- supports exporting triangle meshes as binary `.vtk` files with `lbm.write_mesh_to_vtk(Mesh* mesh);`
 - supports exporting rendered frames as `.png`/`.qoi`/`.bmp` files with `lbm.graphics.write_frame();`, encoding is handled in parallel on the CPU while the simulation on GPU can continue without delay
-
-
-
-## How to get started?
-
-1. Check the settings and extensions in [`src/defines.hpp`](src/defines.hpp) by uncommenting corresponding lines.
-2. Write a C++ setup skript as `main_setup()` function in [`src/setup.cpp`](src/setup.cpp) (get inspiration from existing setups):
-   - For unit conversion, use the `units` struct.
-   - For initializing the box, use call `LBM lbm(Nx, Ny, Nz, nu, ...);` constructor. To use multiple GPUs, use `LBM lbm(Nx, Ny, Nz, Dx, Dy, Dz, nu, ...);`, with `Dx`/`Dy`/`Dz` indicating how many domains (GPUs) there are in each spatial direction.
-   - Set the initial condition in a loop that iterates over the entire lattice by writing to `lbm.rho[n]`/`lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]`/`lbm.flags[n]`.
-   - Call `lbm.run();` to initialize and execute the setup (infinite time steps) or `lbm.run(time_steps);` to execute only a specific number of time steps.
-   - As long as the `lbm` object is in scope, you can access the memory. As soon as it goes out of scope, all memory associated to the current simulation is freed again.
-3. On Windows in Visual Studio Community click compile+run, or on Linux run `chmod +x make.sh` and `./make.sh`; this will automatically select the fastest installed GPU(s). Alternatively, you can add the device ID(s) as command-line arguments, for example `./make.sh 2` to compile+run on device 2, or `bin/FluidX3D 1 3` to run the executable on devices 1 and 3. Compile time for the entire code is about 10 seconds. If you use `INTERACTIVE_GRAPHICS` on Linux, change to the "compile on Linux with X11" command in `make.sh`.
-4. Keyboard/mouse controls with `INTERACTIVE_GRAPHICS`/`INTERACTIVE_GRAPHICS_ASCII` enabled:
-   - <kbd>P</kbd>: start/pause the simulation
-   - <kbd>H</kbd>: show/hide help
-   - <kbd>1</kbd>: flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)
-   - <kbd>2</kbd>: velocity field
-   - <kbd>3</kbd>: streamlines
-   - <kbd>4</kbd>: vorticity / velocity-colored Q-criterion isosurface
-   - <kbd>5</kbd>: rasterized free surface
-   - <kbd>6</kbd>: raytraced free surface
-   - <kbd>7</kbd>: particles
-   - <kbd>T</kbd>: toggle slice visualization mode
-   - <kbd>Q</kbd>/<kbd>E</kbd>: move slice in slice visualization mode
-   - <kbd>Mouse</kbd> or <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>: rotate camera
-   - <kbd>Scrollwheel</kbd> or <kbd>+</kbd>/<kbd>-</kbd>: zoom (centered camera mode) or camera movement speed (free camera mode)
-   - <kbd>Mouseclick</kbd> or <kbd>U</kbd>: toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>
-   - <kbd>Y</kbd>/<kbd>X</kbd>: adjust camera field of view
-   - <kbd>G</kbd>: print current camera position/rotation in console as copy/paste command
-   - <kbd>R</kbd>: toggle camera autorotation
-   - <kbd>F</kbd>: toggle centered/free camera mode
-   - <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>/<kbd>Space</kbd>/<kbd>C</kbd>: move free camera
-   - <kbd>V</kbd>: toggle stereoscopic rendering for VR
-   - <kbd>B</kbd>: toggle VR-goggles/3D-TV mode for stereoscopic rendering
-   - <kbd>N</kbd>/<kbd>M</kbd>: adjust eye distance for stereoscopic rendering
-   - <kbd>Esc</kbd>/<kbd>Alt</kbd>+<kbd>F4</kbd>: quit
 
 
 
@@ -591,4 +579,4 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung, 🟤 Glenfl
 
 - FluidX3D is solo-developed and maintained by Dr. Moritz Lehmann.
 - For any questions, feedback or other inquiries, contact me at [moritz.lehmann@uni-bayreuth.de](mailto:moritz.lehmann@uni-bayreuth.de?subject=FluidX3D).
-- Updates will be posted on Twitter via [@FluidX3D](https://twitter.com/FluidX3D) and [@ProjectPhysX](https://twitter.com/ProjectPhysX), under the hashtag [#FluidX3D](https://twitter.com/hashtag/FluidX3D?src=hashtag_click&f=live) or on my [YouTube channel](https://www.youtube.com/c/ProjectPhysX).
+- Updates are posted on Twitter via [@FluidX3D](https://twitter.com/FluidX3D)/[@ProjectPhysX](https://twitter.com/ProjectPhysX)/[#FluidX3D](https://twitter.com/hashtag/FluidX3D?src=hashtag_click&f=live) and on [YouTube](https://www.youtube.com/c/ProjectPhysX).
