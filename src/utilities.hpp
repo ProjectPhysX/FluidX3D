@@ -3766,12 +3766,6 @@ inline void print(const string& s, const int textcolor) {
 inline void print(const string& s, const int textcolor, const int backgroundcolor) {
 	std::cout << s;
 }
-inline void print_no_reset(const string& s, const int textcolor) { // print with color, but don't reset color afterwards (faster)
-	std::cout << s;
-}
-inline void print_no_reset(const string& s, const int textcolor, const int backgroundcolor) { // print with color, but don't reset color afterwards (faster)
-	std::cout << s;
-}
 #endif // UTILITIES_CONSOLE_COLOR
 
 #ifdef UTILITIES_REGEX
@@ -3813,7 +3807,7 @@ inline void print_message(const string& message, const string& keyword="", const
 		const string word = v.at(i);
 		const uint wordlength = length(word);
 		l += wordlength+1u; // word + space
-		if(l<=w) { // word fits -> append word and space
+		if(l<=w+1u) { // word fits -> append word and space
 			p += word+" ";
 		} else if(wordlength>w) { // word overflows -> split word into next line
 			p += substring(word, 0, w-(l-wordlength-1u))+" |\n| "+f;
@@ -3821,19 +3815,19 @@ inline void print_message(const string& message, const string& keyword="", const
 			l = 0u; // reset line length
 		} else { // word does not fit -> fill remaining line with spaces
 			l = l-length(v.at(i--))-1u; // remove word from line, decrement i to start next line with this word
-			for(uint j=l; j<w; j++) p += " ";
-			p += " |\n| "+f;
+			for(uint j=l; j<=w; j++) p += " ";
+			p += "|\n| "+f;
 			l = 0u; // reset line length
 		}
 	}
-	for(uint j=l; j<w; j++) p += " ";
+	for(uint j=l; j<=w; j++) p += " ";
 	if(keyword_color<0||keyword_color>15) {
 		print("\r| "+keyword);
 	} else {
 		print("\r| ");
 		print(keyword, keyword_color);
 	}
-	println(p+" |");
+	println(p+"|");
 }
 inline void print_error(const string& s) { // print formatted error message
 	print_message(s, "Error", color_red);
