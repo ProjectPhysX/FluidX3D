@@ -3008,6 +3008,23 @@ inline uint hsv_to_rgb(const float3& hsv) {
 	return hsv_to_rgb(hsv.x, hsv.y, hsv.z);
 }
 
+#define color_black      0
+#define color_dark_blue  1
+#define color_dark_green 2
+#define color_light_blue 3
+#define color_dark_red   4
+#define color_magenta    5
+#define color_orange     6
+#define color_light_gray 7
+#define color_gray       8
+#define color_blue       9
+#define color_green     10
+#define color_cyan      11
+#define color_red       12
+#define color_pink      13
+#define color_yellow    14
+#define color_white     15
+
 #ifdef UTILITIES_CONSOLE_INPUT
 #define UTILITIES_CONSOLE_COLOR
 #endif // UTILITIES_CONSOLE_INPUT
@@ -3029,22 +3046,6 @@ inline uint hsv_to_rgb(const float3& hsv) {
 #endif // Windows/Linux
 #endif // UTILITIES_CONSOLE_COLOR
 #ifdef UTILITIES_CONSOLE_COLOR
-#define color_black      0
-#define color_dark_blue  1
-#define color_dark_green 2
-#define color_light_blue 3
-#define color_dark_red   4
-#define color_magenta    5
-#define color_orange     6
-#define color_light_gray 7
-#define color_gray       8
-#define color_blue       9
-#define color_green     10
-#define color_cyan      11
-#define color_red       12
-#define color_pink      13
-#define color_yellow    14
-#define color_white     15
 inline string get_exe_path() { // returns path where executable is located, ends with a "/"
 	string path = "";
 #if defined(_WIN32)
@@ -3758,6 +3759,19 @@ inline int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-
 }
 #endif // Windows/Linux
 #endif // UTILITIES_CONSOLE_INPUT
+#else // UTILITIES_CONSOLE_COLOR
+inline void print(const string& s, const int textcolor) {
+	std::cout << s;
+}
+inline void print(const string& s, const int textcolor, const int backgroundcolor) {
+	std::cout << s;
+}
+inline void print_no_reset(const string& s, const int textcolor) { // print with color, but don't reset color afterwards (faster)
+	std::cout << s;
+}
+inline void print_no_reset(const string& s, const int textcolor, const int backgroundcolor) { // print with color, but don't reset color afterwards (faster)
+	std::cout << s;
+}
 #endif // UTILITIES_CONSOLE_COLOR
 
 #ifdef UTILITIES_REGEX
@@ -3812,14 +3826,14 @@ inline void print_message(const string& message, const string& keyword="", const
 			l = 0u; // reset line length
 		}
 	}
-	for(uint j=l; j<=w; j++) p += " ";
+	for(uint j=l; j<w; j++) p += " ";
 	if(keyword_color<0||keyword_color>15) {
 		print("\r| "+keyword);
 	} else {
 		print("\r| ");
 		print(keyword, keyword_color);
 	}
-	println(p+"|");
+	println(p+" |");
 }
 inline void print_error(const string& s) { // print formatted error message
 	print_message(s, "Error", color_red);
