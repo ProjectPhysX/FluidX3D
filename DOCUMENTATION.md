@@ -260,7 +260,7 @@
 ## 6. Further LBM Extensions
 By now you're already familiar with the [additional boundary types](#initial-and-boundary-conditions) through extensions [`VOLUME_FORCE`](src/defines.hpp), [`FORCE_FIELD`](src/defines.hpp), [`EQUILIBRIUM_BOUNDARIES`](src/defines.hpp), and [`MOVING_BOUNDARIES`](src/defines.hpp). The remaining available model extensions are briefly outlined here:
 
-## [`SURFACE`](src/defines.hpp) Extension
+### [`SURFACE`](src/defines.hpp) Extension
 - To simulate free water surfaces, enable (uncomment) the [`SURFACE`](src/defines.hpp) extension.
 - All cells then get 3 additional flags: `TYPE_F` (fluid), `TYPE_I` (interface), and `TYPE_G` (gas). Fluid cells are computed with regular LBM. Interface cells account for the extra surface tension forces, if the surface tension coefficient `sigma` is set greater than `0` in the [LBM constructor](#the-lbm-class); the interface is always 1 cell layer thick. Gas cells are not simulated at all and are essentially treated as vacuum.
 - If not set otherwise in the [initial conditions](#initial-and-boundary-conditions), all cells are initialized as `TYPE_G` by default. As initial conditions, set all cells that should be fluid to
@@ -271,7 +271,7 @@ By now you're already familiar with the [additional boundary types](#initial-and
 - Addidionally to the 3 flags, each cell also gets assigned a fill level `lbm.phi[n]`: `1` for fluid cells (`TYPE_F`), `]0,1[` for interface cells (`TYPE_I`), and `0` for gas cells (`TYPE_G`). You can set this fill level at initialization, additionally to the cell flag. Do not forget to set the cell flag. If `lbm.phi[n]` is not set manually, it will automatically be initialized such that all fluid cells get `phi=1`, all interface cells get `phi=0.5`, and all gas clls get `phi=0` assigned.
 - For a simple example, see the "[dam break](src/setup.cpp)" setup. A more advanced sample setup for free surfaces is the "[raindrop impact](src/setup.cpp)".
 
-## [`TEMPERATURE`](src/defines.hpp) Extension
+### [`TEMPERATURE`](src/defines.hpp) Extension
 - With the [`TEMPERATURE`](src/defines.hpp) extension, FluidX3D can model thermal convection flows. This extension automatically also enables the [`VOLUME_FORCE`](src/defines.hpp) extension.
 - In the [LBM constructor](#the-lbm-class), you then need to set the volume force (`fx`|`fy`|`fz`), the thermal diffusion coefficient `alpha`, and the thermal expansion coefficient `beta`, all [in LBM units](#unit-conversion):
   ```c
@@ -285,7 +285,7 @@ By now you're already familiar with the [additional boundary types](#initial-and
   ```
 - See the "[Rayleigh-Benard convection](src/setup.cpp)" and "[thermal convection](src/setup.cpp)" setups for two examples.
 
-## [`SUBGRID`](src/defines.hpp) Extension
+### [`SUBGRID`](src/defines.hpp) Extension
 - Fluid flow is characterized by the Reynolds number<p align="center"><i>Re</i> = <sup><i>x</i>·<i>u</i></sup>&#8725;<sub><i>nu</i></sub></p>with a characteristic length scale `x`, a characteristic velocity `u` and the kinematic shear viscosity `nu`. Larger length scale, larger velocity or smaller viscosity all mean larger Reynolds number.
 - The Reynolds number is a unit-less number. A low value <i>Re</i> < 2300 means laminar flow, a high value <i>Re</i> > 2900 means turbulent flow. In between is a transitional regime.
 - For very large Reynolds number <i>Re</i> > 100000, the LBM solver becomes [unstable](#7-suitable-parameters-and-simulation-instability), as tiny, very fast rotating vortices can be present in the flow field, and too fast velocity and shear rate makes the simulation blow up.
@@ -293,7 +293,7 @@ By now you're already familiar with the [additional boundary types](#initial-and
 - The subgrid model in FLuidX3D is the Smagorinsky-Lilly model. You can enable it with the [`SUBGRID`](src/defines.hpp) extension.
 - There is no additional performance cost for this extension.
 
-## [`PARTICLES`](src/defines.hpp) Extension
+### [`PARTICLES`](src/defines.hpp) Extension
 - By default, the LBM is a grid-based simulation, so there are no particles.
 - But the [`PARTICLES`](src/defines.hpp) extension allows to add particles to the simulation, either as passive tracers or as 2-way-coupled particles that can do floating/sedimentation.
 - For passive tracers, only enable the [`PARTICLES`](src/defines.hpp) extension, and in the [LBM constructor](#the-lbm-class) simply add the particle count:
