@@ -163,7 +163,7 @@
   while(lbm.get_t()<lbm_T) { // main simulation loop
   	mesh->rotate(float3x3(float3(0, 0, 1), lbm_omega*(float)lbm_dt)); // rotate the triangle mesh
   	lbm.voxelize_mesh_on_device(mesh, TYPE_S, center, float3(0.0f), float3(0.0f, 0.0f, lbm_omega)); // revoxelize the rotated triangle mesh, provide the instantaneous angular velocity vector for moving boundaries
-	lbm.run(lbm_dt); // run lbm_dt LBM time steps
+  	lbm.run(lbm_dt); // run lbm_dt LBM time steps
   }
   ```
   Here `lbm_omega` is the angular velocity in radians per time step, `lbm_dt` is the number of simulated time steps between revoxelizations, and `float3(0.0f, 0.0f, lbm_omega)` is the instantaneous angular velocity as a vector along the axis of rotation. The largest displacement of the outermost cells should not exceed `1` cell between revoxelizations; set `lbm_omega = lbm_u/lbm_radius` accordingly.
