@@ -503,7 +503,7 @@ public:
 		}
 
 	public:
-		int visualization_modes=0, slice_mode=0, slice_x=0, slice_y=0, slice_z=0; // slice visualization: mode = { 0 (no slice), 1 (x), 2 (y), 3 (z), 4 (xz), 5 (xyz), 7 (yz), 7 (xy) }, slice_{xyz} = position of slices
+		int visualization_modes=0, slice_mode=0, slice_x=0, slice_y=0, slice_z=0; // slice visualization: mode = { 0 (no slice), 1 (x), 2 (y), 3 (z), 4 (xz), 5 (xyz), 6 (yz), 7 (xy) }, slice_{xyz} = position of slices
 
 		Graphics() {} // default constructor
 		Graphics(LBM* lbm) {
