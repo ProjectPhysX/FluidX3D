@@ -18,17 +18,17 @@
   - MSVC v142
   - Windows 10 SDK
 - Open [`FluidX3D.sln`](FluidX3D.sln) in [Visual Studio Community](https://visualstudio.microsoft.com/de/vs/community/).
-- Compile by clicking the <kbd>► Local Windows Debugger</kbd> button.
+- Compile and run by clicking the <kbd>► Local Windows Debugger</kbd> button.
 - To select a specific GPU, open Windows CMD in the `FluidX3D` folder (type `cmd` in File Explorer in the directory field and press <kbd>Enter</kbd>), then run `bin\FluidX3D.exe 0` to select device `0`. You can also select multiple GPUs with `bin\FluidX3D.exe 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
 ### Linux
-- Run `chmod +x make.sh` and `./make.sh`.
+- Compile and run with `chmod +x make.sh` and `./make.sh`.
 - If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), change to the "[compile on Linux with X11](make.sh#L6)" command in [`make.sh`](make.sh#L6).
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
 ### macOS
 - Select the "[compile on macOS](make.sh#L9)" command in [`make.sh`](make.sh#L9).
-- Run `chmod +x make.sh` and `./make.sh`.
+- Compile and run with `chmod +x make.sh` and `./make.sh`.
 
 <br>
 
