@@ -298,7 +298,7 @@ By now you're already familiar with the [additional boundary types](#initial-and
 - But the [`PARTICLES`](src/defines.hpp) extension allows to add particles to the simulation, either as passive tracers or as 2-way-coupled particles that can do floating/sedimentation.
 - For passive tracers, only enable the [`PARTICLES`](src/defines.hpp) extension, and in the [LBM constructor](#the-lbm-class) simply add the particle count:
   ```c
-  LBM lbm(Nx, Ny, Nz, nu, 50000); // this will create 50000 particles
+  LBM lbm(Nx, Ny, Nz, nu, 50000u); // this will create 50000 particles
   ```
 - Then, in [initialization](#initial-and-boundary-conditions), make a loop over all particles (outside of the initialization loop that iterates over all grid cells):
   ```c
@@ -311,7 +311,7 @@ By now you're already familiar with the [additional boundary types](#initial-and
 - Note that the position (`0`|`0`|`0`) for particles corresponds to the simulation box center.
 - For 2-way-coupled particles, additionally enable the [`VOLUME_FORCE`](src/defines.hpp) and [`FORCE_FIELD`](src/defines.hpp) extensions, and in the [LBM constructor](#the-lbm-class) add the particle density ([in LBM units](#unit-conversion)) unequal to `1`:
   ```c
-  LBM lbm(Nx, Ny, Nz, nu, 50000, 1.2f); // this will create 50000 particles that are more dense than the fluid and will sink to the bottom
+  LBM lbm(Nx, Ny, Nz, nu, 50000u, 1.2f); // this will create 50000 particles that are more dense than the fluid and will sink to the bottom
   ```
 
 <br>
