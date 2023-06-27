@@ -84,7 +84,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - improved smooth positioning of streamlines in slice mode
   - fixed bug where mass and massex in SURFACE extension were also allocated in CPU RAM (not required)
   - fixed bug in Q-criterion rendering of halo data in multi-GPU mode, reduced gap width between domains
-  - removed shared memory optimization from mesh voxelization kernel, as it crashes on Nvidia GPUs with new GPU drivers and is incompatible with old OpenCL 1.0 GPUs
+  - fixed crash/bug in local memory optimization in mesh voxelization kernel
   - fixed raytracing attenuation color when no surface is at the simulation box walls with periodic boundaries
 
 </details>
