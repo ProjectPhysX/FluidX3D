@@ -2210,43 +2210,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	ushort distances[64]; // allow up to 64 mesh intersections
 	const bool condition = direction==0u ? r_origin.y<y0||r_origin.z<z0||r_origin.y>=y1||r_origin.z>=z1 : direction==1u ? r_origin.x<x0||r_origin.z<z0||r_origin.x>=x1||r_origin.z>=z1 : r_origin.x<x0||r_origin.y<y0||r_origin.x>=x1||r_origin.y>=y1;
 
-	volatile local uint workgroup_condition; // use local memory optimization (~25% faster)
-	workgroup_condition = 1u;
-	barrier(CLK_LOCAL_MEM_FENCE);
-	atomic_and(&workgroup_condition, (uint)condition);
-	barrier(CLK_LOCAL_MEM_FENCE);
-	const bool workgroup_all = (bool)workgroup_condition;
-	if(workgroup_all) return; // return only if the entire workgroup is outside of the bounding-box of the mesh
-	const uint lid = get_local_id(0);
-	local float3 cache_p0[def_workgroup_size];
-	local float3 cache_p1[def_workgroup_size];
-	local float3 cache_p2[def_workgroup_size];
-	for(uint i=0u; i<triangle_number; i+=def_workgroup_size) {
-		if(i+lid<triangle_number) { // avoid loading from unallocated VRAM (can cause crashes) if triangle_number%def_workgroup_size!=0
-			const uint tx=3u*(i+lid), ty=tx+1u, tz=ty+1u;
-			cache_p0[lid] = (float3)(p0[tx], p0[ty], p0[tz]);
-			cache_p1[lid] = (float3)(p1[tx], p1[ty], p1[tz]);
-			cache_p2[lid] = (float3)(p2[tx], p2[ty], p2[tz]);
-		}
-		barrier(CLK_LOCAL_MEM_FENCE);
-		for(int j=0; j<def_workgroup_size&&i+j<triangle_number; j++) {
-			const float3 p0i=cache_p0[j], p1i=cache_p1[j], p2i=cache_p2[j];
-			const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, h=cross(r_direction, v), q=cross(w, u); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-			const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
-			if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f) { // ray-triangle intersection ahead or behind
-				if(d>0.0f) { // ray-triangle intersection ahead
-					if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
-					intersections++;
-				} else { // ray-triangle intersection behind
-					intersections_check++; // cast a second ray to check if starting point is really inside (error correction)
-				}
-			}
-		}
-		barrier(CLK_LOCAL_MEM_FENCE);
-	}
-	if(condition) return; // extra workgroup threads outside of the bounding-box are not needed anymore, so return /**/
-
-	/*if(condition) return; // don't use local memory (~25% slower, but this also runs on old OpenCL 1.0 GPUs)
+	if(condition) return; // don't use local memory (~25% slower, but this also runs on old OpenCL 1.0 GPUs)
 	for(uint i=0u; i<triangle_number; i++) {
 		const uint tx=3u*i, ty=tx+1u, tz=ty+1u;
 		const float3 p0i = (float3)(p0[tx], p0[ty], p0[tz]);

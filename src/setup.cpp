@@ -833,11 +833,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	Mesh* body = read_stl(get_exe_path()+"../stl/Bell-222-body.stl"); // https://www.thingiverse.com/thing:1625155/files
 	Mesh* main = read_stl(get_exe_path()+"../stl/Bell-222-main.stl"); // body and rotors separated with Microsoft 3D Builder
 	Mesh* back = read_stl(get_exe_path()+"../stl/Bell-222-back.stl");
-	const float scale = 0.9f*body->get_scale_for_box_fit(lbm.size()); // scale plane and rotor to simulation box size
+	const float scale = 0.9f*body->get_scale_for_box_fit(lbm.size()); // scale body and rotors to simulation box size
 	body->scale(scale);
 	main->scale(scale);
 	back->scale(scale);
-	const float3 offset = lbm.center()-body->get_bounding_box_center(); // move plane and rotor to simulation box center
+	const float3 offset = lbm.center()-body->get_bounding_box_center(); // move body and rotors to simulation box center
 	body->translate(offset);
 	main->translate(offset);
 	back->translate(offset);
