@@ -262,7 +262,7 @@ void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, con
 			}
 		}
 	} else { // choose direction closest to rotation axis
-		float v[3] = { fabs(rotational_velocity.x), fabs(rotational_velocity.y), fabs(rotational_velocity.z) };
+		float v[3] = { fabsf(rotational_velocity.x), fabsf(rotational_velocity.y), fabsf(rotational_velocity.z) };
 		float vmax = v[0];
 		for(uint i=1u; i<3u; i++) {
 			if(v[i]>vmax) {
