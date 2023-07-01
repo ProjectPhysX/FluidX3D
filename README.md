@@ -578,5 +578,5 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung, 🟤 Glenfl
 ## Contact
 
 - FluidX3D is solo-developed and maintained by Dr. Moritz Lehmann.
-- For any questions, feedback or other inquiries, contact me at [moritz.lehmann@uni-bayreuth.de](mailto:moritz.lehmann@uni-bayreuth.de?subject=FluidX3D).
+- For any questions, feedback or other inquiries, contact me at [dr.moritz.lehmann@gmail.com](mailto:dr.moritz.lehmann@gmail.com?subject=FluidX3D).
 - Updates are posted on Twitter via [@FluidX3D](https://twitter.com/FluidX3D)/[@ProjectPhysX](https://twitter.com/ProjectPhysX)/[#FluidX3D](https://twitter.com/hashtag/FluidX3D?src=hashtag_click&f=live) and on [YouTube](https://www.youtube.com/c/ProjectPhysX).

@@ -48,10 +48,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		const float fx = (float)x+0.5f-0.5f*(float)Nx;
 		const float fy = (float)y+0.5f-0.5f*(float)Ny;
 		const float fz = (float)z+0.5f-0.5f*(float)Nz;
-		lbm.u.x[n] =  A*cos(2.0f*pif*fx/a)*sin(2.0f*pif*fy/b)*sin(2.0f*pif*fz/c);
-		lbm.u.y[n] = -A*sin(2.0f*pif*fx/a)*cos(2.0f*pif*fy/b)*sin(2.0f*pif*fz/c);
-		lbm.u.z[n] =  A*sin(2.0f*pif*fx/a)*sin(2.0f*pif*fy/b)*cos(2.0f*pif*fz/c);
-		lbm.rho[n] = 1.0f-sq(A)*3.0f/4.0f*(cos(4.0f*pif*fx/a)+cos(4.0f*pif*fy/b));
+		lbm.u.x[n] =  A*cosf(2.0f*pif*fx/a)*sinf(2.0f*pif*fy/b)*sinf(2.0f*pif*fz/c);
+		lbm.u.y[n] = -A*sinf(2.0f*pif*fx/a)*cosf(2.0f*pif*fy/b)*sinf(2.0f*pif*fz/c);
+		lbm.u.z[n] =  A*sinf(2.0f*pif*fx/a)*sinf(2.0f*pif*fy/b)*cosf(2.0f*pif*fz/c);
+		lbm.rho[n] = 1.0f-sq(A)*3.0f/4.0f*(cosf(4.0f*pif*fx/a)+cosf(4.0f*pif*fy/b));
 	} // ######################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_STREAMLINES;
 	lbm.run();
@@ -70,9 +70,9 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		const float a=(float)Nx/(float)periodicity, b=(float)Ny/(float)periodicity;
 		const float fx = (float)x+0.5f-0.5f*(float)Nx;
 		const float fy = (float)y+0.5f-0.5f*(float)Ny;
-		lbm.u.x[n] =  A*cos(2.0f*pif*fx/a)*sin(2.0f*pif*fy/b);
-		lbm.u.y[n] = -A*sin(2.0f*pif*fx/a)*cos(2.0f*pif*fy/b);
-		lbm.rho[n] = 1.0f-sq(A)*3.0f/4.0f*(cos(4.0f*pif*fx/a)+cos(4.0f*pif*fy/b));
+		lbm.u.x[n] =  A*cosf(2.0f*pif*fx/a)*sinf(2.0f*pif*fy/b);
+		lbm.u.y[n] = -A*sinf(2.0f*pif*fx/a)*cosf(2.0f*pif*fy/b);
+		lbm.rho[n] = 1.0f-sq(A)*3.0f/4.0f*(cosf(4.0f*pif*fx/a)+cosf(4.0f*pif*fy/b));
 	} // ######################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_STREAMLINES;
 	lbm.run();
@@ -544,83 +544,24 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 
 
-/*void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
-	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 2000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
-	const float lbm_u = 0.08f;
-	const float si_u = 100.0f/3.6f;
-	const float si_length = 2.0f;
-	const float si_nu=1.48E-5f, si_rho=1.225f;
-	const float relative_length = 0.8f;
-	const float lbm_length = relative_length*(float)lbm_N.y;
-	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
-	print_info("Re = "+to_string(to_uint(units.si_Re(si_length/5.5f*2.0f, si_u, si_nu))));
-	print_info("1s = "+to_string(units.t(1.0f)));
-	const float lbm_nu = units.nu(si_nu);
-	LBM lbm(lbm_N, lbm_nu);
-	// ###################################################################################### define geometry ######################################################################################
-	Mesh* body = read_stl(get_exe_path()+"../stl/mercedesf1-body.stl"); // https://downloadfree3d.com/3d-models/vehicles/sports-car/mercedes-f1-w14/
-	Mesh* front_wheels = read_stl(get_exe_path()+"../stl/mercedesf1-front-wheels.stl"); // wheels separated, decals removed and converted to .stl in Microsoft 3D Builder
-	Mesh* back_wheels = read_stl(get_exe_path()+"../stl/mercedesf1-back-wheels.stl"); // to avoid instability from too close gaps: remove front wheel fenders and move out right back wheel a bit
-	const float scale = relative_length/body->get_max_size()*lbm.size().y; // scale parts
-	body->scale(scale);
-	front_wheels->scale(scale);
-	back_wheels->scale(scale);
-	const float3 offset = float3(lbm.center().x-body->get_bounding_box_center().x, 1.0f-body->pmin.y+0.25f*back_wheels->get_min_size(), 4.0f-back_wheels->pmin.z);
-	body->translate(offset);
-	front_wheels->translate(offset);
-	back_wheels->translate(offset);
-	body->set_center(body->get_bounding_box_center()); // set center of meshes to their bounding box center
-	front_wheels->set_center(front_wheels->get_bounding_box_center());
-	back_wheels->set_center(back_wheels->get_bounding_box_center());
-	const float lbm_radius=0.5f*back_wheels->get_min_size(), omega=lbm_u/lbm_radius;
-	lbm.voxelize_mesh_on_device(body);
-	lbm.voxelize_mesh_on_device(front_wheels, TYPE_S, front_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
-	lbm.voxelize_mesh_on_device(back_wheels, TYPE_S, back_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
-		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
-		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
-		if(z==0u) lbm.flags[n] = TYPE_S;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
-	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-	lbm.run(0u); // initialize simulation
-	while(lbm.get_t()<=units.t(1.0f)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) {
-			lbm.graphics.set_camera_free(float3(0.779346f*(float)Nx, -0.315650f*(float)Ny, 0.329444f*(float)Nz), -27.0f, 19.0f, 100.0f);
-			lbm.graphics.write_frame(get_exe_path()+"export/a/");
-			lbm.graphics.set_camera_free(float3(0.556877f*(float)Nx, 0.228191f*(float)Ny, 1.159613f*(float)Nz), 19.0f, 53.0f, 100.0f);
-			lbm.graphics.write_frame(get_exe_path()+"export/b/");
-			lbm.graphics.set_camera_free(float3(0.220650f*(float)Nx, -0.589529f*(float)Ny, 0.085407f*(float)Nz), -72.0f, 21.0f, 86.0f);
-			lbm.graphics.write_frame(get_exe_path()+"export/c/");
-		}
-		lbm.run(1u);
-	}
-#else // GRAPHICS && !INTERACTIVE_GRAPHICS
-	lbm.run();
-#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
-} /**/
-
-
-
 /*void main_setup() { // aerodynamics of a cow; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 1.0f), 1000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float si_u = 1.0f;
-	const float si_w = 0.8f;
-	const float si_nu=1.48E-5f, si_rho=1.225f;
+	const float si_length = 2.4f;
 	const float si_T = 10.0f;
-	const float lbm_w = (float)lbm_N.x/3.0f;
+	const float si_nu=1.48E-5f, si_rho=1.225f;
+	const float lbm_length = 0.65f*(float)lbm_N.y;
 	const float lbm_u = 0.1f;
-	units.set_m_kg_s(lbm_w, lbm_u, 1.0f, si_w, si_u, si_rho);
-	print_info("Re = "+to_string(units.Re(si_w, si_u, si_nu), 2u));
-	const float lbm_nu = units.nu(si_nu);
-	LBM lbm(lbm_N, lbm_nu);
+	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_length, si_u, si_nu))));
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
+	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
+	LBM lbm(lbm_N, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
-	const float size = 1.3f*lbm.size().x;
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(180.0f))*float3x3(float3(0, 0, 1), radians(180.0f));
-	Mesh* mesh = read_stl(get_exe_path()+"../stl/Cow_t.stl", lbm.size(), lbm.center(), rotation, size); // https://www.thingiverse.com/thing:182114/files
-	mesh->translate(float3(0.0f, 1.0f-mesh->pmin.y+0.1f*size, 1.0f-mesh->pmin.z)); // move mesh forward a bit and to simulation box bottom, keep in mind 1 cell thick box boundaries
+	Mesh* mesh = read_stl(get_exe_path()+"../stl/Cow_t.stl", lbm.size(), lbm.center(), rotation, lbm_length); // https://www.thingiverse.com/thing:182114/files
+	mesh->translate(float3(0.0f, 1.0f-mesh->pmin.y+0.1f*lbm_length, 1.0f-mesh->pmin.z)); // move mesh forward a bit and to simulation box bottom, keep in mind 1 cell thick box boundaries
 	lbm.voxelize_mesh_on_device(mesh);
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z==0u) lbm.flags[n] = TYPE_S; // solid floor
@@ -763,23 +704,22 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 /*void main_setup() { // Cessna 172 propeller aircraft; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint3 lbm_N = resolution(float3(1.0f, 0.8f, 0.25f), 1155u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const uint3 lbm_N = resolution(float3(1.0f, 0.8f, 0.25f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_u = 0.1f;
+	const float lbm_width = 0.95f*(float)lbm_N.x;
 	const uint lbm_dt = 4u; // revoxelize rotor every dt time steps
-	const float si_T = 0.1f;
-	const float si_x = 11.0f;
+	const float si_T = 1.0f;
+	const float si_width = 11.0f;
 	const float si_u = 226.0f/3.6f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
-	print_info("Re = "+to_string(to_uint(units.si_Re(si_x, si_u, si_nu))));
-	units.set_m_kg_s(0.95f*(float)lbm_N.x, lbm_u, 1.0f, si_x, si_u, si_rho);
-	const float lbm_nu = units.nu(si_nu);
-	print_info("1s = "+to_string(units.t(1.0f))+" time steps");
-	print_info("1 length = "+to_string(units.t(si_x/si_u))+" time steps");
-	LBM lbm(lbm_N, lbm_nu);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	units.set_m_kg_s(lbm_width, lbm_u, 1.0f, si_width, si_u, si_rho);
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
+	LBM lbm(lbm_N, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* plane = read_stl(get_exe_path()+"../stl/Cessna-172-Skyhawk-body.stl"); // https://www.thingiverse.com/thing:814319/files
 	Mesh* rotor = read_stl(get_exe_path()+"../stl/Cessna-172-Skyhawk-rotor.stl"); // plane and rotor separated with Microsoft 3D Builder
-	const float scale = 0.95f*plane->get_scale_for_box_fit(lbm.size()); // scale plane and rotor to simulation box size
+	const float scale = lbm_width/plane->get_bounding_box_size().x; // scale plane and rotor to simulation box size
 	plane->scale(scale);
 	rotor->scale(scale);
 	const float3 offset = lbm.center()-plane->get_bounding_box_center(); // move plane and rotor to simulation box center
@@ -816,24 +756,23 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 /*void main_setup() { // Bell 222 helicopter; required extensions in defines.hpp: FP16C, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint3 lbm_N = resolution(float3(1.0f, 1.2f, 0.3f), 1000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const uint3 lbm_N = resolution(float3(1.0f, 1.2f, 0.3f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_u = 0.16f;
-	const float relative_length = 0.9f;
-	const uint lbm_dt = 4u; // revoxelize rotor every dt time steps
+	const float lbm_length = 0.8f*(float)lbm_N.x;
 	const float si_T = 0.34483f; // 2 revolutions of the main rotor
+	const uint lbm_dt = 4u; // revoxelize rotor every dt time steps
 	const float si_length=12.85f, si_d=12.12f, si_rpm=348.0f;
-	const float si_nu=1.48E-5f, si_rho=1.225f;
 	const float si_u = si_rpm/60.0f*si_d*pif;
-	units.set_m_kg_s(relative_length*(float)lbm_N.x, lbm_u, 1.0f, si_length, si_u, si_rho);
-	print_info("1 second = "+to_string(units.t(1.0f))+" time steps");
+	const float si_nu=1.48E-5f, si_rho=1.225f;
+	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
 	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
-	const float lbm_nu = units.nu(si_nu);
-	LBM lbm(lbm_N, lbm_nu);
+	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* body = read_stl(get_exe_path()+"../stl/Bell-222-body.stl"); // https://www.thingiverse.com/thing:1625155/files
 	Mesh* main = read_stl(get_exe_path()+"../stl/Bell-222-main.stl"); // body and rotors separated with Microsoft 3D Builder
 	Mesh* back = read_stl(get_exe_path()+"../stl/Bell-222-back.stl");
-	const float scale = 0.9f*body->get_scale_for_box_fit(lbm.size()); // scale body and rotors to simulation box size
+	const float scale = lbm_length/body->get_bounding_box_size().y; // scale body and rotors to simulation box size
 	body->scale(scale);
 	main->scale(scale);
 	back->scale(scale);
@@ -877,6 +816,69 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		}
 #endif // GRAPHICS && !INTERACTIVE_GRAPHICS
 	}
+} /**/
+
+
+
+/*void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
+	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 4000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const float lbm_u = 0.1f;
+	const float lbm_length = 0.8f*(float)lbm_N.y;
+	const float si_T = 0.25f;
+	const float si_u = 100.0f/3.6f;
+	const float si_length=5.5f, si_width=2.0f;
+	const float si_nu=1.48E-5f, si_rho=1.225f;
+	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
+	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
+	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
+	// ###################################################################################### define geometry ######################################################################################
+	Mesh* body = read_stl(get_exe_path()+"../stl/mercedesf1-body.stl"); // https://downloadfree3d.com/3d-models/vehicles/sports-car/mercedes-f1-w14/
+	Mesh* front_wheels = read_stl(get_exe_path()+"../stl/mercedesf1-front-wheels.stl"); // wheels separated, decals removed and converted to .stl in Microsoft 3D Builder
+	Mesh* back_wheels = read_stl(get_exe_path()+"../stl/mercedesf1-back-wheels.stl"); // to avoid instability from too small gaps: remove front wheel fenders and move out right back wheel a bit
+	const float scale = lbm_length/body->get_bounding_box_size().y; // scale parts
+	body->scale(scale);
+	front_wheels->scale(scale);
+	back_wheels->scale(scale);
+	const float3 offset = float3(lbm.center().x-body->get_bounding_box_center().x, 1.0f-body->pmin.y+0.25f*back_wheels->get_min_size(), 4.0f-back_wheels->pmin.z);
+	body->translate(offset);
+	front_wheels->translate(offset);
+	back_wheels->translate(offset);
+	body->set_center(body->get_bounding_box_center()); // set center of meshes to their bounding box center
+	front_wheels->set_center(front_wheels->get_bounding_box_center());
+	back_wheels->set_center(back_wheels->get_bounding_box_center());
+	const float lbm_radius=0.5f*back_wheels->get_min_size(), omega=lbm_u/lbm_radius;
+	lbm.voxelize_mesh_on_device(body);
+	lbm.voxelize_mesh_on_device(front_wheels, TYPE_S, front_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
+	lbm.voxelize_mesh_on_device(back_wheels, TYPE_S, back_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
+		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
+		if(z==0u) lbm.flags[n] = TYPE_S;
+	} // ######################################################################### run simulation, export images and data ##########################################################################
+	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
+#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
+	lbm.run(0u); // initialize simulation
+	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+		if(lbm.graphics.next_frame(units.t(si_T), 30.0f)) {
+			lbm.graphics.set_camera_free(float3(0.779346f*(float)Nx, -0.315650f*(float)Ny, 0.329444f*(float)Nz), -27.0f, 19.0f, 100.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/a/");
+			lbm.graphics.set_camera_free(float3(0.556877f*(float)Nx, 0.228191f*(float)Ny, 1.159613f*(float)Nz), 19.0f, 53.0f, 100.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/b/");
+			lbm.graphics.set_camera_free(float3(0.220650f*(float)Nx, -0.589529f*(float)Ny, 0.085407f*(float)Nz), -72.0f, 16.0f, 86.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/c/");
+			const float progress = (float)lbm.get_t()/(float)units.t(si_T);
+			const float A = 75.0f, B = -160.0f;
+			lbm.graphics.set_camera_centered(A+progress*(B-A), -5.0f, 100.0f, 1.648721f);
+			lbm.graphics.write_frame(get_exe_path()+"export/d/");
+		}
+		lbm.run(1u);
+	}
+#else // GRAPHICS && !INTERACTIVE_GRAPHICS
+	lbm.run();
+#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
 } /**/
 
 
@@ -945,7 +947,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	lbm.run(0u); // initialize simulation
 	while(true) { // main simulation loop
 		lbm.u.read_from_device();
-		const float uz = u*sin(2.0f*pif*frequency*(float)lbm.get_t());
+		const float uz = u*sinf(2.0f*pif*frequency*(float)lbm.get_t());
 		for(uint z=0u; z<1u; z++) {
 			for(uint y=1u; y<Ny-1u; y++) {
 				for(uint x=1u; x<Nx-1u; x++) {
@@ -982,8 +984,8 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	lbm.run(0u); // initialize simulation
 	while(true) { // main simulation loop
 		lbm.u.read_from_device();
-		const float uy = u*sin(2.0f*pif*frequency*(float)lbm.get_t());
-		const float uz = 0.5f*u*cos(2.0f*pif*frequency*(float)lbm.get_t());
+		const float uy = u*sinf(2.0f*pif*frequency*(float)lbm.get_t());
+		const float uz = 0.5f*u*cosf(2.0f*pif*frequency*(float)lbm.get_t());
 		for(uint z=1u; z<Nz-1u; z++) {
 			for(uint y=0u; y<1u; y++) {
 				for(uint x=1u; x<Nx-1u; x++) {
@@ -1054,8 +1056,8 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		if(sphere(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f), lbm_H+lbm_R+2.5f)+0.5f, lbm_R+2.0f)) {
 			const float b = sphere_plic(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f)+0.5f, lbm_H+lbm_R+2.5f), lbm_R);
 			if(b!=-1.0f) {
-				lbm.u.y[n] =  sin(inclination*pif/180.0f)*lbm_u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
-				lbm.u.z[n] = -cos(inclination*pif/180.0f)*lbm_u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
+				lbm.u.y[n] =  sinf(inclination*pif/180.0f)*lbm_u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
+				lbm.u.z[n] = -cosf(inclination*pif/180.0f)*lbm_u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
 				if(b==1.0f) {
 					lbm.flags[n] = TYPE_F;
 					lbm.phi[n] = 1.0f;

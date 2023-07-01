@@ -4251,7 +4251,7 @@ struct Mesh { // triangle mesh
 		return center;
 	}
 	inline const float3 get_bounding_box_size() const {
-		return 0.5f*(pmax-pmin);
+		return pmax-pmin;
 	}
 	inline const float3 get_bounding_box_center() const {
 		return 0.5f*(pmin+pmax);
