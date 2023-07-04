@@ -106,6 +106,7 @@ Head over to the [FluidX3D Documentation](DOCUMENTATION.md)!
   - streaming (part 1/2)<p align="center"><i>f</i><sub>0</sub>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f</i><sub>0</sub><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>)<br><i>f</i><sub>(<i>t</i>%2 ? (<i>i</i>%2 ? <i>i</i>+1 : <i>i</i>-1) : <i>i</i>)</sub>(<i>i</i>%2 ? <i>x</i>+<i>e<sub>i</sub></i> : <i>x</i>, <i>t</i>+&Delta;<i>t</i>) = <i>f<sub>i</sub></i><sup>temp</sup>(<i>x</i>, <i>t</i>+&Delta;<i>t</i>) &nbsp; for &nbsp; <i>i</i> &isin; [1, <i>q</i>-1]</p>
   - velocity sets: D2Q9, D3Q15, D3Q19 (default), D3Q27
   - collision operators: single-relaxation-time (SRT/BGK) (default), two-relaxation-time (TRT)
+  - [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) and other algebraic optimization to minimize round-off error
 
   </details>
 
@@ -244,9 +245,12 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
     ```
 
   </details>
-- [peak performance on GPUs](#single-gpu-benchmarks) (datacenter/gaming/professional/laptop), validated with roofline model
-- [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) and other algebraic optimization to minimize round-off error
+- <details><summary>peak performance on GPUs (datacenter/gaming/professional/laptop)</summary>
 
+  - [single-GPU/CPU benchmarks](#single-gpucpu-benchmarks)
+  - [multi-GPU benchmarks](#multi-gpu-benchmarks)
+
+  </details>
 - <details><summary>powerful model extensions</summary>
 
   - [boundary types](https://doi.org/10.15495/EPub_UBT_00005400)
@@ -268,7 +272,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
     - optional [FP16S or FP16C compression](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) for thermal DDFs with [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)
   - Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
     <p align="center"><i>&Pi;<sub>&alpha;&beta;</sub></i> = &Sigma;<sub><i>i</i></sub> <i>e<sub>i&alpha;</sub></i> <i>e<sub>i&beta;</sub></i> (<i>f<sub>i</sub></i>   - <i>f<sub>i</sub></i><sup>eq-shifted</sup>)<br><br>Q = &Sigma;<sub><i>&alpha;&beta;</i></sub>   <i>&Pi;<sub>&alpha;&beta;</sub></i><sup>2</sup><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;______________________<br>&tau; = &frac12; (&tau;<sub>0</sub> + &radic; &tau;<sub>0</sub><sup>2</sup> + <sup>(16&radic;2)</sup>&#8725;<sub>(<i>3&pi;</i><sup>2</sup>)</sub> <sup>&radic;Q</sup>&#8725;<sub><i>&rho;</i></sub> )</p>
-  - particles with immersed-boundary method (either passive or 2-way-coupled, only supported with single-GPU)
+  - particles with immersed-boundary method (either passive or 2-way-coupled, single-GPU only)
 
   </details>
 
@@ -302,12 +306,15 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - Intel Xeon Phi (requires installation of the [Intel OpenCL CPU Runtime ("oclcpuexp")](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler))
   - Intel/AMD CPUs (requires installation of the [Intel OpenCL CPU Runtime ("oclcpuexp")](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler))
   - even smartphone ARM GPUs
-- supports parallelization across multiple GPUs on a single PC/laptop/server with PCIe communication, no SLI/Crossfire/NVLink/InfinityFabric or MPI installation required; the GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth is recommended
-- works in Windows and Linux with C++17, with limited support also for MacOS and Android
-- supports importing and voxelizing triangle meshes from binary `.stl` files, with fast GPU voxelization
-- supports exporting volumetric data as binary `.vtk` files with `lbm.<field>.write_device_to_vtk();`
-- supports exporting triangle meshes as binary `.vtk` files with `lbm.write_mesh_to_vtk(Mesh* mesh);`
-- supports exporting rendered frames as `.png`/`.qoi`/`.bmp` files with `lbm.graphics.write_frame();`, encoding is handled in parallel on the CPU while the simulation on GPU can continue without delay
+- native cross-vendor multi-GPU implementation
+  - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
+  - single-node parallelization, so no MPI installation required
+  - GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth are recommended
+- works in [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux) with C++17, with limited support also for [macOS](DOCUMENTATION.md#macos) and [Android](DOCUMENTATION.md#android)
+- supports [importing and voxelizing triangle meshes](DOCUMENTATION.md#loading-stl-files) from binary `.stl` files, with fast GPU voxelization
+- supports [exporting volumetric data](DOCUMENTATION.md#data-export) as binary `.vtk` files
+- supports [exporting triangle meshes](DOCUMENTATION.md#data-export) as binary `.vtk` files
+- supports [exporting rendered images](DOCUMENTATION.md#video-rendering) as `.png`/`.qoi`/`.bmp` files; encoding runs in parallel on the CPU while the simulation on GPU can continue without delay
 
 
 
@@ -498,6 +505,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 Samsung, 🟤 Glenfl
 ## FAQs
 
 ### General
+
+- <details><summary>How to learn using FluidX3D?</summary><br>Follow the <a href="https://github.com/ProjectPhysX/FluidX3D-Beta/blob/master/DOCUMENTATION.md">FluidX3D Documentation</a>!<br><br></details>
 
 - <details><summary>What physical model does FluidX3D use?</summary><br>FluidX3D implements the lattice Boltzmann method, a type of direct numerical simulation (DNS), the most accurate type of fluid simulation, but also the most computationally challenging. Optional extension models include volume force (Guo forcing), free surface (<a href="https://doi.org/10.3390/computation10060092">volume-of-fluid</a> and <a href="https://doi.org/10.3390/computation10020021">PLIC</a>), a temperature model and Smagorinsky-Lilly subgrid turbulence model.<br><br></details>
 
