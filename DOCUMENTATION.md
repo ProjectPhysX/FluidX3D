@@ -243,7 +243,7 @@
   ```
   You can then access the boundary forces at each individual cell with:
   ```c
-  float velocity_x = lbm.u.x[lbm.index(x, y, z)];
+  float lbm_force_x_n = lbm.F.x[lbm.index(x, y, z)];
   ```
 - To sum over all the individual boundary cells that belong to the body, to get the total force on the body, first voxelize the body with
   ```c
