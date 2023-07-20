@@ -25,7 +25,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		// #########################################################################################################################################################################################
 		for(uint i=0u; i<1000u; i++) {
 			lbm.run(10u);
-			mlups = max(mlups, to_uint((double)lbm.get_N()*1E-6/info.dt_smooth));
+			mlups = max(mlups, to_uint((double)lbm.get_N()*1E-6/info.runtime_lbm_timestep_smooth));
 		}
 	} // make lbm object go out of scope to free its memory
 	print_info("Peak MLUPs/s = "+to_string(mlups));

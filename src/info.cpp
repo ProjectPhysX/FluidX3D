@@ -24,16 +24,18 @@ void Info::initialize(LBM* lbm) {
 void Info::append(const ulong steps, const ulong t) {
 	this->steps = steps; // has to be executed before info.print_initialize()
 	this->steps_last = t; // reset last step count if multiple run() commands are executed consecutively
-	this->runtime_last = runtime; // reset last runtime if multiple run() commands are executed consecutively
+	this->runtime_lbm_last = runtime_lbm; // reset last runtime if multiple run() commands are executed consecutively
+	this->runtime_total = clock.stop();
 }
 void Info::update(const double dt) {
-	this->dt = dt; // exact dt
-	this->dt_smooth = (dt+0.3)/(0.3/dt_smooth+1.0); // smoothed dt
-	this->runtime += dt; // skip first step since it is likely slower than average
+	this->runtime_lbm_timestep_last = dt; // exact dt
+	this->runtime_lbm_timestep_smooth = (dt+0.3)/(0.3/runtime_lbm_timestep_smooth+1.0); // smoothed dt
+	this->runtime_lbm += dt; // skip first step since it is likely slower than average
+	this->runtime_total = clock.stop();
 }
 double Info::time() const { // returns either elapsed time or remaining time
-	return steps==max_ulong ? runtime : ((double)steps/(double)(lbm->get_t()-steps_last)-1.0)*(runtime-runtime_last); // time estimation on average so far
-	//return steps==max_ulong ? runtime : ((double)steps-(double)(lbm->get_t()-steps_last))*dt_smooth; // instantaneous time estimation
+	return steps==max_ulong ? runtime_lbm : ((double)steps/(double)(lbm->get_t()-steps_last)-1.0)*(runtime_lbm-runtime_lbm_last); // time estimation on average so far
+	//return steps==max_ulong ? runtime_lbm : ((double)steps-(double)(lbm->get_t()-steps_last))*runtime_lbm_timestep_smooth; // instantaneous time estimation
 }
 void Info::print_logo() const {
 	const int a=color_light_blue, b=color_orange, c=color_pink;
@@ -85,13 +87,14 @@ void Info::print_initialize() {
 #else // INTERACTIVE_GRAPHICS_ASCII
 	println("'-----------------'-----------------------------------------------------------'");
 #endif // INTERACTIVE_GRAPHICS_ASCII
+	clock.start();
 	allow_rendering = true;
 }
 void Info::print_update() const {
 	if(allow_rendering) reprint(
-		"|"+alignr(8, to_uint((double)lbm->get_N()*1E-6/dt_smooth))+" |"+ // MLUPs
-		alignr(7, to_uint((double)lbm->get_N()*(double)bandwidth_bytes_per_cell_device()*1E-9/dt_smooth))+" GB/s |"+ // memory bandwidth
-		alignr(10, to_uint(1.0/dt_smooth))+" | "+ // steps/s
+		"|"+alignr(8, to_uint((double)lbm->get_N()*1E-6/runtime_lbm_timestep_smooth))+" |"+ // MLUPs
+		alignr(7, to_uint((double)lbm->get_N()*(double)bandwidth_bytes_per_cell_device()*1E-9/runtime_lbm_timestep_smooth))+" GB/s |"+ // memory bandwidth
+		alignr(10, to_uint(1.0/runtime_lbm_timestep_smooth))+" | "+ // steps/s
 		(steps==max_ulong ? alignr(17, lbm->get_t()) : alignr(12, lbm->get_t())+" "+print_percentage((double)(lbm->get_t()-steps_last)/(double)steps))+" | "+ // current step
 		alignr(19, print_time(time()))+" |" // either elapsed time or remaining time
 	);
