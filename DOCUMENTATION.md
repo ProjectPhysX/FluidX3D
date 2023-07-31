@@ -104,11 +104,11 @@
 
 ### Initial and Boundary Conditions
 - If not explicitly set, by default all cells have the default values `rho=1`, `u=0`, `flags=0`.
-- The initial/boundary conditions of single grid cells are set in a loop that iterates over the entire grid:
+- The initial/boundary conditions of single grid cells are set in a parallelized loop that iterates over the entire grid:
   ```c
-  const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+  const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
   	// ...
-  }
+  });
   ```
   Within this loop, you can set the density, velocity and flags of each cell individually by assigning values to `lbm.rho[n]`, `lbm.u.x[n]`, `lbm.u.y[n]`, `lbm.u.z[n]` and `lbm.flags[n]`. The `n` here is the linearized 3D grid index, corresponding to an (`x`|`y`|`z`) position via the function `lbm.coordinates(n, x, y, z)`.
 - For example, to set solid walls at the left and right sides of the simulation box, write

@@ -87,6 +87,14 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in Q-criterion rendering of halo data in multi-GPU mode, reduced gap width between domains
   - removed shared memory optimization from mesh voxelization kernel, as it crashes on Nvidia GPUs with new GPU drivers and is incompatible with old OpenCL 1.0 GPUs
   - fixed raytracing attenuation color when no surface is at the simulation box walls with periodic boundaries
+- v2.9 (31.07.2023)
+  - added cross-platform `parallel_for` implementation in `utilities.hpp` using `std::threads`
+  - significantly (>4x) faster simulation startup with multithreaded geometry initialization and sanity checks
+  - faster `calculate_force_on_object()` and `calculate_torque_on_object()` functions with multithreading
+  - added total runtime and LBM runtime to `lbm.write_status()`
+  - fixed bug in voxelization ray direction for re-voxelizing rotating objects
+  - fixed bug in `Mesh::get_bounding_box_size()`
+  - fixed bug in `print_message()` function in `utilities.hpp`
 
 </details>
 
@@ -321,7 +329,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 
 ## Single-GPU/CPU Benchmarks
 
-Here are [performance benchmarks](https://doi.org/10.3390/computation10060092) on various hardware in MLUPs/s, or how many million lattice points are updated per second. The settings used for the benchmark are D3Q19 SRT with no extensions enabled (only LBM with implicit mid-grid bounce-back boundaries) and the setup consists of an empty cubic box with sufficient size (typically 256³). Without extensions, a single lattice point requires:
+Here are [performance benchmarks](https://doi.org/10.3390/computation10060092) on various hardware in MLUPs/s, or how many million lattice cells are updated per second. The settings used for the benchmark are D3Q19 SRT with no extensions enabled (only LBM with implicit mid-grid bounce-back boundaries) and the setup consists of an empty cubic box with sufficient size (typically 256³). Without extensions, a single lattice cell requires:
 - a memory capacity of 93 (FP32/FP32) or 55 (FP32/FP16) Bytes
 - a memory bandwidth of 153 (FP32/FP32) or 77 (FP32/FP16) Bytes per time step
 - 363 (FP32/FP32) or 406 (FP32/FP16S) or 1275 (FP32/FP16C) FLOPs per time step (FP32+INT32 operations counted combined)
@@ -550,7 +558,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 ARM, 🟤 Glenfly
 
 - <details><summary>I need more memory than my GPU can offer. Can I run FluidX3D on my CPU as well?</summary><br>Yes. You only need to install the <a href="https://github.com/intel/llvm/releases/tag/2022-09">OpenCL Runtime for Intel CPUs</a>.<br><br></details>
 
-- <details><summary>In the benchmarks you list some very expensive hardware. How do you get access to that?</summary><br>I'm a scientist (PhD candidate in computational physics) and I use FluidX3D for my research, so I have access to BZHPC, SuperMUC-NG and JURECA-DC supercomputers.<br><br></details>
+- <details><summary>In the benchmarks you list some very expensive hardware. How do you get access to that?</summary><br>As a PhD candidate in computational physics, I used FluidX3D for my research, so I had access to BZHPC, SuperMUC-NG and JSC JURECA-DC supercomputers.<br><br></details>
 
 ### Graphics
 

@@ -20,6 +20,7 @@
 #endif // UTILITIES_REGEX
 #include <iostream>
 #include <thread> // contains <chrono>
+#include <functional> // for parallel_for(...)
 #undef min
 #undef max
 using std::string;
@@ -54,6 +55,41 @@ typedef uint64_t ulong;
 #define epsilon_double 2.2204460492503131E-16
 #define inf_double as_double(0x7FF0000000000000)
 #define nan_double as_double(0xFFFFFFFFFFFFFFFF)
+
+inline void parallel_for(const uint N, const uint threads, std::function<void(uint, uint)> lambda) { // usage: parallel_for(N, threads, [&](uint n, uint t) { ... });
+	vector<thread> thread_array(threads);
+	for(uint t=0u; t<threads; t++) thread_array[t] = thread([=]() {
+		for(ulong n=(ulong)N*(ulong)t/(ulong)threads; n<(ulong)N*(ulong)(t+1u)/(ulong)threads; n++) lambda((uint)n, t);
+	});
+	for(uint t=0u; t<threads; t++) thread_array[t].join();
+}
+inline void parallel_for(const uint N, const uint threads, std::function<void(uint)> lambda) { // usage: parallel_for(N, threads, [&](uint n) { ... });
+	vector<thread> thread_array(threads);
+	for(uint t=0u; t<threads; t++) thread_array[t] = thread([=]() {
+		for(ulong n=(ulong)N*(ulong)t/(ulong)threads; n<(ulong)N*(ulong)(t+1u)/(ulong)threads; n++) lambda((uint)n);
+	});
+	for(uint t=0u; t<threads; t++) thread_array[t].join();
+}
+inline void parallel_for(const uint N, std::function<void(uint)> lambda) { // usage: parallel_for(N, [&](uint n) { ... });
+	parallel_for(N, (uint)thread::hardware_concurrency(), lambda);
+}
+inline void parallel_for(const ulong N, const uint threads, std::function<void(ulong, uint)> lambda) { // usage: parallel_for(N, threads, [&](ulong n, uint t) { ... });
+	vector<thread> thread_array(threads);
+	for(uint t=0u; t<threads; t++) thread_array[t] = thread([=]() {
+		for(ulong n=N*(ulong)t/(ulong)threads; n<N*(ulong)(t+1u)/(ulong)threads; n++) lambda(n, t);
+	});
+	for(uint t=0u; t<threads; t++) thread_array[t].join();
+}
+inline void parallel_for(const ulong N, const uint threads, std::function<void(ulong)> lambda) { // usage: parallel_for(N, threads, [&](ulong n) { ... });
+	vector<thread> thread_array(threads);
+	for(uint t=0u; t<threads; t++) thread_array[t] = thread([=]() {
+		for(ulong n=N*(ulong)t/(ulong)threads; n<N*(ulong)(t+1u)/(ulong)threads; n++) lambda(n);
+	});
+	for(uint t=0u; t<threads; t++) thread_array[t].join();
+}
+inline void parallel_for(const ulong N, std::function<void(ulong)> lambda) { // usage: parallel_for(N, [&](ulong n) { ... });
+	parallel_for(N, (uint)thread::hardware_concurrency(), lambda);
+}
 
 class Clock {
 private:
@@ -2797,15 +2833,15 @@ inline string print_time(const double t) { // input: time in seconds, output: fo
 	       (dm?(dh&&m<10?"0"               :"")+to_string(m)+"m":"")+
 	           (dm&&s<10?"0"               :"")+to_string(s)+"s"    ;
 }
-inline string print_progress(const double x, const uint n=10u) {
-	const uint p = (uint)((double)n*x+0.5);
-	string s = "[";
-	for(uint i=0u; i<p; i++) s += "=";
-	for(uint i=p; i<n; i++) s += " ";
-	return s+"]";
+inline string print_percentage(const float x) {
+	return alignr(3u, to_uint(100.0f*x))+"%";
 }
-inline string print_percentage(const double x) {
-	return alignr(3u, to_uint(100.0*x))+"%";
+inline string print_progress(const float x, const int n=10) {
+	const int p = to_int((float)(n-7)*x);
+	string s = "[";
+	for(int i=0; i<p; i++) s += "=";
+	for(int i=p; i<n-7; i++) s += " ";
+	return s+"] "+print_percentage(x);
 }
 
 inline void print(const string& s="") {
@@ -3369,17 +3405,12 @@ inline void print_image_bw(const Image* image, const uint textwidth=0u, const ui
 #ifdef UTILITIES_CONSOLE_DITHER_LOOKUP
 static bool print_image_dither_lookup_initialized = false;
 static ushort* print_image_dither_lookup = nullptr;
-inline void print_image_dither_initialize_lookup_thread(const int t, const int T) {
-	for(int i=t*16777216/T; i<(t+1)*16777216/T; i++) print_image_dither_lookup[i] = get_console_color_dither(i);
-}
 inline void print_image_dither_initialize_lookup() { // initialize lookup table parallelized (much faster)
 	if(!print_image_dither_lookup_initialized) {
 		print_image_dither_lookup = new ushort[16777216];
-		const int T = (int)thread::hardware_concurrency(); // number of CPU threads
-		thread* threads = new thread[T];
-		for(int t=0; t<T; t++) threads[t] = thread(print_image_dither_initialize_lookup_thread, t, T);
-		for(int t=0; t<T; t++) threads[t].join();
-		delete[] threads;
+		parallel_for(16777216u, [&](uint n) {
+			print_image_dither_lookup[n] = get_console_color_dither((int)n);
+		});
 		print_image_dither_lookup_initialized = true;
 	}
 }

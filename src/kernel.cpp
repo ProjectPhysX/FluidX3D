@@ -1140,7 +1140,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
 )+R(void apply_moving_boundaries(float* fhn, const uint* j, const global float* u, const global uchar* flags) { // apply Dirichlet velocity boundaries if necessary (Krueger p.180, rho_solid=1)
-	uint ji; // reads velocities of only neighboring boundary nodes, which do not change during simulation
+	uint ji; // reads velocities of only neighboring boundary cells, which do not change during simulation
 	for(uint i=1u; i<def_velocity_set; i+=2u) { // loop is entirely unrolled by compiler, no unnecessary memory access is happening
 		const float w6 = -6.0f*w(i); // w(i) = w(i+1) if i is odd
 		ji = j[i+1u]; fhn[i   ] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i+1u)*u[ji]+c(def_velocity_set+i+1u)*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i+1u)*u[2ul*def_N+(ulong)ji], fhn[i   ]) : fhn[i   ]; // boundary : regular
@@ -1150,7 +1150,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // MOVING_BOUNDARIES
 
 )+"#ifdef SURFACE"+R(
-)+R(void average_neighbors_non_gas(const uint n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of node n
+)+R(void average_neighbors_non_gas(const uint n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of cell n
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float rhot=0.0f, uxt=0.0f, uyt=0.0f, uzt=0.0f, counter=0.0f; // average over all fluid/interface neighbors
@@ -1169,7 +1169,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	*uyn  = counter>0.0f ? uyt /counter : 0.0f;
 	*uzn  = counter>0.0f ? uzt /counter : 0.0f;
 }
-)+R(void average_neighbors_fluid(const uint n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of node n
+)+R(void average_neighbors_fluid(const uint n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of cell n
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float rhot=0.0f, uxt=0.0f, uyt=0.0f, uzt=0.0f, counter=0.0f; // average over all fluid/interface neighbors
@@ -1276,7 +1276,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float3 p[24]; // number of neighboring interface points is less or equal than than 26 minus 1 gas and minus 1 fluid point = 24
 	const float center_offset = plic_cube(phij[0], bz); // calculate z-offset PLIC of center point only once
 	for(uint i=1u; i<27u; i++) { // iterate over neighbors, no loop unrolling here (50% better perfoemance without loop unrolling)
-		if(phij[i]>0.0f&&phij[i]<1.0f) { // limit neighbors to interface nodes
+		if(phij[i]>0.0f&&phij[i]<1.0f) { // limit neighbors to interface cells
 			const float3 ei = (float3)(c_D3Q27(i), c_D3Q27(27u+i), c_D3Q27(2u*27u+i)); // assume neighbor normal vector is the same as center normal vector
 			const float offset = plic_cube(phij[i], bz)-center_offset;
 			p[number++] = (float3)(dot(ei, bx), dot(ei, by), dot(ei, bz)+offset); // do coordinate system transformation into (x, y, f(x,y)) and apply PLIC pffsets
@@ -1306,7 +1306,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float2 p[6]; // number of neighboring interface points is less or equal than than 8 minus 1 gas and minus 1 fluid point = 6
 	const float center_offset = plic_cube(phit[0], by); // calculate z-offset PLIC of center point only once
 	for(uint i=1u; i<9u; i++) { // iterate over neighbors, no loop unrolling here (50% better perfoemance without loop unrolling)
-		if(phit[i]>0.0f&&phit[i]<1.0f) { // limit neighbors to interface nodes
+		if(phit[i]>0.0f&&phit[i]<1.0f) { // limit neighbors to interface cells
 			const float3 ei = (float3)(c(i), c(9u+i), 0.0f); // assume neighbor normal vector is the same as center normal vector
 			const float offset = plic_cube(phit[i], by)-center_offset;
 			p[number++] = (float2)(dot(ei, bx), dot(ei, by)+offset); // do coordinate system transformation into (x, f(x)) and apply PLIC pffsets
@@ -1408,7 +1408,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	neighbors(n, j); // calculate neighbor indices
 	uchar flagsj[def_velocity_set]; // cache neighbor flags for multiple readings
 	for(uint i=1u; i<def_velocity_set; i++) flagsj[i] = flags[j[i]];
-	if(flagsn_bo==TYPE_S) { // node is solid
+	if(flagsn_bo==TYPE_S) { // cell is solid
 		bool TYPE_ONLY_S = true; // has only solid neighbors
 		for(uint i=1u; i<def_velocity_set; i++) TYPE_ONLY_S = TYPE_ONLY_S&&(flagsj[i]&TYPE_BO)==TYPE_S;
 		if(TYPE_ONLY_S) {
@@ -1428,7 +1428,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		for(uint i=1u; i<def_velocity_set; i++) {
 			next_to_moving_boundary = next_to_moving_boundary||((flagsj[i]&TYPE_BO)==TYPE_S&&(u[j[i]]!=0.0f||u[def_N+(ulong)j[i]]!=0.0f||u[2ul*def_N+(ulong)j[i]]!=0.0f));
 		}
-		flags[n] = flagsn = next_to_moving_boundary ? flagsn|TYPE_MS : flagsn&~TYPE_MS; // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+		flags[n] = flagsn = next_to_moving_boundary ? flagsn|TYPE_MS : flagsn&~TYPE_MS; // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 )+"#endif"+R( // MOVING_BOUNDARIES
 	}
 	float feq[def_velocity_set]; // f_equilibrium
@@ -1437,24 +1437,24 @@ string opencl_c_container() { return R( // ########################## begin of O
 	{ // separate block to avoid variable name conflicts
 		float phin = phi[n];
 		if(!(flagsn&(TYPE_S|TYPE_E|TYPE_T|TYPE_F|TYPE_I))) flagsn = (flagsn&~TYPE_SU)|TYPE_G; // change all non-fluid and non-interface flags to gas
-		if((flagsn&TYPE_SU)==TYPE_G) { // node with updated flags is gas
-			bool change = false; // check if node has to be changed to interface
-			for(uint i=1u; i<def_velocity_set; i++) change = change||(flagsj[i]&TYPE_SU)==TYPE_F; // if neighbor flag fluid is set, the node must be interface
+		if((flagsn&TYPE_SU)==TYPE_G) { // cell with updated flags is gas
+			bool change = false; // check if cell has to be changed to interface
+			for(uint i=1u; i<def_velocity_set; i++) change = change||(flagsj[i]&TYPE_SU)==TYPE_F; // if neighbor flag fluid is set, the cell must be interface
 			if(change) { // create interface automatically if phi has not explicitely defined for the interface layer
-				flagsn = (flagsn&~TYPE_SU)|TYPE_I; // node must be interface
+				flagsn = (flagsn&~TYPE_SU)|TYPE_I; // cell must be interface
 				phin = 0.5f;
-				float rhon, uxn, uyn, uzn; // initialize interface nodes with average density/velocity of fluid neighbors
+				float rhon, uxn, uyn, uzn; // initialize interface cells with average density/velocity of fluid neighbors
 				average_neighbors_fluid(n, rho, u, flags, &rhon, &uxn, &uyn, &uzn); // get average rho/u from all fluid neighbors
 				calculate_f_eq(rhon, uxn, uyn, uzn, feq); // calculate equilibrium DDFs
 			}
 		}
-		if((flagsn&TYPE_SU)==TYPE_G) { // node with updated flags is still gas
-			u[                 n] = 0.0f; // reset velocity for gas nodes
+		if((flagsn&TYPE_SU)==TYPE_G) { // cell with updated flags is still gas
+			u[                 n] = 0.0f; // reset velocity for gas cells
 			u[    def_N+(ulong)n] = 0.0f;
 			u[2ul*def_N+(ulong)n] = 0.0f;
 			phin = 0.0f;
 		} else if((flagsn&TYPE_SU)==TYPE_I && (phin<0.0f||phin>1.0f)) {
-			phin = 0.5f; // node should be interface, but phi was invalid
+			phin = 0.5f; // cell should be interface, but phi was invalid
 		} else if((flagsn&TYPE_SU)==TYPE_F) {
 			phin = 1.0f;
 		}
@@ -1477,7 +1477,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 } // initialize()
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
-)+R(kernel void update_moving_boundaries(const global float* u, global uchar* flags) { // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+)+R(kernel void update_moving_boundaries(const global float* u, global uchar* flags) { // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute update_moving_boundaries() on halo
 	const uchar flagsn = flags[n];
@@ -1491,7 +1491,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		for(uint i=1u; i<def_velocity_set; i++) {
 			next_to_moving_boundary = next_to_moving_boundary||((u[j[i]]!=0.0f||u[def_N+(ulong)j[i]]!=0.0f||u[2ul*def_N+(ulong)j[i]]!=0.0f)&&(flagsj[i]&TYPE_BO)==TYPE_S);
 		}
-		flags[n] = next_to_moving_boundary ? flagsn|TYPE_MS : flagsn&~TYPE_MS; // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+		flags[n] = next_to_moving_boundary ? flagsn|TYPE_MS : flagsn&~TYPE_MS; // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 	}
 } // update_moving_boundaries()
 )+"#endif"+R( // MOVING_BOUNDARIES
@@ -1513,7 +1513,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute stream_collide() on halo
 	const uchar flagsn = flags[n]; // cache flags[n] for multiple readings
 	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
-	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // if node is solid boundary or gas, just return
+	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // if cell is solid boundary or gas, just return
 
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
@@ -1522,7 +1522,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
-	if(flagsn_bo==TYPE_MS) apply_moving_boundaries(fhn, j, u, flags); // apply Dirichlet velocity boundaries if necessary (reads velocities of only neighboring boundary nodes, which do not change during simulation)
+	if(flagsn_bo==TYPE_MS) apply_moving_boundaries(fhn, j, u, flags); // apply Dirichlet velocity boundaries if necessary (reads velocities of only neighboring boundary cells, which do not change during simulation)
 )+"#endif"+R( // MOVING_BOUNDARIES
 
 	float rhon, uxn, uyn, uzn; // calculate local density and velocity for collision
@@ -1550,7 +1550,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // FORCE_FIELD
 
 )+"#ifdef SURFACE"+R(
-	if(flagsn_su==TYPE_I) { // node was interface, eventually initiate flag change
+	if(flagsn_su==TYPE_I) { // cell was interface, eventually initiate flag change
 		bool TYPE_NO_F=true, TYPE_NO_G=true; // temporary flags for no fluid or gas neighbors
 		for(uint i=1u; i<def_velocity_set; i++) {
 			const uchar flagsji_su = flags[j[i]]&TYPE_SU; // extract SURFACE flags
@@ -1618,7 +1618,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // UPDATE_FIELDS
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
 )+"#ifdef UPDATE_FIELDS"+R(
-	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E nodes
+	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E cells
 		rho[               n] = rhon; // update density field
 		u[                 n] = uxn; // update velocity field
 		u[    def_N+(ulong)n] = uyn;
@@ -1696,7 +1696,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute surface_0() on halo
 	const uchar flagsn = flags[n]; // cache flags[n] for multiple readings
 	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
-	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // node processed here is fluid or interface
+	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // cell processed here is fluid or interface
 
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
@@ -1710,9 +1710,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 	for(uint i=1u; i<def_velocity_set; i++) {
 		massn += massex[j[i]]; // distribute excess mass from last step which is stored in neighbors
 	}
-	if(flagsn_su==TYPE_F) { // node is fluid
-		for(uint i=1u; i<def_velocity_set; i++) massn += fhn[i]-fon[i]; // neighbor is fluid or interface node
-	} else if(flagsn_su==TYPE_I) { // node is interface
+	if(flagsn_su==TYPE_F) { // cell is fluid
+		for(uint i=1u; i<def_velocity_set; i++) massn += fhn[i]-fon[i]; // neighbor is fluid or interface cell
+	} else if(flagsn_su==TYPE_I) { // cell is interface
 		float phij[def_velocity_set]; // cache fill level of neighbor lattice points
 		for(uint i=1u; i<def_velocity_set; i++) phij[i] = phi[j[i]]; // cache fill level of neighbor lattice points
 		float rhon, uxn, uyn, uzn, rho_laplace=0.0f; // no surface tension if rho_laplace is not overwritten later
@@ -1741,8 +1741,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 		calculate_f_eq(1.0f-rho_laplace, uxntmp, uyntmp, uzntmp, feg); // calculate gas equilibrium DDFs with constant ambient pressure
 		uchar flagsj_su[def_velocity_set]; // cache neighbor flags for multiple readings
 		for(uint i=1u; i<def_velocity_set; i++) flagsj_su[i] = flags[j[i]]&TYPE_SU;
-		for(uint i=1u; i<def_velocity_set; i+=2u) { // calculate mass exchange between current node and fluid/interface nodes
-			massn += flagsj_su[i   ]&(TYPE_F|TYPE_I) ? flagsj_su[i   ]==TYPE_F ? fhn[i+1]-fon[i   ] : 0.5f*(phij[i   ]+phij[0])*(fhn[i+1 ]-fon[i   ]) : 0.0f; // neighbor is fluid or interface node
+		for(uint i=1u; i<def_velocity_set; i+=2u) { // calculate mass exchange between current cell and fluid/interface cells
+			massn += flagsj_su[i   ]&(TYPE_F|TYPE_I) ? flagsj_su[i   ]==TYPE_F ? fhn[i+1]-fon[i   ] : 0.5f*(phij[i   ]+phij[0])*(fhn[i+1 ]-fon[i   ]) : 0.0f; // neighbor is fluid or interface cell
 			massn += flagsj_su[i+1u]&(TYPE_F|TYPE_I) ? flagsj_su[i+1u]==TYPE_F ? fhn[i  ]-fon[i+1u] : 0.5f*(phij[i+1u]+phij[0])*(fhn[i   ]-fon[i+1u]) : 0.0f; // fluid : interface : gas
 		}
 		for(uint i=1u; i<def_velocity_set; i+=2u) { // calculate reconstructed gas DDFs
@@ -1753,7 +1753,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 	mass[n] = massn;
 }
-)+R(kernel void surface_1(global uchar* flags) { // prevent neighbors from interface->fluid nodes to become/be gas nodes
+)+R(kernel void surface_1(global uchar* flags) { // prevent neighbors from interface->fluid cells to become/be gas cells
 	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
 	if(n>=(uint)def_N) return; // execute surface_1() also on halo
 	const uchar flagsn_sus = flags[n]&(TYPE_SU|TYPE_S); // extract SURFACE flags
@@ -1764,8 +1764,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 			const uchar flagsji = flags[j[i]];
 			const uchar flagsji_su = flagsji&(TYPE_SU|TYPE_S); // extract SURFACE flags
 			const uchar flagsji_r = flagsji&~TYPE_SU; // extract all non-SURFACE flags
-			if(flagsji_su==TYPE_IG) flags[j[i]] = flagsji_r|TYPE_I; // prevent interface neighbor nodes from becoming gas
-			else if(flagsji_su==TYPE_G) flags[j[i]] = flagsji_r|TYPE_GI; // neighbor node was gas and must change to interface
+			if(flagsji_su==TYPE_IG) flags[j[i]] = flagsji_r|TYPE_I; // prevent interface neighbor cells from becoming gas
+			else if(flagsji_su==TYPE_G) flags[j[i]] = flagsji_r|TYPE_GI; // neighbor cell was gas and must change to interface
 		}
 	}
 } // possible types at the end of surface_1(): TYPE_F / TYPE_I / TYPE_G / TYPE_IF / TYPE_IG / TYPE_GI
@@ -1773,7 +1773,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
 	if(n>=(uint)def_N) return; // execute surface_2() also on halo
 	const uchar flagsn_sus = flags[n]&(TYPE_SU|TYPE_S); // extract SURFACE flags
-	if(flagsn_sus==TYPE_GI) { // initialize the fi of gas nodes that should become interface
+	if(flagsn_sus==TYPE_GI) { // initialize the fi of gas cells that should become interface
 		float rhon, uxn, uyn, uzn; // average over all fluid/interface neighbors
 		average_neighbors_non_gas(n, rho, u, flags, &rhon, &uxn, &uyn, &uzn); // get average rho/u from all fluid/interface neighbors
 		float feq[def_velocity_set];
@@ -1799,37 +1799,37 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute surface_3() on halo
 	const uchar flagsn_sus = flags[n]&(TYPE_SU|TYPE_S); // extract SURFACE flags
 	if(flagsn_sus&TYPE_S) return;
-	const float rhon = rho[n]; // density of node n
-	float massn = mass[n]; // mass of node n
-	float massexn = 0.0f; // excess mass of node n
+	const float rhon = rho[n]; // density of cell n
+	float massn = mass[n]; // mass of cell n
+	float massexn = 0.0f; // excess mass of cell n
 	float phin = 0.0f;
-	if(flagsn_sus==TYPE_F) { // regular fluid node
+	if(flagsn_sus==TYPE_F) { // regular fluid cell
 		massexn = massn-rhon; // dump mass-rho difference into excess mass
-		massn = rhon; // fluid node mass has to equal rho
+		massn = rhon; // fluid cell mass has to equal rho
 		phin = 1.0f;
-	} else if(flagsn_sus==TYPE_I) { // regular interface node
-		massexn = massn>rhon ? massn-rhon : massn<0.0f ? massn : 0.0f; // allow interface nodes with mass>rho or mass<0
+	} else if(flagsn_sus==TYPE_I) { // regular interface cell
+		massexn = massn>rhon ? massn-rhon : massn<0.0f ? massn : 0.0f; // allow interface cells with mass>rho or mass<0
 		massn = clamp(massn, 0.0f, rhon);
-		phin = calculate_phi(rhon, massn, TYPE_I); // calculate fill level for next step (only necessary for interface nodes)
-	} else if(flagsn_sus==TYPE_G) { // regular gas node
+		phin = calculate_phi(rhon, massn, TYPE_I); // calculate fill level for next step (only necessary for interface cells)
+	} else if(flagsn_sus==TYPE_G) { // regular gas cell
 		massexn = massn; // dump remaining mass into excess mass
 		massn = 0.0f;
 		phin = 0.0f;
 	} else if(flagsn_sus==TYPE_IF) { // flag interface->fluid is set
-		flags[n] = (flags[n]&~TYPE_SU)|TYPE_F; // node becomes fluid
+		flags[n] = (flags[n]&~TYPE_SU)|TYPE_F; // cell becomes fluid
 		massexn = massn-rhon; // dump mass-rho difference into excess mass
-		massn = rhon; // fluid node mass has to equal rho
-		phin = 1.0f; // set phi[n] to 1.0f for fluid nodes
+		massn = rhon; // fluid cell mass has to equal rho
+		phin = 1.0f; // set phi[n] to 1.0f for fluid cells
 	} else if(flagsn_sus==TYPE_IG) { // flag interface->gas is set
-		flags[n] = (flags[n]&~TYPE_SU)|TYPE_G; // node becomes gas
+		flags[n] = (flags[n]&~TYPE_SU)|TYPE_G; // cell becomes gas
 		massexn = massn; // dump remaining mass into excess mass
 		massn = 0.0f; // gas mass has to be zero
-		phin = 0.0f; // set phi[n] to 0.0f for gas nodes
+		phin = 0.0f; // set phi[n] to 0.0f for gas cells
 	} else if(flagsn_sus==TYPE_GI) { // flag gas->interface is set
-		flags[n] = (flags[n]&~TYPE_SU)|TYPE_I; // node becomes interface
-		massexn = massn>rhon ? massn-rhon : massn<0.0f ? massn : 0.0f; // allow interface nodes with mass>rho or mass<0
+		flags[n] = (flags[n]&~TYPE_SU)|TYPE_I; // cell becomes interface
+		massexn = massn>rhon ? massn-rhon : massn<0.0f ? massn : 0.0f; // allow interface cells with mass>rho or mass<0
 		massn = clamp(massn, 0.0f, rhon);
-		phin = calculate_phi(rhon, massn, TYPE_I); // calculate fill level for next step (only necessary for interface nodes)
+		phin = calculate_phi(rhon, massn, TYPE_I); // calculate fill level for next step (only necessary for interface cells)
 	}
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
@@ -1838,7 +1838,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const uchar flagsji_su = flags[j[i]]&(TYPE_SU|TYPE_S); // extract SURFACE flags
 		counter += (uint)(flagsji_su==TYPE_F||flagsji_su==TYPE_I||flagsji_su==TYPE_IF||flagsji_su==TYPE_GI); // avoid branching
 	}
-	massn += counter>0u ? 0.0f : massexn; // if excess mass can't be distributed to neighboring interface or fluid nodes, add it to local mass (ensure mass conservation)
+	massn += counter>0u ? 0.0f : massexn; // if excess mass can't be distributed to neighboring interface or fluid cells, add it to local mass (ensure mass conservation)
 	massexn = counter>0u ? massexn/(float)counter : 0.0f; // divide excess mass up for all interface or fluid neighbors
 	mass[n] = massn; // update mass
 	massex[n] = massexn; // update excess mass
@@ -1866,7 +1866,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
-	if(flagsn_bo==TYPE_MS) apply_moving_boundaries(fhn, j, u, flags); // apply Dirichlet velocity boundaries if necessary (reads velocities of only neighboring boundary nodes, which do not change during simulation)
+	if(flagsn_bo==TYPE_MS) apply_moving_boundaries(fhn, j, u, flags); // apply Dirichlet velocity boundaries if necessary (reads velocities of only neighboring boundary cells, which do not change during simulation)
 )+"#endif"+R( // MOVING_BOUNDARIES
 
 	float rhon, uxn, uyn, uzn; // calculate local density and velocity for collision
@@ -1921,7 +1921,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	u[    def_N+(ulong)n] = uyn;
 	u[2ul*def_N+(ulong)n] = uzn;
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
-	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E nodes
+	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E cells
 		rho[               n] = rhon; // update density field
 		u[                 n] = uxn; // update velocity field
 		u[    def_N+(ulong)n] = uyn;
@@ -1934,14 +1934,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(kernel void calculate_force_on_boundaries(const global fpxx* fi, const global uchar* flags, const ulong t, global float* F) { // calculate force from the fluid on solid boundaries from fi directly
 	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute calculate_force_on_boundaries() on halo
-	if((flags[n]&TYPE_BO)!=TYPE_S) return; // only continue for solid boundary nodes
+	if((flags[n]&TYPE_BO)!=TYPE_S) return; // only continue for solid boundary cells
 	uint j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float fhn[def_velocity_set]; // local DDFs
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
 	float Fb=1.0f, fx=0.0f, fy=0.0f, fz=0.0f;
 	calculate_rho_u(fhn, &Fb, &fx, &fy, &fz); // abuse calculate_rho_u() method for calculating force
-	F[                 n] = 2.0f*fx*Fb; // 2 times because fi are reflected on solid boundary nodes (bounced-back)
+	F[                 n] = 2.0f*fx*Fb; // 2 times because fi are reflected on solid boundary cells (bounced-back)
 	F[    def_N+(ulong)n] = 2.0f*fy*Fb;
 	F[2ul*def_N+(ulong)n] = 2.0f*fz*Fb;
 } // calculate_force_on_boundaries()
@@ -2044,26 +2044,26 @@ string opencl_c_container() { return R( // ########################## begin of O
 		3,  5,  8, // yp
 		4,  6,  7  // ym
 )+"#elif defined(D3Q15)"+R(
-		1,  7,  9, 11, 14, // xp
-		2,  8, 10, 12, 13, // xm
-		3,  7,  9, 12, 13, // yp
-		4,  8, 10, 11, 14, // ym
+		1,  7, 14,  9, 11, // xp
+		2,  8, 13, 10, 12, // xm
+		3,  7, 12,  9, 13, // yp
+		4,  8, 11, 10, 14, // ym
 		5,  7, 10, 11, 13, // zp
 		6,  8,  9, 12, 14  // zm
 )+"#elif defined(D3Q19)"+R(
-		1,  7,  9, 13, 15, // xp
-		2,  8, 10, 14, 16, // xm
-		3,  7, 11, 14, 17, // yp
-		4,  8, 12, 13, 18, // ym
-		5,  9, 11, 16, 18, // zp
-		6, 10, 12, 15, 17  // zm
+		1,  7, 13,  9, 15, // xp
+		2,  8, 14, 10, 16, // xm
+		3,  7, 14, 11, 17, // yp
+		4,  8, 13, 12, 18, // ym
+		5,  9, 16, 11, 18, // zp
+		6, 10, 15, 12, 17  // zm
 )+"#elif defined(D3Q27)"+R(
-		1,  7,  9, 13, 15, 19, 21, 23, 26, // xp
-		2,  8, 10, 14, 16, 20, 22, 24, 25, // xm
-		3,  7, 11, 14, 17, 19, 21, 24, 25, // yp
-		4,  8, 12, 13, 18, 20, 22, 23, 26, // ym
-		5,  9, 11, 16, 18, 19, 22, 23, 25, // zp
-		6, 10, 12, 15, 17, 20, 21, 24, 26  // zm
+		1,  7, 13,  9, 15, 19, 26, 21, 23, // xp
+		2,  8, 14, 10, 16, 20, 25, 22, 24, // xm
+		3,  7, 14, 11, 17, 19, 24, 21, 25, // yp
+		4,  8, 13, 12, 18, 20, 23, 22, 26, // ym
+		5,  9, 16, 11, 18, 19, 22, 23, 25, // zp
+		6, 10, 15, 12, 17, 20, 21, 24, 26  // zm
 )+"#endif"+R( // D3Q27
 	};
 	return (uint)index_transfer_data[side_i];
@@ -2302,7 +2302,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
 	const uchar flagsn = flags[n]; // cache flags
 	const uchar flagsn_bo = flagsn&TYPE_BO; // extract boundary flags
-	if(flagsn==0u||flagsn==TYPE_G) return; // don't draw regular fluid nodes
+	if(flagsn==0u||flagsn==TYPE_G) return; // don't draw regular fluid cells
 	//if(flagsn&TYPE_SU) return; // don't draw surface
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
@@ -2321,8 +2321,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 		flagsn&TYPE_I ? COLOR_I : // interface
 		flagsn&TYPE_X ? COLOR_X : // reserved type X
 		flagsn&TYPE_Y ? COLOR_Y : // reserved type Y
-		COLOR_0; // regular or gas node
-	//draw_point(p, c, camera_cache, bitmap, zbuffer); // draw one pixel for every boundary node
+		COLOR_0; // regular or gas cell
+	//draw_point(p, c, camera_cache, bitmap, zbuffer); // draw one pixel for every boundary cell
 	uint t;
 	t = xp+y0+z0; const bool not_xp = xyz.x<def_Nx-1u && flagsn==flags[t] && !is_halo(t); // +00
 	t = xm+y0+z0; const bool not_xm = xyz.x>       0u && flagsn==flags[t] && !is_halo(t); // -00
@@ -2470,9 +2470,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const bool rx=fabs(p.x-slice.x)>0.5f*(float)def_streamline_sparse, ry=fabs(p.y-slice.y)>0.5f*(float)def_streamline_sparse, rz=true;
 	)+"#endif"+R( // D2Q9
 	if((slice_mode==1&&rx)||(slice_mode==2&&ry)||(slice_mode==3&&rz)||(slice_mode==4&&rx&&rz)||(slice_mode==5&&rx&&ry&&rz)||(slice_mode==6&&ry&&rz)||(slice_mode==7&&rx&&ry)) return;
-	if((slice_mode==1||slice_mode==5||slice_mode==4||slice_mode==7)&&!rx) p.x = slice.x; // snap streamline position to slice position
-	if((slice_mode==2||slice_mode==5||slice_mode==6||slice_mode==7)&&!ry) p.y = slice.y;
-	if((slice_mode==3||slice_mode==5||slice_mode==4||slice_mode==6)&&!rz) p.z = slice.z;
+	if((slice_mode==1||slice_mode==5||slice_mode==4||slice_mode==7)&!rx) p.x = slice.x; // snap streamline position to slice position
+	if((slice_mode==2||slice_mode==5||slice_mode==6||slice_mode==7)&!ry) p.y = slice.y;
+	if((slice_mode==3||slice_mode==5||slice_mode==4||slice_mode==6)&!rz) p.z = slice.z;
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float hLx=0.5f*(float)(def_Nx-2u*(def_Dx>1u)), hLy=0.5f*(float)(def_Ny-2u*(def_Dy>1u)), hLz=0.5f*(float)(def_Nz-2u*(def_Dz>1u));

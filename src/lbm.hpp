@@ -38,11 +38,11 @@ private:
 	Memory<fpxx> fi; // LBM density distribution functions (DDFs); only exist in device memory
 	ulong t_last_update_fields = 0ull; // optimization to not call kernel_update_fields multiple times if (rho, u, T) are already up-to-date
 #ifdef FORCE_FIELD
-	Kernel kernel_calculate_force_on_boundaries; // calculate forces from fluid on TYPE_S nodes
-	Kernel kernel_reset_force_field; // reset force field (also on TYPE_S nodes)
+	Kernel kernel_calculate_force_on_boundaries; // calculate forces from fluid on TYPE_S cells
+	Kernel kernel_reset_force_field; // reset force field (also on TYPE_S cells)
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
-	Kernel kernel_update_moving_boundaries; // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+	Kernel kernel_update_moving_boundaries; // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 #endif // MOVING_BOUNDARIES
 #ifdef SURFACE
 	Kernel kernel_surface_0; // additional kernel for computing mass conservation and mass flux computation
@@ -63,17 +63,17 @@ private:
 	string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
 
 public:
-	Memory<float> rho; // density of every node
-	Memory<float> u; // velocity of every node
-	Memory<uchar> flags; // flags of every node
+	Memory<float> rho; // density of every cell
+	Memory<float> u; // velocity of every cell
+	Memory<uchar> flags; // flags of every cell
 #ifdef FORCE_FIELD
-	Memory<float> F; // individual force for every node
+	Memory<float> F; // individual force for every cell
 #endif // FORCE_FIELD
 #ifdef SURFACE
-	Memory<float> phi; // fill level of every node
+	Memory<float> phi; // fill level of every cell
 #endif // SURFACE
 #ifdef TEMPERATURE
-	Memory<float> T; // temperature of every node
+	Memory<float> T; // temperature of every cell
 #endif // TEMPERATURE
 #ifdef PARTICLES
 	Memory<float> particles; // particle positions
@@ -98,10 +98,10 @@ public:
 	void enqueue_surface_3();
 #endif // SURFACE
 #ifdef FORCE_FIELD
-	void enqueue_calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S nodes
+	void enqueue_calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S cells
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
-	void enqueue_update_moving_boundaries(); // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+	void enqueue_update_moving_boundaries(); // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 #endif // MOVING_BOUNDARIES
 #ifdef PARTICLES
 	void enqueue_integrate_particles(const uint time_step_multiplicator=1u); // intgegrates particles forward in time and couples particles to fluid
@@ -149,7 +149,7 @@ public:
 		LBM_Domain* lbm = nullptr;
 		Kernel kernel_graphics_flags; // render flag lattice with wireframe
 		Kernel kernel_graphics_flags_mc; // render flag lattice with marching-cubes
-		Kernel kernel_graphics_field; // render a colored velocity vector for each node
+		Kernel kernel_graphics_field; // render a colored velocity vector for each cell
 		Kernel kernel_graphics_streamline; // render streamlines
 		Kernel kernel_graphics_q; // render vorticity (Q-criterion)
 
@@ -358,17 +358,17 @@ public:
 
 	LBM_Domain** lbm; // one LBM object per domain
 
-	Memory_Container<float> rho; // density of every node
-	Memory_Container<float> u; // velocity of every node
-	Memory_Container<uchar> flags; // flags of every node
+	Memory_Container<float> rho; // density of every cell
+	Memory_Container<float> u; // velocity of every cell
+	Memory_Container<uchar> flags; // flags of every cell
 #ifdef FORCE_FIELD
-	Memory_Container<float> F; // individual force for every node
+	Memory_Container<float> F; // individual force for every cell
 #endif // FORCE_FIELD
 #ifdef SURFACE
-	Memory_Container<float> phi; // fill level of every node
+	Memory_Container<float> phi; // fill level of every cell
 #endif // SURFACE
 #ifdef TEMPERATURE
-	Memory_Container<float> T; // temperature of every node
+	Memory_Container<float> T; // temperature of every cell
 #endif // TEMPERATURE
 #ifdef PARTICLES
 	Memory<float>* particles; // particle positions
@@ -388,13 +388,13 @@ public:
 	void update_fields(); // update fields (rho, u, T) manually
 	void reset(); // reset simulation (takes effect in following run() call)
 #ifdef FORCE_FIELD
-	void calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S nodes
-	float3 calculate_force_on_object(const uchar flag_marker=TYPE_S); // add up force for all nodes flagged with flag_marker
-	float3 calculate_torque_on_object(const uchar flag_marker=TYPE_S); // add up torque around center of mass for all nodes flagged with flag_marker
-	float3 calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all nodes flagged with flag_marker
+	void calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S cells
+	float3 calculate_object_center_of_mass(const uchar flag_marker=TYPE_S); // calculate center of mass of all cells flagged with flag_marker
+	float3 calculate_force_on_object(const uchar flag_marker=TYPE_S); // add up force for all cells flagged with flag_marker
+	float3 calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all cells flagged with flag_marker
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
-	void update_moving_boundaries(); // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
+	void update_moving_boundaries(); // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 #endif // MOVING_BOUNDARIES
 #if defined(PARTICLES)&&!defined(FORCE_FIELD)
 	void integrate_particles(const ulong steps=max_ulong, const uint time_step_multiplicator=1u); // intgegrate passive tracer particles forward in time in stationary flow field

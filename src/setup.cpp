@@ -41,7 +41,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(128u, 128u, 128u, 1u, 1u, 1u, 0.01f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		const float A = 0.25f;
 		const uint periodicity = 1u;
 		const float a=(float)Nx/(float)periodicity, b=(float)Ny/(float)periodicity, c=(float)Nz/(float)periodicity;
@@ -52,7 +52,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		lbm.u.y[n] = -A*sinf(2.0f*pif*fx/a)*cosf(2.0f*pif*fy/b)*sinf(2.0f*pif*fz/c);
 		lbm.u.z[n] =  A*sinf(2.0f*pif*fx/a)*sinf(2.0f*pif*fy/b)*cosf(2.0f*pif*fz/c);
 		lbm.rho[n] = 1.0f-sq(A)*3.0f/4.0f*(cosf(4.0f*pif*fx/a)+cosf(4.0f*pif*fy/b));
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_STREAMLINES;
 	lbm.run();
 	//lbm.run(1000u); lbm.u.read_from_device(); println(lbm.u.x[lbm.index(Nx/2u, Ny/2u, Nz/2u)]); wait(); // test for binary identity
@@ -64,7 +64,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(1024u, 1024u, 1u, 0.02f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		const float A = 0.2f;
 		const uint periodicity = 5u;
 		const float a=(float)Nx/(float)periodicity, b=(float)Ny/(float)periodicity;
@@ -73,7 +73,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		lbm.u.x[n] =  A*cosf(2.0f*pif*fx/a)*sinf(2.0f*pif*fy/b);
 		lbm.u.y[n] = -A*sinf(2.0f*pif*fx/a)*cosf(2.0f*pif*fy/b);
 		lbm.rho[n] = 1.0f-sq(A)*3.0f/4.0f*(cosf(4.0f*pif*fx/a)+cosf(4.0f*pif*fy/b));
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_STREAMLINES;
 	lbm.run();
 } /**/
@@ -93,16 +93,16 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	LBM lbm(lcm(H, WORKGROUP_SIZE)/H, H, 1u, nu, units.f_from_u_Poiseuille_2D(umax, 1.0f, nu, R), 0.0f, 0.0f); // 2D
 #endif // D2Q9
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 #ifndef D2Q9
 		if(!cylinder(x, y, z, lbm.center(), float3(0u, Ny, 0u), 0.5f*(float)min(Nx, Nz)-1.0f)) lbm.flags[n] = TYPE_S; // 3D
 #else // D2Q9
 		if(y==0u||y==Ny-1u) lbm.flags[n] = TYPE_S; // 2D
 #endif // D2Q9
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	double error_min = max_double;
 	while(true) { // main simulation loop
-		lbm.run(1000);
+		lbm.run(1000u);
 		lbm.u.read_from_device();
 		string s;
 		double error_dif=0.0, error_sum=0.0;
@@ -158,10 +158,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float u = units.u_from_Re(Re, 2.0f*R, nu); // velocity
 	LBM lbm(L, L, L, nu); // flow driven by equilibrium boundaries
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 		if(sphere(x, y, z, lbm.center(), R)) {
-			lbm.flags[n] = TYPE_S|TYPE_X; // flag boundary nodes for force summation additionally with TYPE_X
+			lbm.flags[n] = TYPE_S|TYPE_X; // flag boundary cells for force summation additionally with TYPE_X
 		} else {
 			lbm.rho[n] = units.rho_Stokes(lbm.position(x, y, z), float3(-u, 0.0f, 0.0f), R, rho, nu);
 			const float3 un = units.u_Stokes(lbm.position(x, y, z), float3(-u, 0.0f, 0.0f), R);
@@ -169,7 +169,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			lbm.u.y[n] = un.y;
 			lbm.u.z[n] = un.z;
 		}
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	double E1=1000.0, E2=1000.0;
 	while(true) { // main simulation loop
 		lbm.run(T);
@@ -202,11 +202,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float f = units.f_from_u_rectangular_duct(w, D, 1.0f, nu, u);
 	LBM lbm(to_uint(w), to_uint(l), to_uint(h), nu, 0.0f, f, 0.0f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		lbm.u.y[n] = 0.1f*u;
 		if(cylinder(x, y, z, float3(lbm.center().x, 2.0f*D, lbm.center().z), float3(Nx, 0u, 0u), 0.5f*D)) lbm.flags[n] = TYPE_S;
 		if(x==0u||x==Nx-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // x and z non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_Q_CRITERION;
 	lbm.run();
 } /**/
@@ -217,7 +217,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(96u, 96u, 192u, 1u, 1u, 1u, 0.04f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(!cylinder(x, y, z, lbm.center(), float3(0u, 0u, Nz), (float)(Nx/2u-1u))) lbm.flags[n] = TYPE_S;
 		if( cylinder(x, y, z, lbm.center(), float3(0u, 0u, Nz), (float)(Nx/4u   ))) {
 			const float3 relative_position = lbm.relative_position(n);
@@ -226,7 +226,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			lbm.u.z[n] = (1.0f-random(2.0f))*0.001f;
 			lbm.flags[n] = TYPE_S;
 		}
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_STREAMLINES;
 	lbm.run();
 	//lbm.run(4000u); lbm.u.read_from_device(); println(lbm.u.x[lbm.index(Nx/4u, Ny/4u, Nz/2u)]); wait(); // test for binary identity
@@ -241,10 +241,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float u = 0.1f;
 	LBM lbm(L, L, L, units.nu_from_Re(Re, (float)(L-2u), u));
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z==Nz-1) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_STREAMLINES;
 	lbm.run();
 } /**/
@@ -263,10 +263,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		lbm.particles->y[n] = random_symmetric(0.5f*lbm.size().y/4.0f);
 		lbm.particles->z[n] = random_symmetric(0.5f*lbm.size().z/4.0f);
 	}
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z==Nz-1) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_STREAMLINES|VIS_PARTICLES;
 	lbm.run();
 } /**/
@@ -284,11 +284,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float3 p0 = offset+float3(  0*(int)L/64,  5*(int)L/64,  20*(int)L/64);
 	const float3 p1 = offset+float3(-20*(int)L/64, 90*(int)L/64, -10*(int)L/64);
 	const float3 p2 = offset+float3(+20*(int)L/64, 90*(int)L/64, -10*(int)L/64);
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(triangle(x, y, z, p0, p1, p2)) lbm.flags[n] = TYPE_S;
 		else lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run();
 } /**/
@@ -324,10 +324,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	mesh->translate(float3(0.0f, -0.5f*lbm.size().y+mesh->pmax.y+0.5f*(lbm.size().x-(mesh->pmax.x-mesh->pmin.x)), 0.0f));
 	mesh->translate(lbm.center());
 	lbm.voxelize_mesh_on_device(mesh);
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run();
 } /**/
@@ -336,21 +336,49 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 /*void main_setup() { // Concorde; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint3 lbm_N = resolution(float3(1.0f, 3.0f, 0.5f), 1320u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
-	const float lbm_Re = 1000000.0f;
+	const uint3 lbm_N = resolution(float3(1.0f, 3.0f, 0.5f), 2084u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const float si_u = 300.0f/3.6f;
+	const float si_length=62.0f, si_width=26.0f;
+	const float si_T = 1.0f;
+	const float si_nu=1.48E-5f, si_rho=1.225f;
+	const float lbm_length = 0.56f*(float)lbm_N.y;
 	const float lbm_u = 0.1f;
-	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
+	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
+	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
+	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
-	const float size = 1.75f*lbm.size().x;
-	const float3 center = float3(lbm.center().x, 0.52f*size, lbm.center().z+0.03f*size);
+	const float3 center = float3(lbm.center().x, 0.52f*lbm_length, lbm.center().z+0.03f*lbm_length);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-10.0f))*float3x3(float3(0, 0, 1), radians(90.0f))*float3x3(float3(1, 0, 0), radians(90.0f));
-	lbm.voxelize_stl(get_exe_path()+"../stl/concord_cut_large.stl", center, rotation, size); // https://www.thingiverse.com/thing:1176931/files
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	lbm.voxelize_stl(get_exe_path()+"../stl/concord_cut_large.stl", center, rotation, lbm_length); // https://www.thingiverse.com/thing:1176931/files
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run();
+	lbm.run(0u); // initialize simulation
+	//lbm.write_status();
+	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
+		if(lbm.graphics.next_frame(units.t(si_T), 10.0f)) {
+			lbm.graphics.set_camera_free(float3(0.491343f*(float)Nx, -0.882147f*(float)Ny, 0.564339f*(float)Nz), -78.0f, 6.0f, 22.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/front/");
+			lbm.graphics.set_camera_free(float3(1.133361f*(float)Nx, 1.407077f*(float)Ny, 1.684411f*(float)Nz), 72.0f, 12.0f, 20.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/back/");
+			lbm.graphics.set_camera_centered(0.0f, 0.0f, 25.0f, 1.648722f);
+			lbm.graphics.write_frame(get_exe_path()+"export/side/");
+			lbm.graphics.set_camera_centered(0.0f, 90.0f, 25.0f, 1.648722f);
+			lbm.graphics.write_frame(get_exe_path()+"export/top/");
+			lbm.graphics.set_camera_free(float3(0.269361f*(float)Nx, -0.179720f*(float)Ny, 0.304988f*(float)Nz), -56.0f, 31.6f, 100.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/wing/");
+			lbm.graphics.set_camera_free(float3(0.204399f*(float)Nx, 0.340055f*(float)Ny, 1.620902f*(float)Nz), 80.0f, 35.6f, 34.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/follow/");
+		}
+#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
+		lbm.run(1u); // run dt time steps
+	}
+	//lbm.write_status();
 } /**/
 
 
@@ -367,10 +395,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float3 center = float3(lbm.center().x, 0.55f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-15.0f));
 	lbm.voxelize_stl(get_exe_path()+"../stl/techtris_airplane.stl", center, rotation, size); // https://www.thingiverse.com/thing:2772812/files
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.graphics.set_camera_free(float3(1.0f*(float)Nx, -0.4f*(float)Ny, 2.0f*(float)Nz), -33.0f, 42.0f, 68.0f);
@@ -398,10 +426,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float3 center = float3(lbm.center().x, 0.55f*size, lbm.center().z);
 	const float3x3 rotation = float3x3(float3(0, 0, 1), radians(180.0f));
 	lbm.voxelize_stl(get_exe_path()+"../stl/X-Wing.stl", center, rotation, size); // https://www.thingiverse.com/thing:353276/files
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.run(0u); // initialize simulation
@@ -439,10 +467,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/DWG_Tie_Fighter_Assembled_02.stl", lbm.size(), center, rotation, size); // https://www.thingiverse.com/thing:2919109/files
 	lbm.voxelize_mesh_on_device(mesh);
 	lbm.flags.read_from_device();
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
@@ -481,9 +509,9 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float3 center = float3(lbm.center().x, lbm.center().y, 0.36f*radius);
 	const float lbm_omega=lbm_u/radius, lbm_domega=lbm_omega*lbm_dt;
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/FAN_Solid_Bottom.stl", lbm.size(), center, 2.0f*radius); // https://www.thingiverse.com/thing:6113/files
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
@@ -523,10 +551,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	rotor->set_center(rotor->get_bounding_box_center());
 	const float lbm_radius=0.5f*rotor->get_max_size(), omega=lbm_u/lbm_radius, domega=omega*(float)lbm_dt;
 	lbm.voxelize_mesh_on_device(stator, TYPE_S, center);
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]==0u) lbm.u.y[n] = 0.3f*lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
@@ -563,11 +591,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/Cow_t.stl", lbm.size(), lbm.center(), rotation, lbm_length); // https://www.thingiverse.com/thing:182114/files
 	mesh->translate(float3(0.0f, 1.0f-mesh->pmin.y+0.1f*lbm_length, 1.0f-mesh->pmin.z)); // move mesh forward a bit and to simulation box bottom, keep in mind 1 cell thick box boundaries
 	lbm.voxelize_mesh_on_device(mesh);
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z==0u) lbm.flags[n] = TYPE_S; // solid floor
-		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u; // initialize y-velocity everywhere except in solid nodes
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u; // initialize y-velocity everywhere except in solid cells
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all other simulation box boundaries are inflow/outflow
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.graphics.set_camera_centered(-40.0f, 20.0f, 78.0f, 1.25f);
@@ -597,10 +625,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	Clock clock;
 	lbm.voxelize_stl(get_exe_path()+"../stl/Full_Shuttle.stl", center, rotation, size); // https://www.thingiverse.com/thing:4975964/files
 	println(print_time(clock.stop()));
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.write_status();
@@ -633,10 +661,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float size = 1.6f*lbm.size().x;
 	const float3 center = float3(lbm.center().x, lbm.center().y+0.05f*size, 0.18f*size);
 	lbm.voxelize_stl(get_exe_path()+"../stl/StarShipV2.stl", center, size); // https://www.thingiverse.com/thing:4912729/files
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.z[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.write_status();
@@ -662,19 +690,22 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 /*void main_setup() { // Ahmed body; required extensions in defines.hpp: FP16C, FORCE_FIELD, EQUILIBRIUM_BOUNDARIES, SUBGRID, optionally INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint memory = 8000u; // available VRAM of GPU(s) in MB
+	const uint memory = 10000u; // available VRAM of GPU(s) in MB
 	const float lbm_u = 0.05f;
 	const float box_scale = 6.0f;
 	const float si_u = 60.0f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	const float si_width=0.389f, si_height=0.288f, si_length=1.044f;
 	const float si_A = si_width*si_height+2.0f*0.05f*0.03f;
-	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
-	const float Lx = units.x(box_scale*si_width);
-	const float Ly = units.x(box_scale*si_length);
-	const float Lz = units.x(0.5f*(box_scale-1.0f)*si_width+si_height);
-	const uint3 lbm_N = resolution(float3(Lx, Ly, Lz), memory); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const float si_T = 0.25f;
+	const float si_Lx = units.x(box_scale*si_width);
+	const float si_Ly = units.x(box_scale*si_length);
+	const float si_Lz = units.x(0.5f*(box_scale-1.0f)*si_width+si_height);
+	const uint3 lbm_N = resolution(float3(si_Lx, si_Ly, si_Lz), memory); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	units.set_m_kg_s((float)lbm_N.y, lbm_u, 1.0f, box_scale*si_length, si_u, si_rho);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
+	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
 	const float lbm_nu = units.nu(si_nu);
 	const float lbm_length = units.x(si_length);
 	LBM lbm(lbm_N, lbm_nu);
@@ -682,22 +713,39 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/ahmed_25deg_m.stl", lbm.size(), lbm.center(), float3x3(float3(0, 0, 1), radians(90.0f)), lbm_length);
 	mesh->translate(float3(0.0f, units.x(0.5f*(0.5f*box_scale*si_length-si_width))-mesh->pmin.y, 1.0f-mesh->pmin.z));
 	lbm.voxelize_mesh_on_device(mesh, TYPE_S|TYPE_X); // https://github.com/nathanrooy/ahmed-bluff-body-cfd/blob/master/geometry/ahmed_25deg_m.stl converted to binary
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z==0u) lbm.flags[n] = TYPE_S;
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
+	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
+	lbm.graphics.set_camera_centered(20.0f, 30.0f, 1.0f, 1.648722f);
 	lbm.run(0u); // initialize simulation
-	//write_file(get_exe_path()+"Cd.dat", "# t\tCd\n");
-	while(true) { // main simulation loop
-		lbm.calculate_force_on_boundaries();
-		lbm.F.read_from_device();
-		const float3 lbm_force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
-		const float Cd = units.si_F(lbm_force.y)/(0.5f*si_rho*sq(si_u)*si_A); // expect Cd to be too large by a factor 1.3-2.0x; need wall model
-		println("\r"+to_string(Cd, 3u)+"                                                                                ");
-		//write_line(get_exe_path()+"Cd.dat", to_string(lbm.get_t())+"\t"+to_string(Cd, 3u)+"\n");
-		lbm.run(100u);
+#if defined(FP16S)
+	const string path = get_exe_path()+"FP16S/"+to_string(memory)+"MB/";
+#elif defined(FP16C)
+	const string path = get_exe_path()+"FP16C/"+to_string(memory)+"MB/";
+#else // FP32
+	const string path = get_exe_path()+"FP32/"+to_string(memory)+"MB/";
+#endif // FP32
+	//lbm.write_status(path);
+	//write_file(path+"Cd.dat", "# t\tCd\n");
+	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) {
+			Clock clock;
+			lbm.calculate_force_on_boundaries();
+			lbm.F.read_from_device();
+			const float3 lbm_force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
+			const float Cd = units.si_F(lbm_force.y)/(0.5f*si_rho*sq(si_u)*si_A); // expect Cd to be too large by a factor 1.3-2.0x; need wall model
+			println("\r"+to_string(Cd, 3u)+" "+to_string(clock.stop(), 3u)+"                                                                               ");
+	//		write_line(path+"Cd.dat", to_string(lbm.get_t())+"\t"+to_string(Cd, 3u)+"\n");
+#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
+	//		lbm.graphics.write_frame(path+"images/");
+#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
+		}
+		lbm.run(1u);
 	}
+	//lbm.write_status(path);
 } /**/
 
 
@@ -729,10 +777,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	rotor->set_center(rotor->get_bounding_box_center());
 	const float lbm_radius=0.5f*rotor->get_max_size(), omega=-lbm_u/lbm_radius, domega=omega*(float)lbm_dt;
 	lbm.voxelize_mesh_on_device(plane);
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
@@ -786,11 +834,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float main_radius=0.5f*main->get_max_size(), main_omega=lbm_u/main_radius, main_domega=main_omega*(float)lbm_dt;
 	const float back_radius=0.5f*back->get_max_size(), back_omega=-lbm_u/back_radius, back_domega=back_omega*(float)lbm_dt;
 	lbm.voxelize_mesh_on_device(body);
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] =  0.2f*lbm_u;
 		if(lbm.flags[n]!=TYPE_S) lbm.u.z[n] = -0.1f*lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
@@ -853,11 +901,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	lbm.voxelize_mesh_on_device(body);
 	lbm.voxelize_mesh_on_device(front_wheels, TYPE_S, front_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
 	lbm.voxelize_mesh_on_device(back_wheels, TYPE_S, back_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 		if(z==0u) lbm.flags[n] = TYPE_S;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.run(0u); // initialize simulation
@@ -887,7 +935,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(96u, 352u, 96u, 1u, 1u, 1u, 0.007f, 0.0f, 0.0f, -0.0005f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		const uint H1=Nz*2u/5u, H2=Nz*3u/5u, P1=Ny*1u/20u, P3=Ny*3u/20u;
 		if(z<H2) lbm.flags[n] = TYPE_F;
 		if(y<P3&&z< H1) lbm.flags[n] = TYPE_S;
@@ -902,7 +950,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			lbm.rho[n] = 0.99f;
 		}
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run();
 	//lbm.run(1000u); lbm.u.read_from_device(); println(lbm.u.x[lbm.index(Nx/2u, Ny/4u, Nz/4u)]); wait(); // test for binary identity
@@ -914,10 +962,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(128u, 256u, 256u, 0.005f, 0.0f, 0.0f, -0.0002f, 0.0001f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z<Nz*6u/8u && y<Ny/8u) lbm.flags[n] = TYPE_F;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run();
 } /**/
@@ -932,7 +980,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float frequency = 0.01f; // amplitude = u/(2.0f*pif*frequency);
 	LBM lbm(L, L, L*3u/4u, 0.01f, 0.0f, 0.0f, -f, 0.005f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z<Nz/3u && x>0u&&x<Nx-1u&&y>0u&&y<Ny-1u&&z>0u&&z<Nz-1u) {
 			lbm.rho[n] = units.rho_hydrostatic(f, (float)z, (float)(Nz/3u));
 			lbm.u.x[n] = random_symmetric(1E-9f);
@@ -942,7 +990,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		}
 		if(z==0u) lbm.u.z[n] = 1E-16f;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run(0u); // initialize simulation
 	while(true) { // main simulation loop
@@ -970,7 +1018,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float frequency = 0.0007f; // amplitude = u/(2.0f*pif*frequency);
 	LBM lbm(128u, 640u, 96u, 0.01f, 0.0f, 0.0f, -f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		const uint H = Nz/2u;
 		if(z<H) {
 			lbm.flags[n] = TYPE_F;
@@ -979,7 +1027,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		if(plane(x, y, z, float3(lbm.center().x, 128.0f, 0.0f), float3(0.0f, -1.0f, 8.0f))) lbm.flags[n] = TYPE_S;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
 		if(y==0u && x>0u&&x<Nx-1u&&z>0u&&z<Nz-1u) lbm.flags[n] = TYPE_E;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE | (lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE);
 	lbm.run(0u); // initialize simulation
 	while(true) { // main simulation loop
@@ -1006,7 +1054,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(128u, 384u, 96u, 0.02f, 0.0f, -0.00007f, -0.0005f, 0.01f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		const int R = 20, H = 32;
 		if(z==0) lbm.flags[n] = TYPE_S;
 		else if(z<H) {
@@ -1016,7 +1064,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		if(cylinder(x, y, z, float3(Nx*2u/3u, Ny*2u/3u, Nz/2u)+0.5f, float3(0u, 0u, Nz), (float)R)) lbm.flags[n] = TYPE_S;
 		if(cuboid(x, y, z, float3(Nx/3u, Ny/3u, Nz/2u)+0.5f, float3(2u*R, 2u*R, Nz))) lbm.flags[n] = TYPE_S;
 		if(x==0u||x==Nx-1u) lbm.flags[n] = TYPE_S; // x non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run();
 } /**/
@@ -1052,7 +1100,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float lbm_R = 0.5f*lbm_D; // drop radius
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu), 0.0f, 0.0f, -units.f(si_rho, si_g), units.sigma(si_sigma)); // calculate values for remaining parameters in simulation units
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(sphere(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f), lbm_H+lbm_R+2.5f)+0.5f, lbm_R+2.0f)) {
 			const float b = sphere_plic(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f)+0.5f, lbm_H+lbm_R+2.5f), lbm_R);
 			if(b!=-1.0f) {
@@ -1076,7 +1124,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			lbm.rho[n] = 0.5f;
 			lbm.flags[n] = TYPE_E;
 		}
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.run(0u); // initialize simulation
@@ -1123,7 +1171,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const uint lbm_H = to_uint(2.0f*lbm_d);
 	LBM lbm(lbm_N, units.nu(si_nu), 0.0f, 0.0f, -units.f(si_f), lbm_sigma);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z<lbm_H) lbm.flags[n] = TYPE_F;
 		const float r = 0.5f*lbm_d;
 		if(sphere(x, y, z, float3(lbm.center().x, lbm.center().y, (float)lbm_H-0.5f*lbm_d), r+1.0f)) { // bubble
@@ -1137,7 +1185,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			}
 		}
 		if(z==0) lbm.flags[n] = TYPE_S;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run();
 } /**/
@@ -1148,10 +1196,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(96u, 96u, 96u, 0.02f, 0.0f, 0.0f, -0.001f, 0.001f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(x<Nx*2u/3u&&y<Ny*2u/3u) lbm.flags[n] = TYPE_F;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run(0u); // initialize simulation
 	while(true) { // main simulation loop
@@ -1174,13 +1222,13 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(96u, 192u, 128u, 0.02f, 0.0f, 0.0f, -0.001f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(y>Ny*5u/6u) lbm.flags[n] = TYPE_F;
 		const uint D=max(Nx, Nz), R=D/6;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u) lbm.flags[n] = TYPE_S; // x and y non periodic
 		if((z==0u||z==Nz-1u) && sq(x-Nx/2)+sq(y-Nx/2)>sq(R)) lbm.flags[n] = TYPE_S; // z non periodic
 		if(y<=Nx/2u+2u*R && torus_x(x, y, z, float3(Nx/2u, Nx/2u+R, Nz)+0.5f, (float)R, (float)R)) lbm.flags[n] = TYPE_S;
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_PHI_RASTERIZE;
 	lbm.run();
 } /**/
@@ -1191,7 +1239,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(256u, 256u, 128u, 0.014f, 0.0f, 0.0f, 0.0f, 0.0001f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(sphere(x, y, z, lbm.center()-float3(0u, 10u, 0u), 32.0f)) {
 			lbm.flags[n] = TYPE_F;
 			lbm.u.y[n] = 0.025f;
@@ -1204,7 +1252,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		lbm.F.y[n] = -0.001f*lbm.relative_position(n).y;
 		lbm.F.z[n] = -0.0005f*lbm.relative_position(n).z;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 	lbm.run();
 } /**/
@@ -1215,7 +1263,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(256u, 256u, 64u, 0.02f, 0.0f, 0.0f, -0.001f, 0.0f, 1.0f, 1.0f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		lbm.u.x[n] = random_symmetric(0.015f); // initialize velocity with random noise
 		lbm.u.y[n] = random_symmetric(0.015f);
 		lbm.u.z[n] = random_symmetric(0.015f);
@@ -1228,7 +1276,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			lbm.flags[n] = TYPE_T;
 		}
 		if(z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // leave lateral simulation box walls periodic by not closing them with TYPE_S
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_STREAMLINES;
 	lbm.run();
 } /**/
@@ -1239,7 +1287,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(32u, 196u, 60u, 1u, 1u, 1u, 0.02f, 0.0f, 0.0f, -0.001f, 0.0f, 1.0f, 1.0f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(ulong n=0ull; n<lbm.get_N(); n++) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(y==1) {
 			lbm.T[n] = 1.8f;
 			lbm.flags[n] = TYPE_T;
@@ -1249,7 +1297,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		}
 		lbm.rho[n] = units.rho_hydrostatic(0.001f, (float)z, (float)Nz-2.0f); // initialize density with hydrostatic pressure
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_STREAMLINES;
 	lbm.run();
 	//lbm.run(1000u); lbm.u.read_from_device(); println(lbm.u.x[lbm.index(Nx/2u, Ny/2u, Nz/2u)]); wait(); // test for binary identity

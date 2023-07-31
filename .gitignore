@@ -1,1 +1,4 @@
 bin/
+temp/
+.vs/
+FluidX3D.vcxproj.user
