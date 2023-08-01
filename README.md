@@ -483,6 +483,14 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI250&nbsp;(4&nbsp;GCD)           |             181.04 |         256 |         6554 |      16925&nbsp;(3.0x) |            29163 (3.2x) |            29627 (3.5x) |
 | 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI250&nbsp;(8&nbsp;GCD)           |             362.08 |         512 |        13107 |      27350&nbsp;(4.9x) |            52258 (5.8x) |            53521 (6.3x) |
 |                                                                 |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;&nbsp;&nbsp;1x&nbsp;Instinct&nbsp;MI210                 |              45.26 |          64 |         1638 |             6347 (59%) |              8486 (40%) |              9105 (43%) |
+| 🔴&nbsp;&nbsp;&nbsp;2x&nbsp;Instinct&nbsp;MI210                 |              90.52 |         128 |         3277 |            7245 (1.1x) |            12050 (1.4x) |            13539 (1.5x) |
+| 🔴&nbsp;&nbsp;&nbsp;4x&nbsp;Instinct&nbsp;MI210                 |             181.04 |         256 |         6554 |            8816 (1.4x) |            17232 (2.0x) |            16892 (1.9x) |
+| 🔴&nbsp;&nbsp;&nbsp;8x&nbsp;Instinct&nbsp;MI210                 |             362.08 |         512 |        13107 |      13546&nbsp;(2.1x) |            27996 (3.3x) |            27820 (3.1x) |
+| 🔴&nbsp;16x&nbsp;Instinct&nbsp;MI210                            |             724.16 |        1024 |        26214 |      18094&nbsp;(2.9x) |            37360 (4.4x) |            37922 (4.2x) |
+| 🔴&nbsp;24x&nbsp;Instinct&nbsp;MI210                            |            1086.24 |        1536 |        39322 |      22056&nbsp;(3.5x) |            45033 (5.3x) |            44631 (4.9x) |
+| 🔴&nbsp;32x&nbsp;Instinct&nbsp;MI210                            |            1448.32 |        2048 |        52429 |      23881&nbsp;(3.8x) |            50952 (6.0x) |            48848 (5.4x) |
+|                                                                 |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;1x&nbsp;Radeon&nbsp;VII                                 |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
 | 🔴&nbsp;2x&nbsp;Radeon&nbsp;VII                                 |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
 | 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                 |              55.32 |          64 |         4096 |      12911&nbsp;(2.6x) |            24273 (3.1x) |            17080 (3.2x) |
