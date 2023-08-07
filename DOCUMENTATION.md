@@ -193,7 +193,7 @@
   }
   ```
 - To find suitable camera placement, run the simulation at low resolution in [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode, rotate/move the camera to the desired position, click the <kbd>Mouse</kbd> to disable mouse rotation, and press <kbd>G</kbd> to print the current camera settings as a copy-paste command in the console. <kbd>Alt</kbd>+<kbd>Tab</kbd> to the console and copy the camera placement command by selecting it with the mouse and right-clicking, then paste it into the [`main_setup()`](src/setup.cpp) function.
-- The visualization mode(s) can be specified as `lbm.graphics.visualization_modes` with the [`VIS_...`](src/defines.hpp) macros. You can also set the `lbm.graphics.slice_mode` (`0`=no slice, `1`=x, `2`=y, `3`=z, `4`´=xz, `5`=xyz, `6`=yz, `7`=xy) and reposition the slices with `lbm.graphics.slice_x`/`lbm.graphics.slice_y`/`lbm.graphics.slice_z`.
+- The visualization mode(s) can be specified as `lbm.graphics.visualization_modes` with the [`VIS_...`](src/defines.hpp) macros. You can also set the `lbm.graphics.slice_mode` (`0`=no slice, `1`=x, `2`=y, `3`=z, `4`=xz, `5`=xyz, `6`=yz, `7`=xy) and reposition the slices with `lbm.graphics.slice_x`/`lbm.graphics.slice_y`/`lbm.graphics.slice_z`.
 - Exported frames will automatically be assigned the current simulation time step in their name, in the format `bin/export/image-123456789.png`.
 - To convert the rendered `.png` images to video, use [FFmpeg](https://ffmpeg.org/):
   ```bash
