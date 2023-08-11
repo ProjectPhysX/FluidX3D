@@ -312,8 +312,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - gaming GPUs (desktop or laptop), like Nvidia GeForce, AMD Radeon, Intel Arc
   - professional/workstation GPUs, like Nvidia Quadro, AMD Radeon Pro / FirePro
   - integrated GPUs
-  - Intel Xeon Phi (requires installation of the [Intel OpenCL CPU Runtime ("oclcpuexp")](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler))
-  - Intel/AMD CPUs (requires installation of the [Intel OpenCL CPU Runtime ("oclcpuexp")](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler))
+  - Intel Xeon Phi (requires installation of [Intel OpenCL CPU Runtime](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) ([Repo](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler)))
+  - Intel/AMD CPUs (requires installation of [Intel OpenCL CPU Runtime](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) ([Repo](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler)))
   - even smartphone ARM GPUs
 - native cross-vendor multi-GPU implementation
   - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
@@ -565,7 +565,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, 🟣 Apple, 🟡 ARM, 🟤 Glenfly
 
 - <details><summary>I don't have a dedicated graphics card at all. Can I still run FluidX3D on my PC/laptop?</summary><br>Yes. FluidX3D also runs on all integrated GPUs since around 2012, and also on CPUs.<br><br></details>
 
-- <details><summary>I need more memory than my GPU can offer. Can I run FluidX3D on my CPU as well?</summary><br>Yes. You only need to install the <a href="https://github.com/intel/llvm/releases/tag/2022-09">OpenCL Runtime for Intel CPUs</a>.<br><br></details>
+- <details><summary>I need more memory than my GPU can offer. Can I run FluidX3D on my CPU as well?</summary><br>Yes. You only need to install the <a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html">Intel OpenCL CPU Runtime</a>.<br><br></details>
 
 - <details><summary>In the benchmarks you list some very expensive hardware. How do you get access to that?</summary><br>As a PhD candidate in computational physics, I used FluidX3D for my research, so I had access to BZHPC, SuperMUC-NG and JSC JURECA-DC supercomputers.<br><br></details>
 

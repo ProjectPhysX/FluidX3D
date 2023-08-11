@@ -2241,7 +2241,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const bool set_u = sq(ux)+sq(uy)+sq(uz)+sq(rx)+sq(ry)+sq(rz)>0.0f;
 	uint intersection = intersections%2u!=intersections_check%2u; // iterate through column, start with 0 regularly, start with 1 if forward and backward intersection count evenness differs (error correction)
 	const uint h0 = direction==0u ? xyz.x : direction==1u ? xyz.y : xyz.z;
-	const uint hmax = direction==0u ? (uint)clamp((int)x1-def_Ox, 0, (int)def_Nx-1) : direction==1u ? (uint)clamp((int)y1-def_Oy, 0, (int)def_Ny-1) : (uint)clamp((int)z1-def_Oz, 0, (int)def_Nz-1);
+	const uint hmax = direction==0u ? (uint)clamp((int)x1-def_Ox, 0, (int)def_Nx) : direction==1u ? (uint)clamp((int)y1-def_Oy, 0, (int)def_Ny) : (uint)clamp((int)z1-def_Oz, 0, (int)def_Nz);
 	const uint hmesh = h0+(uint)distances[intersections-1u];
 	for(uint h=h0; h<hmax; h++) {
 		while(intersection<intersections&&h>h0+(uint)distances[intersection]) {
