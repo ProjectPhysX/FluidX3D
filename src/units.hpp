@@ -10,11 +10,13 @@ public:
 		m = si_x/x; // length si_x = x*[m]
 		kg = si_rho/rho*cb(m); // density si_rho = rho*[kg/m^3]
 		s = u/si_u*m; // velocity si_u = u*[m/s]
+		print_info("Unit Conversion: 1 cell = "+to_string(1000.0f*this->si_x(1.0f), 3u)+" mm, 1 s = "+to_string(this->t(1.0f))+" time steps");
 	}
 	void set_m_kg_s(const float m, const float kg, const float s) { // do unit conversion manually
 		this->m = m;
 		this->kg = kg;
 		this->s = s;
+		print_info("Unit Conversion: 1 cell = "+to_string(1000.0f*this->si_x(1.0f), 3u)+" mm, 1 s = "+to_string(this->t(1.0f))+" time steps");
 	}
 
 	// the following methods convert SI units into simulation units (have to be called after set_m_kg_s(...);)

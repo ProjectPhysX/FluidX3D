@@ -345,8 +345,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float lbm_u = 0.1f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
-	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
-	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	const float3 center = float3(lbm.center().x, 0.52f*lbm_length, lbm.center().z+0.03f*lbm_length);
@@ -358,7 +356,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 	lbm.run(0u); // initialize simulation
-	//lbm.write_status();
+	lbm.write_status();
 	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 		if(lbm.graphics.next_frame(units.t(si_T), 10.0f)) {
@@ -378,7 +376,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 #endif // GRAPHICS && !INTERACTIVE_GRAPHICS
 		lbm.run(1u); // run dt time steps
 	}
-	//lbm.write_status();
+	lbm.write_status();
 } /**/
 
 
@@ -583,8 +581,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float lbm_u = 0.1f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_length, si_u, si_nu))));
-	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
-	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
 	LBM lbm(lbm_N, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(180.0f))*float3x3(float3(0, 0, 1), radians(180.0f));
@@ -704,8 +700,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const uint3 lbm_N = resolution(float3(si_Lx, si_Ly, si_Lz), memory); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	units.set_m_kg_s((float)lbm_N.y, lbm_u, 1.0f, box_scale*si_length, si_u, si_rho);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
-	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
-	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
 	const float lbm_nu = units.nu(si_nu);
 	const float lbm_length = units.x(si_length);
 	LBM lbm(lbm_N, lbm_nu);
@@ -813,8 +807,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float si_u = si_rpm/60.0f*si_d*pif;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
-	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
-	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* body = read_stl(get_exe_path()+"../stl/Bell-222-body.stl"); // https://www.thingiverse.com/thing:1625155/files
@@ -879,8 +871,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
-	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
-	print_info("1 cell = "+to_string(1000.0f*units.si_x(1.0f), 2u)+" mm");
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* body = read_stl(get_exe_path()+"../stl/mercedesf1-body.stl"); // https://downloadfree3d.com/3d-models/vehicles/sports-car/mercedes-f1-w14/
