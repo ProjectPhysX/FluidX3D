@@ -2226,7 +2226,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 				intersections_check++; // cast a second ray to check if starting point is really inside (error correction)
 			}
 		}
-	} /**/
+	}
 
 	for(int i=1; i<(int)intersections; i++) { // insertion-sort distances
 		ushort t = distances[i];
@@ -2251,18 +2251,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 		inside &= (intersection<intersections&&h<hmesh); // point must be outside if there are no more ray-mesh intersections ahead (error correction)
 		const ulong n = index((uint3)(direction==0u?h:xyz.x, direction==1u?h:xyz.y, direction==2u?h:xyz.z));
 		uchar flagsn = flags[n];
+		const float3 un = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-(position(coordinates(n))+offset), (float3)(rx, ry, rz));
 		if(inside) {
 			flagsn = (flagsn&~TYPE_BO)|flag;
 			if(set_u) {
-				const float3 p = position(coordinates(n))+offset;
-				const float3 un = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-p, (float3)(rx, ry, rz));
 				u[                 n] = un.x;
 				u[    def_N+(ulong)n] = un.y;
 				u[2ul*def_N+(ulong)n] = un.z;
 			}
 		} else {
 			if(set_u) {
-				const float3 un = (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]); // for velocity voxelization, only clear moving boundaries
 				if((flagsn&TYPE_BO)==TYPE_S) { // reconstruct DDFs when boundary point is converted to fluid
 					uint j[def_velocity_set]; // neighbor indices
 					neighbors(n, j); // calculate neighbor indices
