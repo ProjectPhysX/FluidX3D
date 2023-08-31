@@ -3,7 +3,10 @@
 
 
 ## 1. Download
-[Download](https://github.com/ProjectPhysX/FluidX3D/archive/refs/heads/master.zip) and unzip the source code, or clone with `git clone https://github.com/ProjectPhysX/FluidX3D.git`.
+[Download](https://github.com/ProjectPhysX/FluidX3D/archive/refs/heads/master.zip) and unzip the source code, or clone with:
+```bash
+git clone https://github.com/ProjectPhysX/FluidX3D.git
+```
 
 <br>
 
@@ -22,18 +25,30 @@
 - To select a specific GPU, open Windows CMD in the `FluidX3D` folder (type `cmd` in File Explorer in the directory field and press <kbd>Enter</kbd>), then run `bin\FluidX3D.exe 0` to select device `0`. You can also select multiple GPUs with `bin\FluidX3D.exe 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
 ### Linux
-- Compile and run with `chmod +x make.sh` and `./make.sh`.
+- Compile and run with:
+  ```bash
+  chmod +x make.sh
+  ./make.sh
+  ```
 - Compiling requires `C++17`, which is supported since `g++` version `8`. Check with `g++ --version`.
 - If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), change to the "[compile on Linux with X11](make.sh#L6)" command in [`make.sh`](make.sh#L6).
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
 ### macOS
 - Select the "[compile on macOS](make.sh#L9)" command in [`make.sh`](make.sh#L9).
-- Compile and run with `chmod +x make.sh` and `./make.sh`.
+- Compile and run with:
+  ```bash
+  chmod +x make.sh
+  ./make.sh
+  ```
 
 ### Android
 - Select the "[compile on Android](make.sh#L10)" command in [`make.sh`](make.sh#L10).
-- Compile and run with `chmod +x make.sh` and `./make.sh`.
+- Compile and run with:
+  ```bash
+  chmod +x make.sh
+  ./make.sh
+  ```
 
 <br>
 

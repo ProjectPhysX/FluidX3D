@@ -2226,7 +2226,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 				intersections_check++; // cast a second ray to check if starting point is really inside (error correction)
 			}
 		}
-	} /**/
+	}
 
 	for(int i=1; i<(int)intersections; i++) { // insertion-sort distances
 		ushort t = distances[i];

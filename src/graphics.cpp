@@ -689,10 +689,12 @@ int main(int argc, char* argv[]) {
 	input_thread.join();
 	return 0;
 }
+
 #endif // Linux
 #endif // INTERACTIVE_GRAPHICS
 
 #ifdef INTERACTIVE_GRAPHICS_ASCII
+
 uint last_textwidth=0u, last_textheight=0u;
 uint fontwidth=8u, fontheight=16u;
 void update_frame(const double frametime) {
@@ -748,9 +750,11 @@ int main(int argc, char* argv[]) {
 	input_thread.join();
 	return 0;
 }
+
 #endif // INTERACTIVE_GRAPHICS_ASCII
 
 #if !defined(INTERACTIVE_GRAPHICS) && !defined(INTERACTIVE_GRAPHICS_ASCII)
+
 int main(int argc, char* argv[]) {
 	main_arguments = get_main_arguments(argc, argv);
 	camera = Camera(GRAPHICS_FRAME_WIDTH, GRAPHICS_FRAME_HEIGHT, 60u); // width and height must be divisible by 8
@@ -764,5 +768,6 @@ int main(int argc, char* argv[]) {
 	compute_thread.join();
 	return 0;
 }
+
 #endif // no INTERACTIVE_GRAPHICS and no INTERACTIVE_GRAPHICS_ASCII
 #endif // GRAPHICS

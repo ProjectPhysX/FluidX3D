@@ -70,7 +70,7 @@ public:
 	float Ma(const float u) const { return u/0.57735027f; } // Mach number Ma = u/c = [1] no unit, c = 1/sqrt(3) is lattice speed of sound
 	float rho_from_p(const float p) const { return 3.0f*p; } // density rho = p/c^2 = 3*p = [kg/(m*s^2)], p is pressure, c = 1/sqrt(3) is lattice speed of sound
 	float rho_laplace(const float sigma, const float R) { return 6.0f*sigma/R; } // sphere laplace pressure p = 2*sigma/R, density rho = 3*p
-	float rho_hydrostatic(const float f, const float h, const float h0) { return 3.0f*f*(h0-h)+1.0f; } // hydrostatic pressure p = rho*g*h+p0 = f*h+1/3, density rho = 3*p, force per volume f = rho*g, rho0 = 1
+	float rho_hydrostatic(const float f, const float z, const float h) { return 3.0f*f*(h-z)+1.0f; } // hydrostatic pressure p = rho*g*h+p0 = f*h+1/3, density rho = 3*p, force per volume f = rho*g, rho0 = 1
 	float nu_from_mu(const float mu, const float rho) const { return mu/rho; } // kinematic shear viscosity nu = mu/rho = [m^2/s]
 	float nu_from_tau(const float tau) const { return (tau-0.5f)/3.0f; } // kinematic shear viscosity nu = (tau-1/2)/3 = [m^2/s]
 	float nu_from_Re(const float Re, const float x, const float u) const { return x*u/Re; } // kinematic shear viscosity nu = x*u/Re = [m^2/s]
