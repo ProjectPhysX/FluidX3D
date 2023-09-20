@@ -4058,7 +4058,7 @@ inline void write_bmp(const string& filename, const Image* image) {
 		header[22u+i] = (uchar)((image->height()>>(8u*i))&255);
 	}
 	uchar* data = new uchar[filesize];
-	for(uint i=0u; i<54; i++) data[i] = header[i];
+	for(uint i=0u; i<54u; i++) data[i] = header[i];
 	for(uint y=0u; y<image->height(); y++) {
 		for(uint x=0u; x<image->width(); x++) {
 			const int color = image->color(x, image->height()-1u-y);
