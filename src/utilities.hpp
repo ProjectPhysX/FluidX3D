@@ -2848,7 +2848,7 @@ inline void print(const string& s="") {
 	std::cout << s;
 }
 inline void println(const string& s="") {
-	std::cout << s+'\n';
+	std::cout << s+"\n";
 }
 inline void reprint(const string& s="") {
 	std::cout << "\r"+s;
