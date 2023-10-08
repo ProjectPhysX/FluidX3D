@@ -61,30 +61,35 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 
 <br>
 
-## 4. Keyboard/Mouse Controls for [`INTERACTIVE_GRAPHICS`](src/defines.hpp)
-- <kbd>P</kbd>: start/pause the simulation
-- <kbd>H</kbd>: show/hide help menu for keyboard controls and visualization settings
-- <kbd>1</kbd>: flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)
-- <kbd>2</kbd>: velocity field
-- <kbd>3</kbd>: streamlines
-- <kbd>4</kbd>: vorticity (velocity-colored Q-criterion isosurface)
-- <kbd>5</kbd>: rasterized free surface
-- <kbd>6</kbd>: raytraced free surface
-- <kbd>7</kbd>: particles
-- <kbd>T</kbd>: toggle slice visualization mode
-- <kbd>Q</kbd>/<kbd>E</kbd>: move slice in slice visualization mode
-- <kbd>Mouse</kbd> or <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>: rotate camera
-- <kbd>Scrollwheel</kbd> or <kbd>+</kbd>/<kbd>-</kbd>: zoom (centered camera mode) or camera movement speed (free camera mode)
-- <kbd>Mouseclick</kbd> or <kbd>U</kbd>: toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd>
-- <kbd>Y</kbd>/<kbd>X</kbd>: adjust camera field of view
-- <kbd>G</kbd>: print current camera position/rotation in console as copy/paste command
-- <kbd>R</kbd>: toggle camera autorotation
-- <kbd>F</kbd>: toggle centered/free camera mode
-- <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>/<kbd>Space</kbd>/<kbd>C</kbd>: move free camera
-- <kbd>V</kbd>: toggle stereoscopic rendering for VR
-- <kbd>B</kbd>: toggle VR-goggles/3D-TV mode for stereoscopic rendering
-- <kbd>N</kbd>/<kbd>M</kbd>: adjust eye distance for stereoscopic rendering
-- <kbd>Esc</kbd>/<kbd>Alt</kbd>+<kbd>F4</kbd>: quit
+## 4. Keyboard/Mouse Controls for [`INTERACTIVE_GRAPHICS`](src/defines.hpp)/[`_ASCII`](src/defines.hpp)
+| Key                       | Function                                                                                                                           |
+| :-----------------------: | :--------------------------------------------------------------------------------------------------------------------------------- |
+|                           |                                                                                                                                    |
+| <kbd>P</kbd>              | start/pause the simulation                                                                                                         |
+| <kbd>H</kbd>              | show/hide help menu for keyboard controls and visualization settings                                                               |
+| <kbd>Esc</kbd><br><kbd>Alt</kbd>+<kbd>F4</kbd> | quit                                                                                                          |
+|                           |                                                                                                                                    |
+| <kbd>Mouse</kbd><br><kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | rotate camera                                                                        |
+| <kbd>Scrollwheel</kbd><br><kbd>+</kbd> <kbd>-</kbd> | zoom (centered camera mode) or camera movement speed (free camera mode)                                  |
+| <kbd>Mouseclick</kbd><br><kbd>U</kbd> | toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> |
+| <kbd>F</kbd>              | toggle centered/free camera mode                                                                                                   |
+| <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd><br><kbd>Space</kbd> <kbd>C</kbd> | move free camera                                                        |
+| <kbd>Y</kbd> <kbd>X</kbd> | adjust camera field of view                                                                                                        |
+| <kbd>R</kbd>              | toggle camera autorotation                                                                                                         |
+| <kbd>G</kbd>              | print current camera position/rotation in console as copy/paste command                                                            |
+| <kbd>V</kbd>              | toggle stereoscopic rendering for VR                                                                                               |
+| <kbd>B</kbd>              | toggle VR-goggles/3D-TV mode for stereoscopic rendering                                                                            |
+| <kbd>N</kbd> <kbd>M</kbd> | adjust eye distance for stereoscopic rendering                                                                                     |
+|                           |                                                                                                                                    |
+| <kbd>1</kbd>              | flag wireframe / solid surface (and force vectors on solid cells or surface pressure if the extension is used)                     |
+| <kbd>2</kbd>              | velocity field                                                                                                                     |
+| <kbd>3</kbd>              | streamlines                                                                                                                        |
+| <kbd>4</kbd>              | vorticity (velocity-colored Q-criterion isosurface)                                                                                |
+| <kbd>5</kbd>              | rasterized free surface                                                                                                            |
+| <kbd>6</kbd>              | raytraced free surface                                                                                                             |
+| <kbd>7</kbd>              | particles                                                                                                                          |
+| <kbd>T</kbd>              | toggle slice visualization mode                                                                                                    |
+| <kbd>Q</kbd> <kbd>E</kbd> | move slice in slice visualization mode                                                                                             |
 
 <br>
 
