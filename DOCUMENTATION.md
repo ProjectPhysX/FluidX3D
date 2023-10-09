@@ -69,11 +69,11 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 | <kbd>H</kbd>              | show/hide help menu for keyboard controls and visualization settings                                                               |
 | <kbd>Esc</kbd><br><kbd>Alt</kbd>+<kbd>F4</kbd> | quit                                                                                                          |
 |                           |                                                                                                                                    |
-| <kbd>Mouse</kbd><br><kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | rotate camera                                                                        |
+| <kbd>Mouse</kbd><br><kbd>I</kbd><br><kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | rotate camera                                                                     |
 | <kbd>Scrollwheel</kbd><br><kbd>+</kbd> <kbd>-</kbd> | zoom (centered camera mode) or camera movement speed (free camera mode)                                  |
 | <kbd>Mouseclick</kbd><br><kbd>U</kbd> | toggle rotation with <kbd>Mouse</kbd> and angle snap rotation with <kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> |
 | <kbd>F</kbd>              | toggle centered/free camera mode                                                                                                   |
-| <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd><br><kbd>Space</kbd> <kbd>C</kbd> | move free camera                                                        |
+| <kbd>W</kbd><br><kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd><br><kbd>Space</kbd> <kbd>C</kbd> | move free camera                                                     |
 | <kbd>Y</kbd> <kbd>X</kbd> | adjust camera field of view                                                                                                        |
 | <kbd>R</kbd>              | toggle camera autorotation                                                                                                         |
 | <kbd>G</kbd>              | print current camera position/rotation in console as copy/paste command                                                            |
