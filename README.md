@@ -124,7 +124,7 @@ Read the [FluidX3D Documentation](DOCUMENTATION.md)!
     | <i>p</i>             | <sup>kg</sup>&#8725;<sub>m&nbsp;s²</sub> | <i>p</i> = <i>c</i>² <i>&rho;</i>              | pressure of fluid                                                               |
     | <i>u</i> | <sup>m</sup>&#8725;<sub>s</sub> | <i>u</i> = <sup>1</sup>&#8725;<sub><i>&rho;</i></sub> &Sigma;<sub><i>i</i></sub> <i>c<sub>i</sub></i> <i>f<sub>i</sub></i> | velocity of fluid        |
     | <i>&nu;</i>          | <sup>m²</sup>&#8725;<sub>s</sub>    | <i>&nu;</i> = <sup><i>&mu;</i></sup>&#8725;<sub><i>&rho;</i></sub> | kinematic shear viscosity of fluid                               |
-    | <i>&mu;</i>          | <sup>kg</sup>&#8725;<sub>m&nbsp;s</sub> | <i>&mu;</i> = &rho; &nu;                        | dynamic viscosity of fluid                                                      |
+    | <i>&mu;</i>          | <sup>kg</sup>&#8725;<sub>m&nbsp;s</sub> | <i>&mu;</i> = <i>&rho;</i> <i>&nu;</i>          | dynamic viscosity of fluid                                                      |
     |                      |                                     |                                                     |                                                                                 |
     | <i>f<sub>i</sub></i> | <sup>kg</sup>&#8725;<sub>m³</sub>   | -                                                   | shifted density distribution functions (DDFs)                                   |
     | &Delta;<i>x</i>      | m                                   | &Delta;<i>x</i> = 1                                 | lattice constant (in LBM units)                                                 |
