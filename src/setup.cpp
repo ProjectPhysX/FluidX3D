@@ -217,13 +217,16 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(96u, 96u, 192u, 1u, 1u, 1u, 0.04f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint threads = (uint)thread::hardware_concurrency();
+	vector<uint> seed(threads);
+	for(uint t=0u; t<threads; t++) seed[t] = 42u+t;
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), threads, [&](ulong n, uint t) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(!cylinder(x, y, z, lbm.center(), float3(0u, 0u, Nz), (float)(Nx/2u-1u))) lbm.flags[n] = TYPE_S;
 		if( cylinder(x, y, z, lbm.center(), float3(0u, 0u, Nz), (float)(Nx/4u   ))) {
 			const float3 relative_position = lbm.relative_position(n);
 			lbm.u.x[n] =  relative_position.y;
 			lbm.u.y[n] = -relative_position.x;
-			lbm.u.z[n] = (1.0f-random(2.0f))*0.001f;
+			lbm.u.z[n] = (1.0f-random(seed[t], 2.0f))*0.001f;
 			lbm.flags[n] = TYPE_S;
 		}
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
@@ -258,10 +261,11 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float u = 0.1f;
 	LBM lbm(L, L, L, units.nu_from_Re(Re, (float)(L-2u), u), 0.0f, 0.0f, -0.00001f, cb(L/4u), 2.0f);
 	// ###################################################################################### define geometry ######################################################################################
+	uint seed = 42u;
 	for(ulong n=0ull; n<lbm.particles->length(); n++) {
-		lbm.particles->x[n] = random_symmetric(0.5f*lbm.size().x/4.0f);
-		lbm.particles->y[n] = random_symmetric(0.5f*lbm.size().y/4.0f);
-		lbm.particles->z[n] = random_symmetric(0.5f*lbm.size().z/4.0f);
+		lbm.particles->x[n] = random_symmetric(seed, 0.5f*lbm.size().x/4.0f);
+		lbm.particles->y[n] = random_symmetric(seed, 0.5f*lbm.size().y/4.0f);
+		lbm.particles->z[n] = random_symmetric(seed, 0.5f*lbm.size().z/4.0f);
 	}
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z==Nz-1) lbm.u.y[n] = u;
@@ -970,12 +974,15 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float frequency = 0.01f; // amplitude = u/(2.0f*pif*frequency);
 	LBM lbm(L, L, L*3u/4u, 0.01f, 0.0f, 0.0f, -f, 0.005f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+	const uint threads = (uint)thread::hardware_concurrency();
+	vector<uint> seed(threads);
+	for(uint t=0u; t<threads; t++) seed[t] = 42u+t;
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), threads, [&](ulong n, uint t) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(z<Nz/3u && x>0u&&x<Nx-1u&&y>0u&&y<Ny-1u&&z>0u&&z<Nz-1u) {
 			lbm.rho[n] = units.rho_hydrostatic(f, (float)z, (float)(Nz/3u));
-			lbm.u.x[n] = random_symmetric(1E-9f);
-			lbm.u.y[n] = random_symmetric(1E-9f);
-			lbm.u.z[n] = random_symmetric(1E-9f);
+			lbm.u.x[n] = random_symmetric(seed[t], 1E-9f);
+			lbm.u.y[n] = random_symmetric(seed[t], 1E-9f);
+			lbm.u.z[n] = random_symmetric(seed[t], 1E-9f);
 			lbm.flags[n] = TYPE_F;
 		}
 		if(z==0u) lbm.u.z[n] = 1E-16f;
@@ -1094,8 +1101,8 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		if(sphere(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f), lbm_H+lbm_R+2.5f)+0.5f, lbm_R+2.0f)) {
 			const float b = sphere_plic(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f)+0.5f, lbm_H+lbm_R+2.5f), lbm_R);
 			if(b!=-1.0f) {
-				lbm.u.y[n] =  sinf(inclination*pif/180.0f)*lbm_u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
-				lbm.u.z[n] = -cosf(inclination*pif/180.0f)*lbm_u;//+random_symmetric(0.1f); // break symmetry by initializing with noise
+				lbm.u.y[n] =  sinf(inclination*pif/180.0f)*lbm_u;
+				lbm.u.z[n] = -cosf(inclination*pif/180.0f)*lbm_u;
 				if(b==1.0f) {
 					lbm.flags[n] = TYPE_F;
 					lbm.phi[n] = 1.0f;
@@ -1253,10 +1260,13 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	LBM lbm(256u, 256u, 64u, 0.02f, 0.0f, 0.0f, -0.001f, 0.0f, 1.0f, 1.0f);
 	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
-		lbm.u.x[n] = random_symmetric(0.015f); // initialize velocity with random noise
-		lbm.u.y[n] = random_symmetric(0.015f);
-		lbm.u.z[n] = random_symmetric(0.015f);
+	const uint threads = (uint)thread::hardware_concurrency();
+	vector<uint> seed(threads);
+	for(uint t=0u; t<threads; t++) seed[t] = 42u+t;
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), threads, [&](ulong n, uint t) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+		lbm.u.x[n] = random_symmetric(seed[t], 0.015f); // initialize velocity with random noise
+		lbm.u.y[n] = random_symmetric(seed[t], 0.015f);
+		lbm.u.z[n] = random_symmetric(seed[t], 0.015f);
 		lbm.rho[n] = units.rho_hydrostatic(0.001f, (float)z, (float)Nz-2.0f); // initialize density with hydrostatic pressure
 		if(z==1u) {
 			lbm.T[n] = 1.75f;

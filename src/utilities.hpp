@@ -240,11 +240,12 @@ inline float standard_deviation(const uint n, const float* const x) {
 	}
 	return (float)sqrt(s/(double)n);
 }
-inline float random(const float x=1.0f) {
-	return x*((float)rand()/(float)RAND_MAX);
+inline float random(uint& seed, const float x=1.0f) {
+	seed = (1103515245u*seed+12345u)%2147483648u; // standard C99 LCG
+	return x*(float)seed*4.65661287E-10;
 }
-inline float random_symmetric(const float x=1.0f) {
-	return 2.0f*x*((float)rand()/(float)RAND_MAX-0.5f);
+inline float random_symmetric(uint& seed, const float x=1.0f) {
+	return 2.0f*x*(random(seed, 1.0f)-0.5f);
 }
 inline void lu_solve(float* M, float* x, float* b, const int N) { // solves system of N linear equations M*x=b
 	for(int i=0; i<N; i++) { // decompose M in M=L*U
