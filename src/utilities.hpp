@@ -242,7 +242,7 @@ inline float standard_deviation(const uint n, const float* const x) {
 }
 inline float random(uint& seed, const float x=1.0f) {
 	seed = (1103515245u*seed+12345u)%2147483648u; // standard C99 LCG
-	return x*(float)seed*4.65661287E-10;
+	return x*(float)seed*4.65661287E-10f;
 }
 inline float random_symmetric(uint& seed, const float x=1.0f) {
 	return 2.0f*x*(random(seed, 1.0f)-0.5f);
