@@ -211,6 +211,9 @@ private:
 		if(!free) {
 			zoom = exp(log_zoom*0.25f);
 		} else {
+			pos.x = R.zx*dis/zoom;
+			pos.y = R.zy*dis/zoom;
+			pos.z = R.zz*dis/zoom;
 			zoom = 1E16f;
 		}
 	}

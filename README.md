@@ -95,6 +95,17 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in voxelization ray direction for re-voxelizing rotating objects
   - fixed bug in `Mesh::get_bounding_box_size()`
   - fixed bug in `print_message()` function in `utilities.hpp`
+- v2.10 (05.11.2023)
+  - improved rasterization performance via frustrum culling when only part of the simulation box is visible
+  - improved switching between centered/free camera mode
+  - refactored OpenCL rendering library
+  - unit conversion factors are now automatically printed in console when `units.set_m_kg_s(...)` is used
+  - faster startup time for FluidX3D benchmark
+  - miner bug fix in `voxelize_mesh(...)` kernel
+  - fixed bug in `shading(...)`
+  - replaced slow (in multithreading) `std::rand()` function with standard C99 LCG
+  - more robust correction of wrong VRAM capacity reporting on Intel Arc GPUs
+  - fixed some minor compiler warnings
 
 </details>
 
@@ -380,6 +391,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;80GB                 |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;40GB                 |              19.49 |          40 |         1555 |             8522 (84%) |        16013&nbsp;(79%) |        11251&nbsp;(56%) |
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;40GB                 |              19.49 |          40 |         1555 |             8526 (84%) |        16035&nbsp;(79%) |        11088&nbsp;(55%) |
+| 🟢&nbsp;CMP&nbsp;170HX                           |               6.32 |           8 |         1493 |             7684 (79%) |        12392&nbsp;(64%) |              6859 (35%) |
 | 🟢&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB      |              15.67 |          32 |          900 |             4471 (76%) |              8947 (77%) |              7217 (62%) |
 | 🟢&nbsp;Tesla&nbsp;V100&nbsp;PCIe&nbsp;16GB      |              14.13 |          16 |          900 |             5128 (87%) |        10325&nbsp;(88%) |              7683 (66%) |
 | 🟢&nbsp;Quadro&nbsp;GV100                        |              16.66 |          32 |          870 |             3442 (61%) |              6641 (59%) |              5863 (52%) |
@@ -410,6 +422,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                    |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
+| 🔵&nbsp;Arc&nbsp;A580                            |              10.44 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |
+| 🔵&nbsp;Arc&nbsp;A380                            |               4.10 |           6 |          186 |              622 (51%) |              1097 (45%) |              1115 (46%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090               |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
 | 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                   |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
