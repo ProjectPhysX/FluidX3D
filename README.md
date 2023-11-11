@@ -12,7 +12,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - initial release
 - v1.1 (29.09.2022)
   - added solid voxelization on GPU (slow algorithm)
-  - added tool to print current camera position (key_H)
+  - added tool to print current camera position (key <kbd>H</kbd>)
   - minor bug fix (workaround for Intel iGPU driver bug with triangle rendering)
 - v1.2 (24.10.2022)
   - added functions to compute force/torque on objects
@@ -42,15 +42,15 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in `write_line()` function in `src/utilities.hpp`
   - removed `.exe` file extension for Linux/macOS
 - v2.4 (11.03.2023)
-  - added a help menu with key H that shows keyboard/mouse controls, visualization settings and simulation stats
-  - improvements to keyboard/mouse control (+/- for zoom, mouseclick frees/locks cursor)
+  - added a help menu with key <kbd>H</kbd> that shows keyboard/mouse controls, visualization settings and simulation stats
+  - improvements to keyboard/mouse control (<kbd>+</kbd>/<kbd>-</kbd> for zoom, <kbd>mouseclick</kbd> frees/locks cursor)
   - added suggestion of largest possible grid resolution if resolution is set larger than memory allows
   - minor optimizations in multi-GPU communication (insignificant performance difference)
   - fixed bug in temperature equilibrium function for temperature extension
   - fixed erroneous double literal for Intel iGPUs in skybox color functions
   - fixed bug in make.sh where multi-GPU device IDs would not get forwarded to the executable
   - minor bug fixes in graphics engine (free cursor not centered during rotation, labels in VR mode)
-  - fixed bug in LBM::voxelize_stl() size parameter standard initialization
+  - fixed bug in `LBM::voxelize_stl()` size parameter standard initialization
 - v2.5 (11.04.2023)
   - implemented light absorption in fluid for raytracing graphics (no performance impact)
   - improved raytracing framerate when camera is inside fluid
@@ -83,7 +83,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - added optional semi-transparent rendering mode (`#define GRAPHICS_TRANSPARENCY 0.7f` in `defines.hpp`)
   - fixed flickering of streamline visualization in interactive graphics
   - improved smooth positioning of streamlines in slice mode
-  - fixed bug where mass and massex in SURFACE extension were also allocated in CPU RAM (not required)
+  - fixed bug where `mass` and `massex` in `SURFACE` extension were also allocated in CPU RAM (not required)
   - fixed bug in Q-criterion rendering of halo data in multi-GPU mode, reduced gap width between domains
   - removed shared memory optimization from mesh voxelization kernel, as it crashes on Nvidia GPUs with new GPU drivers and is incompatible with old OpenCL 1.0 GPUs
   - fixed raytracing attenuation color when no surface is at the simulation box walls with periodic boundaries
@@ -422,12 +422,13 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2741 (75%) |              4591 (63%) |              4626 (64%) |
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                    |              17.20 |           8 |          512 |             2625 (78%) |              4184 (63%) |              4238 (64%) |
-| 🔵&nbsp;Arc&nbsp;A580                            |              10.44 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |
-| 🔵&nbsp;Arc&nbsp;A380                            |               4.10 |           6 |          186 |              622 (51%) |              1097 (45%) |              1115 (46%) |
+| 🔵&nbsp;Arc&nbsp;A580                            |              12.29 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |
+| 🔵&nbsp;Arc&nbsp;A380                            |               4.20 |           6 |          186 |              622 (51%) |              1097 (45%) |              1115 (46%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090               |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
 | 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                   |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070               |              29.15 |          12 |          504 |             2646 (80%) |              4548 (69%) |              5016 (77%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080M              |              33.85 |          12 |          432 |             2577 (91%) |              5086 (91%) |              5114 (91%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090&nbsp;Ti       |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090               |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;Ti       |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
