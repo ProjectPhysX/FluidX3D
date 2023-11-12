@@ -185,7 +185,7 @@ public:
 			return *this;
 		}
 		void allocate(Device& device); // allocate memory for bitmap and zbuffer
-		bool enqueue_draw_frame(const int visualization_modes, const int slice_mode=0, const int slice_x=0, const int slice_y=0, const int slice_z=0); // main rendering function, calls rendering kernels, returns true if new frame is rendered, false if old frame is returned when camera has not moved
+		bool enqueue_draw_frame(const int visualization_modes, const int slice_mode=0, const int slice_x=0, const int slice_y=0, const int slice_z=0, const bool visualization_change=true); // main rendering function, calls rendering kernels, returns true if new frame is rendered, false if old frame is returned when camera has not moved
 		int* get_bitmap(); // returns pointer to bitmap
 		int* get_zbuffer(); // returns pointer to zbuffer
 		string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
@@ -495,6 +495,7 @@ public:
 		LBM* lbm = nullptr;
 		std::atomic_int running_encoders = 0;
 		uint last_exported_frame = 0u; // for next_frame(...) function
+		int last_visualization_modes=0, last_slice_mode=0, last_slice_x=0, last_slice_y=0, last_slice_z=0; // don't render a new frame if the scene hasn't changed since last frame
 		void default_settings() {
 			visualization_modes |= VIS_FLAG_LATTICE;
 #ifdef PARTICLES
