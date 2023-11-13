@@ -243,11 +243,10 @@ public:
 		allocate_device_buffer(device, allocate_device);
 		if(allocate_host) {
 			host_buffer = new T[N*(ulong)d];
-			for(ulong i=0ull; i<N*(ulong)d; i++) host_buffer[i] = value;
 			initialize_auxiliary_pointers();
 			host_buffer_exists = true;
 		}
-		write_to_device();
+		reset(value);
 	}
 	inline Memory(Device& device, const ulong N, const uint dimensions, T* const host_buffer, const bool allocate_device=true) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
@@ -328,8 +327,9 @@ public:
 		delete_host_buffer();
 	}
 	inline void reset(const T value=(T)0) {
-		if(host_buffer_exists) for(ulong i=0ull; i<N*(ulong)d; i++) host_buffer[i] = value;
-		write_to_device();
+		if(host_buffer_exists) std::fill(host_buffer, host_buffer+range(), value); // faster than "for(ulong i=0ull; i<range(); i++) host_buffer[i] = value;"
+		cl_queue.enqueueFillBuffer(device_buffer, value, 0ull, capacity()); // faster than "write_to_device();"
+		cl_queue.finish();
 	}
 	inline const ulong length() const { return N; }
 	inline const uint dimensions() const { return d; }
