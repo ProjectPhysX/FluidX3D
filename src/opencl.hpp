@@ -327,9 +327,13 @@ public:
 		delete_host_buffer();
 	}
 	inline void reset(const T value=(T)0) {
-		if(host_buffer_exists) std::fill(host_buffer, host_buffer+range(), value); // faster than "for(ulong i=0ull; i<range(); i++) host_buffer[i] = value;"
-		cl_queue.enqueueFillBuffer(device_buffer, value, 0ull, capacity()); // faster than "write_to_device();"
-		cl_queue.finish();
+		if(host_buffer_exists) {
+			std::fill(host_buffer, host_buffer+range(), value); // faster than "for(ulong i=0ull; i<range(); i++) host_buffer[i] = value;"
+		}
+		if(device_buffer_exists) {
+			cl_queue.enqueueFillBuffer(device_buffer, value, 0ull, capacity()); // faster than "write_to_device();"
+			cl_queue.finish();
+		}
 	}
 	inline const ulong length() const { return N; }
 	inline const uint dimensions() const { return d; }
