@@ -717,7 +717,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.graphics.set_camera_centered(20.0f, 30.0f, 1.0f, 1.648722f);
+	lbm.graphics.set_camera_centered(20.0f, 30.0f, 0.0f, 1.648722f);
 	lbm.run(0u); // initialize simulation
 #if defined(FP16S)
 	const string path = get_exe_path()+"FP16S/"+to_string(memory)+"MB/";

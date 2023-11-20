@@ -302,7 +302,7 @@ private:
 		}
 	}
 	void input_X() {
-		fov = fmax(fov-1.0f, 1.0f);
+		fov = fmax(fov-1.0f, 1E-6f);
 		dis = 0.5f*(float)width/tan(fov*pif/360.0f);
 	}
 	void input_Y() {

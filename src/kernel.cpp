@@ -823,10 +823,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float x_right  = !vr ? (float)( (int)def_screen_width/2-1) : ((float)( (int)def_screen_width/2-1)-(float)(def_screen_width/4u))*rtv;
 	const float y_top    = (float)(-(int)def_screen_height/2 );
 	const float y_bottom = (float)((int)def_screen_height/2-1);
-	float3 r00 = p0+normalize((float3)(x_left , y_top   , -dis)); // get 4 edge vectors of frustrum, get_camray(...) inlined and redundant parts eliminated
-	float3 r01 = p0+normalize((float3)(x_right, y_top   , -dis));
-	float3 r10 = p0+normalize((float3)(x_left , y_bottom, -dis));
-	float3 r11 = p0+normalize((float3)(x_right, y_bottom, -dis));
+	const float dis_clamped = fmin(dis, 1E4f); // avoid flickering at very small field of view
+	float3 r00 = p0+normalize((float3)(x_left , y_top   , -dis_clamped)); // get 4 edge vectors of frustrum, get_camray(...) inlined and redundant parts eliminated
+	float3 r01 = p0+normalize((float3)(x_right, y_top   , -dis_clamped));
+	float3 r10 = p0+normalize((float3)(x_left , y_bottom, -dis_clamped));
+	float3 r11 = p0+normalize((float3)(x_right, y_bottom, -dis_clamped));
 	r00 = Rx*r00.x+Ry*r00.y+Rz*r00.z+pos-camera_center; // reverse rotation and reverse transformation of r00
 	r01 = Rx*r01.x+Ry*r01.y+Rz*r01.z+pos-camera_center; // reverse rotation and reverse transformation of r01
 	r10 = Rx*r10.x+Ry*r10.y+Rz*r10.z+pos-camera_center; // reverse rotation and reverse transformation of r10
