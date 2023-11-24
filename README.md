@@ -389,6 +389,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;H100&nbsp;PCIe&nbsp;80GB                 |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                 |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |        18448&nbsp;(70%) |        11197&nbsp;(42%) |
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;80GB                 |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
+| 🟢&nbsp;PG506-243&nbsp;/&nbsp;PG506-242          |              22.14 |          64 |         1638 |             8195 (77%) |        15654&nbsp;(74%) |        12271&nbsp;(58%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;40GB                 |              19.49 |          40 |         1555 |             8522 (84%) |        16013&nbsp;(79%) |        11251&nbsp;(56%) |
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;40GB                 |              19.49 |          40 |         1555 |             8526 (84%) |        16035&nbsp;(79%) |        11088&nbsp;(55%) |
 | 🟢&nbsp;CMP&nbsp;170HX                           |               6.32 |           8 |         1493 |             7684 (79%) |        12392&nbsp;(64%) |              6859 (35%) |
@@ -496,6 +497,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+    |              14.34 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380     |              11.78 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |              10.65 |         256 |          410 |             1285 (48%) |              1007 (19%) |              1120 (21%) |
+| 🔵&nbsp;1x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |               5.33 |         128 |          205 |              444 (33%) |               463 (17%) |               534 (20%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8256     |               1.95 |        1536 |          282 |              396 (22%) |               158 ( 4%) |               175 ( 5%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8153     |               4.10 |         384 |          256 |              691 (41%) |               290 ( 9%) |               328 (10%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6128         |               2.61 |         192 |          256 |              254 (15%) |               185 ( 6%) |               193 ( 6%) |
@@ -550,6 +552,10 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;1x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
 | 🟢&nbsp;2x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              38.98 |         160 |         3870 |      15742&nbsp;(1.6x) |       27165&nbsp;(1.5x) |       17510&nbsp;(1.6x) |
 | 🟢&nbsp;4x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              77.96 |         320 |         7740 |      25957&nbsp;(2.7x) |       52056&nbsp;(2.9x) |       33283&nbsp;(3.1x) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              22.14 |          64 |         1638 |             8195 (77%) |        15654&nbsp;(74%) |        12271&nbsp;(58%) |
+| 🟢&nbsp;2x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              44.28 |         128 |         3277 |      13885&nbsp;(1.7x) |       24168&nbsp;(1.5x) |       20906&nbsp;(1.7x) |
+| 🟢&nbsp;4x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              88.57 |         256 |         6554 |      23097&nbsp;(2.8x) |       41088&nbsp;(2.6x) |       36130&nbsp;(2.9x) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8543 (84%) |        15917&nbsp;(79%) |              8748 (43%) |
 | 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |      14311&nbsp;(1.7x) |            23707 (1.5x) |            15512 (1.8x) |
