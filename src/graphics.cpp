@@ -476,8 +476,6 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 		running = false;
 		PostQuitMessage(0);
 		exit(0);
-	} else if(message==WM_MOUSEMOVE) {
-		camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));
 	} else if(message==WM_MOUSEWHEEL) {
 		if((short)HIWORD(wParam)>0) camera.input_scroll_up(); else camera.input_scroll_down();
 	} else if(message==WM_LBUTTONDOWN||message==WM_MBUTTONDOWN||message==WM_RBUTTONDOWN) {
@@ -528,6 +526,12 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 			DispatchMessage(&msg);
 		}
 		// main loop ################################################################
+		{ // don't use "if(message==WM_MOUSEMOVE) camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));" because SetCursorPos itself triggers WM_MOUSEMOVE
+			POINT p = { 0l, 0l };
+			GetCursorPos(&p);
+			camera.input_mouse_moved((int)p.x, (int)p.y);
+			if(!camera.lockmouse) SetCursorPos((int)camera.width/2, (int)camera.height/2);
+		}
 		camera.update_state();
 		main_graphics();
 		update_frame(frametime);

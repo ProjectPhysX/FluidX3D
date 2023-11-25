@@ -35,12 +35,12 @@ public:
 	float eye_distance = 8.0f; // distance between cameras in VR mode
 	bool autorotation = false; // autorotation
 	bool key_update = true; // a key variable has been updated
+	bool lockmouse = false; // mouse movement won't change camera view when this is true
 
 private:
 	float log_zoom=4.0f*log(zoom), target_log_zoom=log_zoom;
 	double mouse_x=0.0, mouse_y=0.0, target_mouse_x=0.0, target_mouse_y=0.0; // mouse position
 	double mouse_sensitivity = 1.0; // mouse sensitivity
-	bool lockmouse = false; // mouse movement won't change camera view when this is true
 	bool key_state[512] = { 0 };
 
 public:
@@ -317,9 +317,6 @@ private:
 	}
 
 	void update_rotation(const double arx, const double ary) {
-#if defined(INTERACTIVE_GRAPHICS)&&defined(_WIN32)
-		if(!lockmouse) SetCursorPos((int)width/2, (int)height/2);
-#endif // INTERACTIVE_GRAPHICS && Windows
 		rx += arx*pi/180.0;
 		ry += ary*pi/180.0;
 		rx = fmod(rx, 2.0*pi);
