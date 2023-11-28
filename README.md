@@ -478,9 +478,10 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |       0.256 |            6 |                1 ( 2%) |                 1 ( 1%) |                 1 ( 1%) |
 | 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
-| ⚪&nbsp;M2&nbsp;Max&nbsp;GPU&nbsp;38C&nbsp;32GB  |               9.73 |          22 |          400 |             2405 (92%) |              4641 (89%) |              2444 (47%) |
-| ⚪&nbsp;M1&nbsp;Max&nbsp;GPU&nbsp;24C&nbsp;32GB  |               6.14 |          22 |          400 |             2369 (91%) |              4496 (87%) |              2777 (53%) |
-| ⚪&nbsp;M1&nbsp;Pro&nbsp;GPU&nbsp;16C&nbsp;16GB  |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
+| ⚪&nbsp;M2&nbsp;Max&nbsp;GPU&nbsp;38CU&nbsp;32GB |               9.73 |          22 |          400 |             2405 (92%) |              4641 (89%) |              2444 (47%) |
+| ⚪&nbsp;M1&nbsp;Ultra&nbsp;GPU&nbsp;64CU&nbsp;128GB |           16.38 |          98 |          800 |             4519 (86%) |              8418 (81%) |              6915 (67%) |
+| ⚪&nbsp;M1&nbsp;Max&nbsp;GPU&nbsp;24CU&nbsp;32GB |               6.14 |          22 |          400 |             2369 (91%) |              4496 (87%) |              2777 (53%) |
+| ⚪&nbsp;M1&nbsp;Pro&nbsp;GPU&nbsp;16CU&nbsp;16GB |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
 | 🔴&nbsp;Radeon&nbsp;780M&nbsp;(Z1&nbsp;Extreme)  |               8.29 |           8 |          102 |              443 (66%) |               860 (65%) |               820 (62%) |
 | 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(4750G)     |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |
 | 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(3500U)     |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
