@@ -255,14 +255,6 @@ private:
 		autorotation = !autorotation;
 	}
 	void input_U() {
-#if defined(INTERACTIVE_GRAPHICS) && defined(_WIN32)
-		if(!lockmouse) {
-			ShowCursor(true); // show cursor
-		} else {
-			ShowCursor(false); // hide cursor
-			SetCursorPos(width/2, height/2); // reset mouse
-		}
-#endif // Windows
 		lockmouse = !lockmouse;
 	}
 	void input_I() {

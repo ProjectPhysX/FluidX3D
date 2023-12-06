@@ -470,18 +470,35 @@ void update_frame(const double frametime) {
 	SetBitmapBits(frameDC, 4*(int)camera.width*(int)camera.height, camera.bitmap);
 	BitBlt(displayDC, 0, 0, (int)camera.width, (int)camera.height, memDC, 0, 0, SRCCOPY); // copy back buffer to front buffer
 	camera.clear_frame(); // clear frame
+	if(!camera.lockmouse) SetCursorPos((int)camera.width/2, (int)camera.height/2); // center cursor
 }
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
 	if(message==WM_DESTROY) {
 		running = false;
 		PostQuitMessage(0);
 		exit(0);
+	} else if(message==WM_MOUSEMOVE) {
+		camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));
 	} else if(message==WM_MOUSEWHEEL) {
 		if((short)HIWORD(wParam)>0) camera.input_scroll_up(); else camera.input_scroll_down();
 	} else if(message==WM_LBUTTONDOWN||message==WM_MBUTTONDOWN||message==WM_RBUTTONDOWN) {
+		if(!camera.lockmouse) {
+			ShowCursor(true); // show cursor
+		} else {
+			ShowCursor(false); // hide cursor
+			SetCursorPos(camera.width/2, camera.height/2); // reset cursor
+		}
 		camera.input_key('U');
 	} else if(message==WM_KEYDOWN) {
 		int key = key_windows((int)wParam);
+		if(key=='U') {
+			if(!camera.lockmouse) {
+				ShowCursor(true); // show cursor
+			} else {
+				ShowCursor(false); // hide cursor
+				SetCursorPos(camera.width/2, camera.height/2); // reset cursor
+			}
+		}
 		camera.set_key_state(key, true);
 		key_bindings(key);
 	} else if(message==WM_KEYUP) {
@@ -526,12 +543,6 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 			DispatchMessage(&msg);
 		}
 		// main loop ################################################################
-		{ // don't use "if(message==WM_MOUSEMOVE) camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));" because SetCursorPos itself triggers WM_MOUSEMOVE
-			POINT p = { 0l, 0l };
-			GetCursorPos(&p);
-			camera.input_mouse_moved((int)p.x, (int)p.y);
-			if(!camera.lockmouse) SetCursorPos((int)camera.width/2, (int)camera.height/2);
-		}
 		camera.update_state();
 		main_graphics();
 		update_frame(frametime);
@@ -608,42 +619,60 @@ void update_frame(const double frametime) {
 	XPutImage(x11_display, x11_window, x11_gc, x11_image, 0, 0, 0, 0, camera.width, camera.height);
 	updating_frame = false;
 	camera.clear_frame(); // clear frame
+	if(!camera.lockmouse) XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // center cursor
+}
+void hide_cursor() {
+	const char zeroes[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	Pixmap x11_pixmap = XCreateBitmapFromData(x11_display, x11_window, zeroes, 8, 8);
+	XColor black;
+	black.red = black.green = black.blue = 0;
+	Cursor x11_invisible_cursor = XCreatePixmapCursor(x11_display, x11_pixmap, x11_pixmap, &black, &black, 0, 0);
+	XDefineCursor(x11_display, x11_window, x11_invisible_cursor);
+	XFreeCursor(x11_display, x11_invisible_cursor);
+	XFreePixmap(x11_display, x11_pixmap);
+}
+void show_cursor() {
+	Cursor x11_cursor = XCreateFontCursor(x11_display, 68);
+	XDefineCursor(x11_display, x11_window, x11_cursor);
+	XFreeCursor(x11_display, x11_cursor);
 }
 void input_detection() {
-	int last_x=camera.width/2, last_y=camera.height/2;
-	bool mouse_pressed = false;
 	XEvent x11_event;
 	while(running) {
 		if(!updating_frame) {
 			XNextEvent(x11_display, &x11_event);
-			if(x11_event.type==KeyPress) {
-				const int key = key_linux((int)x11_event.xkey.keycode);
-				camera.set_key_state(key, true);
-				key_bindings(key);
-			} else if(x11_event.type==KeyRelease) {
-				const int key = key_linux((int)x11_event.xkey.keycode);
-				camera.set_key_state(key, false);
-			} else if(x11_event.type==ButtonPress) {
+			if(x11_event.type==MotionNotify) {
+				camera.input_mouse_moved((int)x11_event.xmotion.x, (int)x11_event.xmotion.y);
+			} else if(x11_event.type==ButtonPress) { // counterpart: ButtonRelease
 				const int x11_button = x11_event.xbutton.button;
 				if(x11_button==Button4) { // scroll up
 					camera.input_scroll_up();
 				} else if(x11_button==Button5) { // scroll down
 					camera.input_scroll_down();
 				} else {
-					mouse_pressed = true;
-					last_x = (int)x11_event.xmotion.x;
-					last_y = (int)x11_event.xmotion.y;
+					if(!camera.lockmouse) {
+						show_cursor();
+					} else {
+						hide_cursor();
+						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // reset cursor
+					}
+					camera.input_key('U');
 				}
-			} else if(x11_event.type==ButtonRelease) {
-				mouse_pressed = false;
-			} else if(x11_event.type==MotionNotify) {
-				int new_x = (int)x11_event.xmotion.x;
-				int new_y = (int)x11_event.xmotion.y;
-				if(mouse_pressed) {
-					camera.input_mouse_dragged(new_x-last_x, new_y-last_y);
-					last_x = new_x;
-					last_y = new_y;
+			} else if(x11_event.type==KeyPress) {
+				const int key = key_linux((int)x11_event.xkey.keycode);
+				if(key=='U') {
+					if(!camera.lockmouse) {
+						show_cursor();
+					} else {
+						hide_cursor();
+						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // reset cursor
+					}
 				}
+				camera.set_key_state(key, true);
+				key_bindings(key);
+			} else if(x11_event.type==KeyRelease) {
+				const int key = key_linux((int)x11_event.xkey.keycode);
+				camera.set_key_state(key, false);
 			}
 		} else {
 			sleep(0.01);
@@ -656,19 +685,20 @@ int main(int argc, char* argv[]) {
 	x11_display = XOpenDisplay(0);
 	if(!x11_display) print_error("No X11 display available.");
 
-	const uint height = 720u; // (uint)DisplayHeight(x11_display, 0);
-	const uint width = height*16u/9u; // (uint)DisplayWidth(x11_display, 0);
+	const uint height = (uint)DisplayHeight(x11_display, 0);
+	const uint width = (uint)DisplayWidth(x11_display, 0);
 	camera = Camera(width, height, 60u);
 
 	x11_window = XCreateWindow(x11_display, DefaultRootWindow(x11_display), 0, 0, width, height, 0, CopyFromParent, CopyFromParent, CopyFromParent, 0, 0);
 	XStoreName(x11_display, x11_window, WINDOW_NAME);
-	struct Hints { long flags=2l, functions=0l, decorations=0b0111010l, input_mode=0l, status=0l; } x11_hints; // decorations=maximize|minimize|menu|title|resize|border|all
+	struct Hints { long flags=2l, functions=0l, decorations=0b0000000l, input_mode=0l, status=0l; } x11_hints; // decorations=maximize|minimize|menu|title|resize|border|all
 	Atom x11_property = XInternAtom(x11_display, "_MOTIF_WM_HINTS", 0);
 	XChangeProperty(x11_display, x11_window, x11_property, x11_property, 32, PropModeReplace, (unsigned char*)&x11_hints, 5);
 	XMapRaised(x11_display, x11_window);
 	x11_gc = XCreateGC(x11_display, x11_window, 0, 0);
 	x11_image = XCreateImage(x11_display, CopyFromParent, DefaultDepth(x11_display, DefaultScreen(x11_display)), ZPixmap, 0, (char*)camera.bitmap, width, height, 32, 0);
 	XSelectInput(x11_display, x11_window, KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask);
+	hide_cursor();
 
 	thread compute_thread(main_physics); // start main_physics() in a new thread
 	thread input_thread(input_detection);
