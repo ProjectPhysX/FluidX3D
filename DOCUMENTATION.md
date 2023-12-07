@@ -54,8 +54,12 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 
 ## 3. Go through Sample Setups
 - Now open [`src/setup.cpp`](src/setup.cpp). In here are all the sample setups, each one being a `void main_setup() {...}` function block written in C++. Uncomment one of them, maybe start top-to-bottom.
-- In the line where the `main_setup()` function starts, it says "required extensions in defines.hpp:", followed by a list of extensions in capital letters. Head over to [`src/defines.hpp`](src/defines.hpp) and comment `//#define BENCHMARK` with a `//`. Then, uncomment all of the extensions required for the setup by removing the `//` in front of the corresponding line.
-- Finally, [compile](#2-compiling-the-source-code) and run the setup with the <kbd>► Local Windows Debugger</kbd> button (Windows) or `./make.sh` (Linux/macOS).
+- In the line where the `main_setup()` function starts, it says "required extensions in defines.hpp:", followed by a list of extensions in capital letters. Head over to [`src/defines.hpp`](src/defines.hpp) and comment out
+  ```c
+  //#define BENCHMARK
+  ```
+  with a `//`. Then, uncomment all of the extensions required for the setup by removing the `//` in front of the corresponding line.
+- Finally, [compile](#2-compiling-the-source-code) and run the setup with the <kbd>► Local Windows Debugger</kbd> button (Windows) or `./make.sh` (Linux/macOS/Android).
 - Once the interactive graphics window opens, press key <kbd>P</kbd> to start/pause the simulation, and press <kbd>H</kbd> to show the help menu for keyboard controls and visualization settings.
 - Go through some of the sample setups this way, get familiar with their code structure and test the graphics mode.
 
