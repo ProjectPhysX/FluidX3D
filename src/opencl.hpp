@@ -83,12 +83,21 @@ struct Device_Info {
 
 string get_opencl_c_code(); // implemented in kernel.hpp
 inline void print_device_info(const Device_Info& d) { // print OpenCL device info
+#if defined(_WIN32)
+	const string os = "Windows";
+#elif defined(__linux__)
+	const string os = "Linux";
+#elif defined(__APPLE__)
+	const string os = "macOS";
+#else // unknown operating system
+	const string os = "unknown operating system";
+#endif // operating system
 	println("\r|----------------.------------------------------------------------------------|");
-	println("| Device ID      | "+alignl(58, to_string(d.id)        )+" |");
-	println("| Device Name    | "+alignl(58, d.name                 )+" |");
-	println("| Device Vendor  | "+alignl(58, d.vendor               )+" |");
-	println("| Device Driver  | "+alignl(58, d.driver_version       )+" |");
-	println("| OpenCL Version | "+alignl(58, d.opencl_c_version     )+" |");
+	println("| Device ID      | "+alignl(58, to_string(d.id)             )+" |");
+	println("| Device Name    | "+alignl(58, d.name                      )+" |");
+	println("| Device Vendor  | "+alignl(58, d.vendor                    )+" |");
+	println("| Device Driver  | "+alignl(58, d.driver_version+" ("+os+")")+" |");
+	println("| OpenCL Version | "+alignl(58, d.opencl_c_version          )+" |");
 	println("| Compute Units  | "+alignl(58, to_string(d.compute_units)+" at "+to_string(d.clock_frequency)+" MHz ("+to_string(d.cores)+" cores, "+to_string(d.tflops, 3)+" TFLOPs/s)")+" |");
 	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
 	println("| Buffer Limits  | "+alignl(58, to_string(d.max_global_buffer)+" MB global, "+to_string(d.max_constant_buffer)+" KB constant")+" |");

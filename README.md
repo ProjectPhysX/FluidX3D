@@ -106,6 +106,12 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - replaced slow (in multithreading) `std::rand()` function with standard C99 LCG
   - more robust correction of wrong VRAM capacity reporting on Intel Arc GPUs
   - fixed some minor compiler warnings
+- v2.11 (07.12.2023)
+  - interactive graphics on Linux are now in fullscreen mode too, fully matching Windows
+  - made CPU/GPU buffer initialization significantly faster with `std::fill` and `enqueueFillBuffer` (overall ~8% faster simulation startup)
+  - added operating system info to OpenCL device driver version printout
+  - fixed flickering with frustrum culling at very small field of view
+  - fixed bug where rendered/exported frame was not updated when `visualization_modes` changed
 
 </details>
 

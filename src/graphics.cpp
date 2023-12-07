@@ -470,7 +470,6 @@ void update_frame(const double frametime) {
 	SetBitmapBits(frameDC, 4*(int)camera.width*(int)camera.height, camera.bitmap);
 	BitBlt(displayDC, 0, 0, (int)camera.width, (int)camera.height, memDC, 0, 0, SRCCOPY); // copy back buffer to front buffer
 	camera.clear_frame(); // clear frame
-	if(!camera.lockmouse) SetCursorPos((int)camera.width/2, (int)camera.height/2); // center cursor
 }
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
 	if(message==WM_DESTROY) {
@@ -479,6 +478,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 		exit(0);
 	} else if(message==WM_MOUSEMOVE) {
 		camera.input_mouse_moved((int)LOWORD(lParam), (int)HIWORD(lParam));
+		if(!camera.lockmouse) SetCursorPos((int)camera.width/2, (int)camera.height/2); // center cursor
 	} else if(message==WM_MOUSEWHEEL) {
 		if((short)HIWORD(wParam)>0) camera.input_scroll_up(); else camera.input_scroll_down();
 	} else if(message==WM_LBUTTONDOWN||message==WM_MBUTTONDOWN||message==WM_RBUTTONDOWN) {
