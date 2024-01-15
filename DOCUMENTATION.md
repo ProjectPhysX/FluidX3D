@@ -11,9 +11,9 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 <br>
 
 ## 2. Compiling the Source Code
-- There is no "installation" of the FluidX3D software. Instead, you have to compile the source code yourself.
-- I have made this as easy as possible and this documentation will guide you through it. Nontheless, some basic programming experience with C++ would be good, as all the setup scripts are written in C++.
-- First, compile the code as-is; this is the standard FP32 benchmark test case. By default, the fastest installed GPU will be selected automatically. Compile time is about 10 seconds.
+- There is no "installation" of FluidX3D. Instead, you have to compile the source code yourself.
+- I have made this as easy as possible and this documentation will guide you through it. Nontheless, some basic programming experience with C++ would be good for the setup scripts.
+- First, compile the code as-is; this is the standard FP32 benchmark test case. By default, the fastest installed GPU will be selected automatically. Compile time is about 5 seconds.
 
 ### Windows
 - Download and install [Visual Studio Community](https://visualstudio.microsoft.com/de/vs/community/). In Visual Studio Installer, add:
@@ -30,7 +30,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   chmod +x make.sh
   ./make.sh
   ```
-- Compiling requires `C++17`, which is supported since `g++` version `8`. Check with `g++ --version`.
+- Compiling requires `C++17`, which is supported since `g++` version `8` (check with `g++ --version`). If you have `make` installed (check with `make --version`), compiling will will be faster using multiple CPU cores; otherwise compiling falls back to using a single CPU core.
 - If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), change to the "[compile on Linux with X11 graphics](make.sh#L3)" command in [`make.sh`](make.sh#L3).
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
