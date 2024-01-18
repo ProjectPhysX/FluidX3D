@@ -222,29 +222,53 @@ private:
 public:
 	template<typename T> class Memory_Container { // does not hold any data itsef, just links to LBM_Domain data
 	private:
-		LBM* lbm = nullptr;
 		ulong N = 0ull; // buffer length
 		uint d = 1u; // buffer dimensions
-		uint Nx=1u, Ny=1u, Nz=1u; // (local) lattice dimensions
-		uint Dx=1u, Dy=1u, Dz=1u; // lattice domains
+		LBM* lbm = nullptr;
 		Memory<T>** buffers = nullptr; // host buffers
 		string name = "";
+
+		uint Nx=1u, Ny=1u, Nz=1u, Dx=1u, Dy=1u, Dz=1u, D=1u; // auxiliary variables: (local) lattice dimensions, lattice domains, number of domains
+		uint NxDx=1u, NyDy=1u, NzDz=1u, Hx=0u, Hy=0u, Hz=0u; // auxiliary variables: number of domains, shortcuts for N_/D_, halo offsets
+		ulong NxNy=1ull, local_Nx=1ull, local_Ny=1ull, local_Nz=1ull, local_N=1ull; // auxiliary variables: shortcut for Nx*Ny, size of each domain, number of cells in each domain
+		inline void initialize_auxiliary_variables() { // these variables are frequently used in reference() functions, so pre-compute them only once here
+			Nx = lbm->get_Nx(); Ny = lbm->get_Ny(); Nz = lbm->get_Nz();
+			Dx = lbm->get_Dx(); Dy = lbm->get_Dy(); Dz = lbm->get_Dz();
+			D = Dx*Dy*Dz; // number of domains
+			NxNy = (ulong)Nx*(ulong)Ny; // shortcut for Nx*Ny
+			NxDx=Nx/Dx; NyDy=Ny/Dy; NzDz=Nz/Dz; // shortcuts for N_/D_
+			Hx=Dx>1u; Hy=Dy>1u; Hz=Dz>1u; // halo offsets
+			local_Nx=(ulong)(NxDx+2u*Hx); local_Ny=(ulong)(NyDy+2u*Hy); local_Nz=(ulong)(NzDz+2u*Hz); // size of each domain
+			local_N = local_Nx*local_Ny*local_Nz; // number of cells in each domain
+		}
 		inline void initialize_auxiliary_pointers() {
 			/********/ x = Pointer(this, 0x0u);
 			if(d>0x1u) y = Pointer(this, 0x1u);
 			if(d>0x2u) z = Pointer(this, 0x2u);
 		}
+		inline T& reference(const ulong i) { // stitch together domain buffers and make them appear as one single large buffer
+			if(D==1u) { // take shortcut for single domain
+				return buffers[0]->data()[i]; // array of structures
+			} else { // decompose index for multiple domains
+				const ulong global_i=i%N, t=global_i%NxNy;
+				const uint x=(uint)(t%(ulong)Nx), y=(uint)(t/(ulong)Nx), z=(uint)(global_i/NxNy); // n = x+(y+z*Ny)*Nx
+				const uint px=x%NxDx, py=y%NyDy, pz=z%NzDz, dx=x/NxDx, dy=y/NyDy, dz=z/NzDz, domain=dx+(dy+dz*Dy)*Dx; // 3D position within domain and which domain
+				const ulong local_i = (ulong)(px+Hx)+((ulong)(py+Hy)+(ulong)(pz+Hz)*local_Ny)*local_Nx; // add halo offsets
+				const ulong local_dimension = i/N;
+				return buffers[domain]->data()[local_i+local_dimension*local_N]; // array of structures
+			}
+		}
 		inline T& reference(const ulong i, const uint dimension) { // stitch together domain buffers and make them appear as one single large buffer
-			const ulong global_i = i%N;
-			const ulong NxNy=(ulong)Nx*(ulong)Ny, t=global_i%NxNy;
-			const uint x=(uint)(t%(ulong)Nx), y=(uint)(t/(ulong)Nx), z=(uint)(global_i/NxNy); // n = x+(y+z*Ny)*Nx
-			const uint NxDx=Nx/Dx, NyDy=Ny/Dy, NzDz=Nz/Dz;
-			const uint px=x%NxDx, py=y%NyDy, pz=z%NzDz, dx=x/NxDx, dy=y/NyDy, dz=z/NzDz, domain=dx+(dy+dz*Dy)*Dx;
-			const uint Hx=Dx>1u, Hy=Dy>1u, Hz=Dz>1u; // halo offsets
-			const ulong local_N = (ulong)(NxDx+2u*Hx)*(ulong)(NyDy+2u*Hy)*(ulong)(NzDz+2u*Hz); // add halo offsets
-			const ulong local_i = (ulong)(px+Hx)+((ulong)(py+Hy)+(ulong)(pz+Hz)*(ulong)(NyDy+2u*Hy))*(ulong)(NxDx+2u*Hx); // add halo offsets
-			const ulong local_dimension = max(i/N, (ulong)dimension);
-			return buffers[domain]->data()[local_i+local_dimension*local_N]; // array of structures
+			if(D==1u) { // take shortcut for single domain
+				return buffers[0]->data()[i+(ulong)dimension*N]; // array of structures
+			} else { // decompose index for multiple domains
+				const ulong global_i=i%N, t=global_i%NxNy;
+				const uint x=(uint)(t%(ulong)Nx), y=(uint)(t/(ulong)Nx), z=(uint)(global_i/NxNy); // n = x+(y+z*Ny)*Nx
+				const uint px=x%NxDx, py=y%NyDy, pz=z%NzDz, dx=x/NxDx, dy=y/NyDy, dz=z/NzDz, domain=dx+(dy+dz*Dy)*Dx; // 3D position within domain and which domain
+				const ulong local_i = (ulong)(px+Hx)+((ulong)(py+Hy)+(ulong)(pz+Hz)*local_Ny)*local_Nx; // add halo offsets
+				const ulong local_dimension = max(i/N, (ulong)dimension);
+				return buffers[domain]->data()[local_i+local_dimension*local_N]; // array of structures
+			}
 		}
 		inline static string vtk_type() {
 			/**/ if constexpr(std::is_same<T, char >::value) return "char" ; else if constexpr(std::is_same<T, uchar >::value) return "unsigned_char" ;
@@ -300,52 +324,47 @@ public:
 		Pointer x, y, z; // host buffer auxiliary pointers for multi-dimensional array access (array of structures)
 
 		inline Memory_Container(LBM* lbm, Memory<T>** buffers, const string& name) {
-			this->lbm = lbm;
-			this->Nx = lbm->get_Nx(); this->Ny = lbm->get_Ny(); this->Nz = lbm->get_Nz();
-			this->Dx = lbm->get_Dx(); this->Dy = lbm->get_Dy(); this->Dz = lbm->get_Dz();
-			this->buffers = buffers;
-			this->name = name;
-			this->N = (ulong)this->Nx*(ulong)this->Ny*(ulong)this->Nz;
+			this->N = lbm->get_N();
 			this->d = buffers[0]->dimensions();
 			if(this->N*(ulong)this->d==0ull) print_error("Memory size must be larger than 0.");
+			this->lbm = lbm;
+			this->buffers = buffers;
+			this->name = name;
+			initialize_auxiliary_variables();
 			initialize_auxiliary_pointers();
 		}
 		inline Memory_Container() {} // default constructor
 		inline Memory_Container& operator=(Memory_Container&& memory) noexcept { // move assignment
-			this->lbm = memory.lbm;
-			this->Nx = memory.Nx; this->Ny = memory.Ny; this->Nz = memory.Nz;
-			this->Dx = memory.Dx; this->Dy = memory.Dy; this->Dz = memory.Dz;
-			this->buffers = memory.buffers;
-			this->name = memory.name;
 			this->N = memory.N;
 			this->d = memory.d;
+			this->lbm = memory.lbm;
+			this->buffers = memory.buffers;
+			this->name = memory.name;
+			initialize_auxiliary_variables();
 			initialize_auxiliary_pointers();
 			return *this;
 		}
 		inline void reset(const T value=(T)0) {
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) {
-				for(ulong i=0ull; i<range()/(ulong)(Dx*Dy*Dz); i++) buffers[domain][i] = value;
-			}
-			write_to_device();
+			for(uint domain=0u; domain<D; domain++) buffers[domain]->reset(value);
 		}
 		inline const ulong length() const { return N; }
 		inline const uint dimensions() const { return d; }
 		inline const ulong range() const { return N*(ulong)d; }
 		inline const ulong capacity() const { return N*(ulong)d*sizeof(T); } // returns capacity of the buffer in Byte
-		inline T& operator[](const ulong i) { return reference(i, 0u); }
-		inline const T& operator[](const ulong i) const { return reference(i, 0u); }
-		inline const T operator()(const ulong i) const { return reference(i, 0u); }
+		inline T& operator[](const ulong i) { return reference(i); }
+		inline const T& operator[](const ulong i) const { return reference(i); }
+		inline const T operator()(const ulong i) const { return reference(i); }
 		inline const T operator()(const ulong i, const uint dimension) const { return reference(i, dimension); } // array of structures
 		inline void read_from_device() {
 #ifndef UPDATE_FIELDS
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
+			for(uint domain=0u; domain<D; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
 #endif // UPDATE_FIELDS
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->enqueue_read_from_device();
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->finish_queue();
+			for(uint domain=0u; domain<D; domain++) buffers[domain]->enqueue_read_from_device();
+			for(uint domain=0u; domain<D; domain++) buffers[domain]->finish_queue();
 		}
 		inline void write_to_device() {
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->enqueue_write_to_device();
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->finish_queue();
+			for(uint domain=0u; domain<D; domain++) buffers[domain]->enqueue_write_to_device();
+			for(uint domain=0u; domain<D; domain++) buffers[domain]->finish_queue();
 		}
 		inline void write_host_to_vtk(const string& path="") { // write binary .vtk file
 			write_vtk(default_filename(path, name, ".vtk", lbm->get_t()));

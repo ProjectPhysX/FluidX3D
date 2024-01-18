@@ -30,12 +30,12 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   chmod +x make.sh
   ./make.sh
   ```
-- Compiling requires `C++17`, which is supported since `g++` version `8` (check with `g++ --version`). If you have `make` installed (check with `make --version`), compiling will will be faster using multiple CPU cores; otherwise compiling falls back to using a single CPU core.
-- If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), change to the "[compile on Linux with X11 graphics](make.sh#L3)" command in [`make.sh`](make.sh#L3).
+- Compiling requires [`g++`](https://gcc.gnu.org/) with `C++17`, which is supported since version `8` (check with `g++ --version`). If you have [`make`](https://www.gnu.org/software/make/) installed (check with `make --version`), compiling will will be faster using multiple CPU cores; otherwise compiling falls back to using a single CPU core.
+- If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), select [`TARGET=Linux-X11`](make.sh#L3) in [`make.sh`](make.sh#L3).
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
 ### macOS
-- Select the "[compile on macOS](make.sh#L5)" command in [`make.sh`](make.sh#L5).
+- Select [`TARGET=macOS`](make.sh#L5) in [`make.sh`](make.sh#L5).
 - Compile and run with:
   ```bash
   chmod +x make.sh
@@ -43,7 +43,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   ```
 
 ### Android
-- Select the "[compile on Android](make.sh#L6)" command in [`make.sh`](make.sh#L6).
+- Select [`TARGET=Android`](make.sh#L6) in [`make.sh`](make.sh#L6).
 - Compile and run with:
   ```bash
   chmod +x make.sh

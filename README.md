@@ -112,6 +112,10 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - added operating system info to OpenCL device driver version printout
   - fixed flickering with frustrum culling at very small field of view
   - fixed bug where rendered/exported frame was not updated when `visualization_modes` changed
+- v2.12 (17.01.2024)
+  - significantly (~3x) faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
+  - significantly faster simulation initialization (~40% single-GPU, ~15% multi-GPU)
+  - minor bug fix in `Memory_Container::reset()` function
 
 </details>
 
