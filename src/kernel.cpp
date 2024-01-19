@@ -504,17 +504,17 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float intersect_triangle(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<0.0f||s>1.0f||t<0.0f||s+t>1.0f) ? -1.0f : f*dot(v, q);
+	return (f<0.0f||s<-0.001f||s>1.001f||t<-0.001f||s+t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_triangle_bidirectional(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (s<0.0f||s>1.0f||t<0.0f||s+t>1.0f) ? -1.0f : f*dot(v, q);
+	return (s<-0.001f||s>1.001f||t<-0.001f||s+t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_rhombus(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<0.0f||s>1.0f||t<0.0f||t>1.0f) ? -1.0f : f*dot(v, q);
+	return (f<0.0f||s<-0.001f||s>1.001f||t<-0.001f||t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_plane(const ray r, const float3 p0, const float3 p1, const float3 p2) { // ray-triangle intersection, but skip barycentric coordinates
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v);
