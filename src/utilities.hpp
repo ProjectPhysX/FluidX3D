@@ -3078,7 +3078,10 @@ inline uint hsv_to_rgb(const float3& hsv) {
 #elif defined(__linux__)||defined(__APPLE__)
 #include <sys/ioctl.h> // for getting console size
 #include <unistd.h> // for getting path of executable
-#else // Linux
+#if defined(__APPLE__)
+#include <mach-o/dyld.h> // _NSGetExecutablePath
+#endif // Apple
+#else // Linux or Apple
 #undef UTILITIES_CONSOLE_COLOR
 #endif // Windows/Linux
 #endif // UTILITIES_CONSOLE_COLOR
@@ -3091,6 +3094,11 @@ inline string get_exe_path() { // returns path where executable is located, ends
 	std::wstring ws(wc);
 	transform(ws.begin(), ws.end(), back_inserter(path), [](wchar_t c) { return (char)c; });
 	path = replace(path, "\\", "/");
+#elif defined(__APPLE__)
+	uint length = 0u;
+	_NSGetExecutablePath(nullptr, &length);
+	path.resize(length+1u, 0);
+	_NSGetExecutablePath(path.data(), &length);
 #else // Linux
 	char c[260];
 	int length = (int)readlink("/proc/self/exe", c, 260);
