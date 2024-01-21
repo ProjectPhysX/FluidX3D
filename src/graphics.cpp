@@ -559,7 +559,8 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 
 #elif defined(__linux__)||defined(__APPLE__)
 
-#include "X11/include/X11/Xlib.h" // source: libx11-dev
+#include "X11/include/X11/Xlib.h" // sources: libx11-dev, x11proto-dev, libxrandr-dev, libxrender-dev
+#include "X11/include/X11/extensions/Xrandr.h" // for multi-monitor
 
 Display* x11_display;
 Window x11_window;
@@ -654,7 +655,7 @@ void input_detection() {
 						show_cursor();
 					} else {
 						hide_cursor();
-						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // reset cursor
+						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, (int)camera.width/2, (int)camera.height/2); // reset cursor
 					}
 					camera.input_key('U');
 				}
@@ -665,7 +666,7 @@ void input_detection() {
 						show_cursor();
 					} else {
 						hide_cursor();
-						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // reset cursor
+						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, (int)camera.width/2, (int)camera.height/2); // reset cursor
 					}
 				}
 				camera.set_key_state(key, true);
@@ -685,20 +686,33 @@ int main(int argc, char* argv[]) {
 	x11_display = XOpenDisplay(0);
 	if(!x11_display) print_error("No X11 display available.");
 
-	const uint height = (uint)DisplayHeight(x11_display, 0);
-	const uint width = (uint)DisplayWidth(x11_display, 0);
+	Window x11_root_window = DefaultRootWindow(x11_display);
+	XRRScreenResources* x11_screen_resources = XRRGetScreenResources(x11_display, x11_root_window);
+	XRROutputInfo* x11_output_info = XRRGetOutputInfo(x11_display, x11_screen_resources, XRRGetOutputPrimary(x11_display, x11_root_window));
+	XRRCrtcInfo* x11_crtc_info = XRRGetCrtcInfo(x11_display, x11_screen_resources, x11_output_info->crtc);
+	const uint width  = (uint)x11_crtc_info->width; // width and height of primary monitor
+	const uint height = (uint)x11_crtc_info->height;
+	const int window_offset_x = (int)x11_crtc_info->x; // offset of primary monitor in multi-monitor coordinates
+	const int window_offset_y = (int)x11_crtc_info->y;
+	XRRFreeCrtcInfo(x11_crtc_info);
+	XRRFreeOutputInfo(x11_output_info);
+	XRRFreeScreenResources(x11_screen_resources);
+
 	camera = Camera(width, height, 60u);
 
-	x11_window = XCreateWindow(x11_display, DefaultRootWindow(x11_display), 0, 0, width, height, 0, CopyFromParent, CopyFromParent, CopyFromParent, 0, 0);
-	XStoreName(x11_display, x11_window, WINDOW_NAME);
+	x11_window = XCreateWindow(x11_display, x11_root_window, window_offset_x, window_offset_y, width, height, 0, CopyFromParent, CopyFromParent, CopyFromParent, 0, 0);
+	XSizeHints x11_size_hints = { PPosition|PSize, window_offset_x, window_offset_y, (int)width, (int)height };
+	XSetNormalHints(x11_display, x11_window, &x11_size_hints); // place window on the primary monitor
 	struct Hints { long flags=2l, functions=0l, decorations=0b0000000l, input_mode=0l, status=0l; } x11_hints; // decorations=maximize|minimize|menu|title|resize|border|all
 	Atom x11_property = XInternAtom(x11_display, "_MOTIF_WM_HINTS", 0);
-	XChangeProperty(x11_display, x11_window, x11_property, x11_property, 32, PropModeReplace, (unsigned char*)&x11_hints, 5);
+	XChangeProperty(x11_display, x11_window, x11_property, x11_property, 32, PropModeReplace, (unsigned char*)&x11_hints, 5); // remove window decorations
+	XStoreName(x11_display, x11_window, WINDOW_NAME);
 	XMapRaised(x11_display, x11_window);
 	x11_gc = XCreateGC(x11_display, x11_window, 0, 0);
 	x11_image = XCreateImage(x11_display, CopyFromParent, DefaultDepth(x11_display, DefaultScreen(x11_display)), ZPixmap, 0, (char*)camera.bitmap, width, height, 32, 0);
 	XSelectInput(x11_display, x11_window, KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask);
 	hide_cursor();
+	XWarpPointer(x11_display, None, x11_window, 0, 0, camera.width, camera.height, window_offset_x+(int)camera.width/2, window_offset_y+(int)camera.height/2); // catch cursor from anywhere on monitors
 
 	thread compute_thread(main_physics); // start main_physics() in a new thread
 	thread input_thread(input_detection);

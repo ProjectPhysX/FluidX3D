@@ -10,7 +10,7 @@ if command -v make &>/dev/null; then # if make is available, compile FluidX3D wi
 else # else (make is not installed), compile FluidX3D with a single CPU core
 	mkdir -p bin # create directory for executable
 	rm -rf temp bin/FluidX3D # prevent execution of old executable if compiling fails
-	if [ $TARGET == Linux-X11 ]; then g++ src/*.cpp -o bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL -I./src/X11/include -L./src/X11/lib -lX11; fi
+	if [ $TARGET == Linux-X11 ]; then g++ src/*.cpp -o bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL -I./src/X11/include -L./src/X11/lib -lX11 -lXrandr; fi
 	if [ $TARGET == Linux     ]; then g++ src/*.cpp -o bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL; fi
 	if [ $TARGET == macOS     ]; then g++ src/*.cpp -o bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -framework OpenCL; fi
 	if [ $TARGET == Android   ]; then g++ src/*.cpp -o bin/FluidX3D -std=c++17 -pthread -I./src/OpenCL/include -L/system/vendor/lib64 -lOpenCL; fi

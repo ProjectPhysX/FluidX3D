@@ -2,11 +2,15 @@ MAKEFLAGS = -j$(nproc)
 CC = g++
 CFLAGS = -std=c++17 -pthread
 
+.PHONY: no-target
+no-target:
+	@echo Please select one of these targets: make Linux-X11, make Linux, make macOS, make Android
+
 Linux-X11 Linux: LDFLAGS_OPENCL = -I./src/OpenCL/include -L./src/OpenCL/lib -lOpenCL
 macOS: LDFLAGS_OPENCL = -I./src/OpenCL/include -framework OpenCL
 Android: LDFLAGS_OPENCL = -I./src/OpenCL/include -L/system/vendor/lib64 -lOpenCL
 
-Linux-X11: LDFLAGS_X11 = -I./src/X11/include -L./src/X11/lib -lX11
+Linux-X11: LDFLAGS_X11 = -I./src/X11/include -L./src/X11/lib -lX11 -lXrandr
 Linux macOS Android: LDFLAGS_X11 =
 
 Linux-X11 Linux macOS Android: bin/FluidX3D

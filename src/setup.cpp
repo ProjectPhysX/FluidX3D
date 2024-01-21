@@ -1073,7 +1073,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const uint3 lbm_N = resolution(float3(1.0f, 1.0f, 0.85f), 4000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	float lbm_D = (float)lbm_N.x/5.0f;
 	const float lbm_u = 0.05f; // impact velocity in LBM units
-	const float si_T = 0.010f; // simulated time in [s]
+	const float si_T = 0.003f; // simulated time in [s]
 	const float inclination = 20.0f; // impact angle [°], 0 = vertical
 	const int select_drop_size = 12;
 	//                            0        1        2        3        4        5        6        7        8        9       10       11       12       13 (13 is for validation)
@@ -1126,7 +1126,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 10.0f)) { // generate video
+		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) { // generate video
 			lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/new/");
 			lbm.graphics.set_camera_centered(10.0f, 40.0f, 100.0f, 1.0f);

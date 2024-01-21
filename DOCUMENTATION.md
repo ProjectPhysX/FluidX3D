@@ -209,9 +209,9 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   while(lbm.get_t()<lbm_T) { // main simulation loop
   	if(lbm.graphics.next_frame(lbm_T, 25.0f)) { // render enough frames for 25 seconds of 60fps video
   		lbm.graphics.set_camera_free(float3(2.5f*(float)Nx, 0.0f*(float)Ny, 0.0f*(float)Nz), 0.0f, 0.0f, 50.0f); // set camera to position 1
-  		lbm.graphics.write_frame(get_exe_path()+"export/camera_angle_1/"); // export image from camera position 1
+  		lbm.graphics.write_frame(get_exe_path()+"export/camera_1/"); // export image from camera position 1
   		lbm.graphics.set_camera_centered(-40.0f, 20.0f, 78.0f, 1.25f); // set camera to position 2
-  		lbm.graphics.write_frame(get_exe_path()+"export/camera_angle_2/"); // export image from camera position 2
+  		lbm.graphics.write_frame(get_exe_path()+"export/camera_2/"); // export image from camera position 2
   	}
   	lbm.run(1u); // run 1 LBM time step
   }
@@ -221,7 +221,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 - Exported frames will automatically be assigned the current simulation time step in their name, in the format `bin/export/image-123456789.png`.
 - To convert the rendered `.png` images to video, use [FFmpeg](https://ffmpeg.org/):
   ```bash
-  ffmpeg -framerate 60 -pattern_type glob -i "./bin/export/*/image-*.png" -c:v libx264 -pix_fmt yuv420p -b:v 24M "video.mp4"
+  ffmpeg -framerate 60 -pattern_type glob -i "export/*/image-*.png" -c:v libx264 -pix_fmt yuv420p -b:v 24M "video.mp4"
   ```
 
 ### Data Export
