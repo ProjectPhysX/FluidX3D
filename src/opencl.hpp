@@ -185,7 +185,7 @@ public:
 		const string kernel_code = enable_device_capabilities()+"\n"+opencl_c_code;
 		cl_source.push_back({ kernel_code.c_str(), kernel_code.length() });
 		this->cl_program = cl::Program(info.cl_context, cl_source);
-		const string build_options = string("-cl-fast-relaxed-math")+(info.intel_gpu_above_4gb_patch ? " -cl-intel-greater-than-4GB-buffer-required" : "");
+		const string build_options = string("-cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable")+(info.intel_gpu_above_4gb_patch ? " -cl-intel-greater-than-4GB-buffer-required" : "");
 #ifndef LOG
 		int error = cl_program.build({ info.cl_device }, (build_options+" -w").c_str()); // compile OpenCL C code, disable warnings
 		if(error) print_warning(cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device)); // print build log

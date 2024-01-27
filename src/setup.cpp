@@ -104,7 +104,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	while(true) { // main simulation loop
 		lbm.run(1000u);
 		lbm.u.read_from_device();
-		string s;
 		double error_dif=0.0, error_sum=0.0;
 #ifndef D2Q9
 		for(uint x=0u; x<Nx; x++) {
@@ -117,7 +116,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 						const double uref = umax*(sq(R)-sq(r))/sq(R); // theoretical velocity profile u = G*(R^2-r^2)
 						error_dif += sq(unum-uref); // L2 error (Krüger p. 138)
 						error_sum += sq(uref);
-						s += to_string(r)+" "+to_string(unum)+" "+to_string(uref)+"\n";
 					}
 				}
 			}
@@ -131,7 +129,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 				const double uref = umax*(sq(R)-sq(r))/sq(R); // theoretical velocity profile u = G*(R^2-r^2)
 				error_dif += sq(unum-uref); // L2 error (Krüger p. 138)
 				error_sum += sq(uref);
-				s += to_string(r)+" "+to_string(unum)+" "+to_string(uref)+"\n";
 			}
 		}
 #endif // D2Q9
