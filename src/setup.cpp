@@ -296,15 +296,15 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 
 
-/*void main_setup() { // NASA Common Research Model; required extensions in defines.hpp: FP16C, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS
+void main_setup() { // NASA Common Research Model; required extensions in defines.hpp: FP16C, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint3 lbm_N = resolution(float3(1.0f, 1.5f, 1.0f/3.0f), 2000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const uint3 lbm_N = resolution(float3(1.5f, 2.0f, 1.5f/3.5f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float Re = 10000000.0f;
 	const float u = 0.1f;
 	LBM lbm(lbm_N, units.nu_from_Re(Re, (float)lbm_N.x, u));
 	// ###################################################################################### define geometry ######################################################################################
 	// model: https://commonresearchmodel.larc.nasa.gov/high-lift-crm/high-lift-crm-geometry/assembled-geometry/, .stp file converted to .stl with https://imagetostl.com/convert/file/stp/to/stl
-	Mesh* half = read_stl(get_exe_path()+"../stl/crm-hl_reference_ldg.stl", lbm.size(), float3(0.0f), float3x3(float3(0, 0, 1), radians(90.0f)), 1.0f*lbm_N.x);
+	Mesh* half = read_stl(get_exe_path()+"stl/crm-hl_reference_ldg.stl", lbm.size(), float3(0.0f), float3x3(float3(0, 0, 1), radians(90.0f)), 1.0f*lbm_N.x);
 	half->translate(float3(-0.5f*(half->pmax.x-half->pmin.x), 0.0f, 0.0f));
 	Mesh* mesh = new Mesh(2u*half->triangle_number, float3(0.0f));
 	for(uint i=0u; i<half->triangle_number; i++) {
