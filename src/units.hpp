@@ -51,7 +51,7 @@ public:
 	float M(const float si_M) const { return si_M*sq(unit_s)/(unit_kg*sq(unit_m)); } // torque si_M = M*[kg*m^2/s^2]
 	float sigma(const float si_sigma) const { return si_sigma*sq(unit_s)/unit_kg; } // surface tension si_sigma = sigma*[kg/s^2]
 	float T(const float si_T) { return si_T/unit_K; } // temperature si_T = T*[K]
-	float alpha(const float si_alpha) { return si_alpha*unit_s/sq(unit_m); } // thermal diffusivity si_alpha = alpha*[m^2/s]
+	float alpha(const float si_alpha) { return si_alpha*unit_s/sq(unit_m); } // thermal diffusion coefficient si_alpha = alpha*[m^2/s]
 	float beta(const float si_beta) { return si_beta*unit_K/cb(unit_m); } // (volumetric) thermal expansion coefficient si_beta = beta*[m^3/K]
 
 	// the following methods convert simulation units into SI units (have to be called after set_m_kg_s(...);)
