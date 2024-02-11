@@ -989,26 +989,28 @@ void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // rem
 	for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_unvoxelize_mesh_on_device(mesh, flag);
 	for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
 }
-void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path) const { // write mesh to binary .vtk file
+void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path, const bool convert_to_si_units) const { // write mesh to binary .vtk file
 	const string header_1 = "# vtk DataFile Version 3.0\nData\nBINARY\nDATASET POLYDATA\nPOINTS "+to_string(3u*mesh->triangle_number)+" float\n";
 	const string header_2 = "POLYGONS "+to_string(mesh->triangle_number)+" "+to_string(4u*mesh->triangle_number)+"\n";
 	float* points = new float[9u*mesh->triangle_number];
 	int* triangles = new int[4u*mesh->triangle_number];
-	for(uint i=0u; i<mesh->triangle_number; i++) {
-		points[9u*i   ] = reverse_bytes(mesh->p0[i].x-center().x);
-		points[9u*i+1u] = reverse_bytes(mesh->p0[i].y-center().y);
-		points[9u*i+2u] = reverse_bytes(mesh->p0[i].z-center().z);
-		points[9u*i+3u] = reverse_bytes(mesh->p1[i].x-center().x);
-		points[9u*i+4u] = reverse_bytes(mesh->p1[i].y-center().y);
-		points[9u*i+5u] = reverse_bytes(mesh->p1[i].z-center().z);
-		points[9u*i+6u] = reverse_bytes(mesh->p2[i].x-center().x);
-		points[9u*i+7u] = reverse_bytes(mesh->p2[i].y-center().y);
-		points[9u*i+8u] = reverse_bytes(mesh->p2[i].z-center().z);
+	const float spacing = convert_to_si_units ? units.si_x(1.0f) : 1.0f;
+	const float3 offset = center();
+	parallel_for(mesh->triangle_number, [&](uint i) {
+		points[9u*i   ] = reverse_bytes(spacing*(mesh->p0[i].x-offset.x));
+		points[9u*i+1u] = reverse_bytes(spacing*(mesh->p0[i].y-offset.y));
+		points[9u*i+2u] = reverse_bytes(spacing*(mesh->p0[i].z-offset.z));
+		points[9u*i+3u] = reverse_bytes(spacing*(mesh->p1[i].x-offset.x));
+		points[9u*i+4u] = reverse_bytes(spacing*(mesh->p1[i].y-offset.y));
+		points[9u*i+5u] = reverse_bytes(spacing*(mesh->p1[i].z-offset.z));
+		points[9u*i+6u] = reverse_bytes(spacing*(mesh->p2[i].x-offset.x));
+		points[9u*i+7u] = reverse_bytes(spacing*(mesh->p2[i].y-offset.y));
+		points[9u*i+8u] = reverse_bytes(spacing*(mesh->p2[i].z-offset.z));
 		triangles[4u*i   ] = reverse_bytes(3); // 3 vertices per triangle
 		triangles[4u*i+1u] = reverse_bytes(3*(int)i  ); // vertex 0
 		triangles[4u*i+2u] = reverse_bytes(3*(int)i+1); // vertex 1
 		triangles[4u*i+3u] = reverse_bytes(3*(int)i+2); // vertex 2
-	}
+	});
 	const string filename = default_filename(path, "mesh", ".vtk", get_t());
 	create_folder(filename);
 	std::ofstream file(filename, std::ios::out|std::ios::binary);

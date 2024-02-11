@@ -41,6 +41,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   chmod +x make.sh
   ./make.sh
   ```
+- [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported on macOS, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) preview though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
 
 ### Android
 - Select [`TARGET=Android`](make.sh#L6) in [`make.sh`](make.sh#L6).
@@ -49,6 +50,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   chmod +x make.sh
   ./make.sh
   ```
+- [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported on Android, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) preview though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
 
 <br>
 
@@ -115,7 +117,10 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   ```c
   const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 2000u);
   ```
-  This takes as inputs the desired aspect ratio of the simulation box and the VRAM occupation in MB, and returns the grid resolution as a `uint3` with `.x`/`.y`/`.z` components. You can also directly feed the `uint3` into the LBM constructor as resolution: `LBM lbm(lbm_N, nu, ...);`
+  This takes as inputs the desired aspect ratio of the simulation box and the VRAM occupation in MB, and returns the grid resolution as a `uint3` with `.x`/`.y`/`.z` components. You can also directly feed the `uint3` into the LBM constructor as resolution:
+  ```c
+  LBM lbm(lbm_N, nu, ...);
+  ```
 
 ### Unit Conversion
 - The LBM simulation uses a different unit system from SI units, where density `rho=1` and velocity `u≈0.001-0.1`, because floating-point arithmetic is most accurate close to `1`.
@@ -235,6 +240,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   lbm.write_mesh_to_vtk(const Mesh* mesh); // for exporting triangle meshes
   ```
 - These functions first pull the data from the GPU(s) into CPU RAM, and then write it to the hard drive.
+- If [unit conversion](#unit-conversion) with `units.set_m_kg_s(...)` was specified, the data in exported `.vtk` files is automaticlally converted to SI units.
 - Exported files will automatically be assigned the current simulation time step in their name, in the format `bin/export/u-123456789.vtk`.
 - Be aware that these volumetric files can be gigantic in file size, tens of GigaByte for a single file.
 - You can view/evaluate the `.vtk` files for example in [ParaView](https://www.paraview.org/).

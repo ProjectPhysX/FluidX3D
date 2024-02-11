@@ -113,9 +113,20 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed flickering with frustrum culling at very small field of view
   - fixed bug where rendered/exported frame was not updated when `visualization_modes` changed
 - v2.12 (18.01.2024)
-  - significantly (~3x) faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
+  - ~3x faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
   - significantly faster simulation initialization (~40% single-GPU, ~15% multi-GPU)
   - minor bug fix in `Memory_Container::reset()` function
+- v2.13 (11.02.2023)
+  - data in exported `.vtk` files is now automatically converted to SI units
+  - ~2x faster `.vtk` export with multithreading
+  - added unit conversion functions for `TEMPERATURE` extension
+  - fixed graphical artifacts with axis-aligned camera in raytracing
+  - fixed `get_exe_path()` for macOS
+  - fixed X11 multi-monitor issues on Linux
+  - workaround for Nvidia driver bug: `enqueueFillBuffer` is broken for large buffers on Nvidia GPUs
+  - fixed slow numeric drift issues caused by `-cl-fast-relaxed-math`
+  - fixed wrong Maximum Allocation Size reporting in `LBM::write_status()`
+  - fixed missing scaling of coordinates to SI units in `LBM::write_mesh_to_vtk()`
 
 </details>
 
@@ -218,7 +229,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 
   - domain decomposition allows pooling VRAM from multiple GPUs for much larger grid resolution
   - each domain (GPU) can hold up to 4.29 billion (2³², 1624³) lattice points (225 GB memory)
-  - GPUs don't have to be identical (not even from the same vendor), but similar VRAM capacity/bandwidth is recommended
+  - GPUs don't have to be identical (<a href="https://youtu.be/PscbxGVs52o">not even from the same vendor</a>), but similar VRAM capacity/bandwidth is recommended
   - domain communication architecture (simplified)
     ```diff
     ++   .-----------------------------------------------------------------.   ++
@@ -339,7 +350,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - FluidX3D can do simulations so large that storing the volumetric data for later rendering becomes unmanageable (like 120GB for a single frame, hundreds of TeraByte for a video)
 - instead, FluidX3D allows [rendering raw simulation data directly in VRAM](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL), so no large volumetric files have to be exported to the hard disk (see my [technical talk](https://youtu.be/pD8JWAZ2f8o))
 - the rendering is so fast that it works interactively in real time for both rasterization and raytracing
-- if no monitor is available (like on a remote Linux server), there is an ASCII rendering mode to interactively visualize the simulation in the terminal (even in WSL and/or through SSH)
+- rasterization and raytracing are done in OpenCL and work on all GPUs, even the ones without RTX/DXR raytracing cores or without any rendering hardware at all (like A100, MI200, ...)
+- if no monitor is available (like on a remote Linux server), there is an [ASCII rendering mode](https://youtu.be/pD8JWAZ2f8o&t=1456) to interactively visualize the simulation in the terminal (even in WSL and/or through SSH)
 - rendering is fully multi-GPU-parallelized via seamless domain decomposition rasterization
 - with interactive graphics mode disabled, image resolution can be as large as VRAM allows for (4K/8K/16K and above)
 - (interacitive) visualization modes:
@@ -365,7 +377,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - native cross-vendor multi-GPU implementation
   - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
   - single-node parallelization, so no MPI installation required
-  - GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth are recommended
+  - [GPUs don't even have to be from the same vendor](https://youtu.be/PscbxGVs52o), but similar memory capacity and bandwidth are recommended
 - works in [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux) with C++17, with limited support also for [macOS](DOCUMENTATION.md#macos) and [Android](DOCUMENTATION.md#android)
 - supports [importing and voxelizing triangle meshes](DOCUMENTATION.md#loading-stl-files) from binary `.stl` files, with fast GPU voxelization
 - supports [exporting volumetric data](DOCUMENTATION.md#data-export) as binary `.vtk` files
