@@ -116,7 +116,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - ~3x faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
   - significantly faster simulation initialization (~40% single-GPU, ~15% multi-GPU)
   - minor bug fix in `Memory_Container::reset()` function
-- v2.13 (11.02.2023)
+- v2.13 (11.02.2024)
   - data in exported `.vtk` files is now automatically converted to SI units
   - ~2x faster `.vtk` export with multithreading
   - added unit conversion functions for `TEMPERATURE` extension
