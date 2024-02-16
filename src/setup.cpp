@@ -1,9 +1,8 @@
 #include "setup.hpp"
 
-
+#include "info.hpp"
 
 #ifdef BENCHMARK
-#include "info.hpp"
 void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK, optionally FP16S or FP16C
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	uint mlups = 0u; {
@@ -35,6 +34,124 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 } /**/
 #endif // BENCHMARK
 
+// Co-Opting Stuff Into doing what we want to do, round 1
+// taking the Merc F1 W14 Demo and making it be our SAE car instead
+/*
+void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
+	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 10000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const float lbm_u = 0.1f;
+	const float lbm_length = 0.8f*(float)lbm_N.y;
+	const float si_T = 0.25f;
+	const float si_u = 100.0f/3.6f;
+	const float si_length=5.5f, si_width=2.0f;
+	const float si_nu=1.48E-5f, si_rho=1.225f;
+	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
+	// ###################################################################################### define geometry ######################################################################################
+	Mesh* body = read_stl(get_exe_path()+"stl/sr24-main.stl"); // https://downloadfree3d.com/3d-models/vehicles/sports-car/mercedes-f1-w14/
+	Mesh* front_wheels = read_stl(get_exe_path()+"stl/SR24-Wheel.stl"); // wheels separated, decals removed and converted to .stl in Microsoft 3D Builder
+	Mesh* back_wheels = read_stl(get_exe_path()+"stl/SR24-Wheel.stl"); // to avoid instability from too small gaps: remove front wheel fenders and move out right back wheel a bit
+	const float scale = lbm_length/body->get_bounding_box_size().y; // scale parts
+	body->scale(scale);
+	front_wheels->scale(scale);
+	back_wheels->scale(scale);
+	const float3 offset = float3(lbm.center().x-body->get_bounding_box_center().x, 1.0f-body->pmin.y+0.25f*back_wheels->get_min_size(), 4.0f-back_wheels->pmin.z);
+	body->translate(offset);
+	front_wheels->translate(offset);
+	back_wheels->translate(offset);
+	body->set_center(body->get_bounding_box_center()); // set center of meshes to their bounding box center
+	front_wheels->set_center(front_wheels->get_bounding_box_center());
+	back_wheels->set_center(back_wheels->get_bounding_box_center());
+	const float lbm_radius=0.5f*back_wheels->get_min_size(), omega=lbm_u/lbm_radius;
+	lbm.voxelize_mesh_on_device(body);
+	lbm.voxelize_mesh_on_device(front_wheels, TYPE_S, front_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
+	lbm.voxelize_mesh_on_device(back_wheels, TYPE_S, back_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating
+	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
+		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
+		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
+		if(z==0u) lbm.flags[n] = TYPE_S;
+	}); // ####################################################################### run simulation, export images and data ##########################################################################
+	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
+#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
+	lbm.run(0u); // initialize simulation
+	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+		if(lbm.graphics.next_frame(units.t(si_T), 30.0f)) {
+			lbm.graphics.set_camera_free(float3(0.779346f*(float)Nx, -0.315650f*(float)Ny, 0.329444f*(float)Nz), -27.0f, 19.0f, 100.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/a/");
+			lbm.graphics.set_camera_free(float3(0.556877f*(float)Nx, 0.228191f*(float)Ny, 1.159613f*(float)Nz), 19.0f, 53.0f, 100.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/b/");
+			lbm.graphics.set_camera_free(float3(0.220650f*(float)Nx, -0.589529f*(float)Ny, 0.085407f*(float)Nz), -72.0f, 16.0f, 86.0f);
+			lbm.graphics.write_frame(get_exe_path()+"export/c/");
+			const float progress = (float)lbm.get_t()/(float)units.t(si_T);
+			const float A = 75.0f, B = -160.0f;
+			lbm.graphics.set_camera_centered(A+progress*(B-A), -5.0f, 100.0f, 1.648721f);
+			lbm.graphics.write_frame(get_exe_path()+"export/d/");
+		}
+		lbm.run(1u);
+	}
+#else // GRAPHICS && !INTERACTIVE_GRAPHICS
+	lbm.run();
+#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
+} /**/
+
+// Co-Opting Round Two
+// trying to get everything to run for longer
+/*
+ - increased si_T to 2.0f from 1.0f
+ - set lbm.graphics.next_frame second arg to 30.0f from 10.0f
+
+*/
+/*void main_setup() { // Concorde; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS
+	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
+	const uint3 lbm_N = resolution(float3(1.0f, 3.0f, 0.75f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const float si_u = 300.0f / 3.6f;
+	const float si_length = 62.0f, si_width = 26.0f;
+	const float si_T = 2.0f;
+	const float si_nu = 1.48E-5f, si_rho = 1.225f;
+	const float lbm_length = 0.56f * (float)lbm_N.y;
+	const float lbm_u = 0.1f;
+	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	print_info("Re = " + to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
+	// ###################################################################################### define geometry ######################################################################################
+	const float3 center = float3(lbm.center().x, 0.52f * lbm_length, lbm.center().z + 0.03f * lbm_length);
+	//const float3x3 rotation = float3x3(float3(1, 0, 0), radians(180.0f)) * float3x3(float3(0, 0, 1), radians(90.0f)) * float3x3(float3(1, 0, 0), radians(180.0f));
+	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(0.0f)) * float3x3(float3(0, 0, 1), radians(0.0f)) * float3x3(float3(1, 0, 0), radians(0.0f));
+
+	//lbm.voxelize_stl(get_exe_path() + "stl/frontclipBinary7.stl", center, rotation, lbm_length * 0.7f); // https://www.thingiverse.com/thing:1176931/files
+	lbm.voxelize_stl(get_exe_path() + "stl/saeMaster2_BINARY_MeshLabbed.stl", center, rotation, lbm_length * 0.7f); // https://www.thingiverse.com/thing:1176931/files
+
+	const uint Nx = lbm.get_Nx(), Ny = lbm.get_Ny(), Nz = lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x = 0u, y = 0u, z = 0u; lbm.coordinates(n, x, y, z);
+	if (lbm.flags[n] != TYPE_S) lbm.u.y[n] = lbm_u;
+	if (x == 0u || x == Nx - 1u || y == 0u || y == Ny - 1u || z == 0u || z == Nz - 1u) lbm.flags[n] = TYPE_E; // all non periodic
+		}); // ####################################################################### run simulation, export images and data ##########################################################################
+	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE | VIS_Q_CRITERION;
+	lbm.run(0u); // initialize simulation
+	lbm.write_status();
+	while (lbm.get_t() <= units.t(si_T)) { // main simulation loop
+#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
+		lbm.write_status(std::to_string(lbm.get_t()) + " of " + std::to_string(si_T));
+		if (lbm.graphics.next_frame(units.t(si_T), 30.0f)) {
+			lbm.graphics.set_camera_free(float3(0.491343f * (float)Nx, -0.882147f * (float)Ny, 0.564339f * (float)Nz), -78.0f, 6.0f, 22.0f);
+			lbm.graphics.write_frame(get_exe_path() + "export/front/");
+			lbm.graphics.set_camera_free(float3(1.133361f * (float)Nx, 1.407077f * (float)Ny, 1.684411f * (float)Nz), 72.0f, 12.0f, 20.0f);
+			lbm.graphics.write_frame(get_exe_path() + "export/back/");
+			lbm.graphics.set_camera_centered(0.0f, 0.0f, 25.0f, 1.648722f);
+			lbm.graphics.write_frame(get_exe_path() + "export/side/");
+			lbm.graphics.set_camera_centered(0.0f, 90.0f, 25.0f, 1.648722f);
+			lbm.graphics.write_frame(get_exe_path() + "export/top/");
+			lbm.graphics.set_camera_free(float3(0.269361f * (float)Nx, -0.179720f * (float)Ny, 0.304988f * (float)Nz), -56.0f, 31.6f, 100.0f);
+			lbm.graphics.write_frame(get_exe_path() + "export/wing/");
+			lbm.graphics.set_camera_free(float3(0.204399f * (float)Nx, 0.340055f * (float)Ny, 1.620902f * (float)Nz), 80.0f, 35.6f, 34.0f);
+			lbm.graphics.write_frame(get_exe_path() + "export/follow/");
+		}
+#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
+		lbm.run(1u); // run dt time steps
+	}
+	lbm.write_status();
+} /**/
 
 
 /*void main_setup() { // 3D Taylor-Green vortices; required extensions in defines.hpp: INTERACTIVE_GRAPHICS
@@ -279,7 +396,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const uint L = 128u;
 	const float Re = 100000.0f;
 	const float u = 0.1f;
-	LBM lbm(L, 4u*L, L, units.nu_from_Re(Re, (float)L, u));
+	LBM lbm(L, 10u*L, L, units.nu_from_Re(Re, (float)L, u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float3 offset = float3(lbm.center().x, 0.0f, lbm.center().z);
 	const float3 p0 = offset+float3(  0*(int)L/64,  5*(int)L/64,  20*(int)L/64);
@@ -296,9 +413,9 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 
 
-void main_setup() { // NASA Common Research Model; required extensions in defines.hpp: FP16C, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS
+/*void main_setup() { // NASA Common Research Model; required extensions in defines.hpp: FP16C, EQUILIBRIUM_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint3 lbm_N = resolution(float3(1.5f, 2.0f, 1.5f/3.5f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+	const uint3 lbm_N = resolution(float3(1.5f, 2.0f, 1.5f/3.5f), 11500u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float Re = 10000000.0f;
 	const float u = 0.1f;
 	LBM lbm(lbm_N, units.nu_from_Re(Re, (float)lbm_N.x, u));
