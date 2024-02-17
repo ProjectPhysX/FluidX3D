@@ -24,33 +24,16 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 - Compile and run by clicking the <kbd>► Local Windows Debugger</kbd> button.
 - To select a specific GPU, open Windows CMD in the `FluidX3D` folder (type `cmd` in File Explorer in the directory field and press <kbd>Enter</kbd>), then run `bin\FluidX3D.exe 0` to select device `0`. You can also select multiple GPUs with `bin\FluidX3D.exe 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
-### Linux
+### Linux / macOS / Android
 - Compile and run with:
   ```bash
   chmod +x make.sh
   ./make.sh
   ```
 - Compiling requires [`g++`](https://gcc.gnu.org/) with `C++17`, which is supported since version `8` (check with `g++ --version`). If you have [`make`](https://www.gnu.org/software/make/) installed (check with `make --version`), compiling will will be faster using multiple CPU cores; otherwise compiling falls back to using a single CPU core.
-- If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), select [`TARGET=Linux-X11`](make.sh#L3) in [`make.sh`](make.sh#L3).
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
-
-### macOS
-- Select [`TARGET=macOS`](make.sh#L5) in [`make.sh`](make.sh#L5).
-- Compile and run with:
-  ```bash
-  chmod +x make.sh
-  ./make.sh
-  ```
-- [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported on macOS, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) preview though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
-
-### Android
-- Select [`TARGET=Android`](make.sh#L6) in [`make.sh`](make.sh#L6).
-- Compile and run with:
-  ```bash
-  chmod +x make.sh
-  ./make.sh
-  ```
-- [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported on Android, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) preview though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
+- Operating system (Linux/macOS/Android) and X11 support (required for [`INTERACTIVE_GRAPHICS`](src/defines.hpp)) are detected automatically. In case problems arise, you can still manually select [`target=...`](make.sh#L13) in [`make.sh`](make.sh#L13).
+- On macOS and Android, [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
 
 <br>
 

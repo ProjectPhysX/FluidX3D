@@ -378,7 +378,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
   - single-node parallelization, so no MPI installation required
   - [GPUs don't even have to be from the same vendor](https://youtu.be/PscbxGVs52o), but similar memory capacity and bandwidth are recommended
-- works in [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux) with C++17, with limited support also for [macOS](DOCUMENTATION.md#macos) and [Android](DOCUMENTATION.md#android)
+- works on [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux--macos--android) with C++17, with limited support also for [macOS](DOCUMENTATION.md#linux--macos--android) and [Android](DOCUMENTATION.md#linux--macos--android)
 - supports [importing and voxelizing triangle meshes](DOCUMENTATION.md#loading-stl-files) from binary `.stl` files, with fast GPU voxelization
 - supports [exporting volumetric data](DOCUMENTATION.md#data-export) as binary `.vtk` files
 - supports [exporting triangle meshes](DOCUMENTATION.md#data-export) as binary `.vtk` files
