@@ -40,23 +40,23 @@ double Info::time() const { // returns either elapsed time or remaining time
 void Info::print_logo() const {
 	const int a=color_light_blue, b=color_orange, c=color_pink;
 	print(".-----------------------------------------------------------------------------.\n");
-	print("|                       "); print("______________   ", a);               print("______________", b);      print("                       |\n");
-	print("|                       "); print("\\   ________  | ", a);               print("|  ________   /", b);     print("                       |\n");
+	print("|                      "); print(  " ______________  ", a);              print(" ______________ ", b);     print("                      |\n");
+	print("|                       "); print( "\\   ________  | ", a);              print("|  ________   /", b);     print("                       |\n");
 	print("|                        "); print("\\  \\       | | ", a);              print("| |       /  /", b);     print("                        |\n");
 	print("|                         "); print("\\  \\      | | ", a);              print("| |      /  /", b);     print("                         |\n");
 	print("|                          "); print("\\  \\     | | ", a);              print("| |     /  /", b);     print("                          |\n");
-	print("|                           "); print("\\  \\_.-\"  | ", a);             print("|  \"-._/  /", b);    print("                           |\n");
+	print("|                           "); print("\\  \\_.-\"  | ", a);            print("|  \"-._/  /", b);     print("                           |\n");
 	print("|                            "); print("\\    _.-\" ", a);  print("_ ", c); print("\"-._    /", b);  print("                            |\n");
 	print("|                             "); print("\\.-\" ", a); print("_.-\" \"-._ ", c); print("\"-./", b); print("                             |\n");
-	print("|                               ");                print(".-\"  .-\"-.  \"-.", c);                print("                               |\n");
-	print("|                               ");                print("\\  v\"     \"v  /", c);                print("                               |\n");
-	print("|                                ");                print("\\  \\     /  /", c);                 print("                                |\n");
-	print("|                                 ");                print("\\  \\   /  /", c);                 print("                                 |\n");
-	print("|                                  ");                print("\\  \\ /  /", c);                 print("                                  |\n");
-	print("|                                   ");                print("\\  '  /", c);                  print("                                   |\n");
-	print("|                                    ");                print("\\   /", c);                  print("                                    |\n");
-	print("|                                     ");                print("\\ /", c);                  print("               FluidX3D Version 2.12 |\n");
-	print("|                                      ");                 print("'", c);                  print("     Copyright (c) Dr. Moritz Lehmann |\n");
+	print("|                              ");                 print(" .-\"  .-\"-.  \"-. ", c);               print("                              |\n");
+	print("|                               ");                 print("\\  v\"     \"v  /", c);               print("                               |\n");
+	print("|                                ");                 print("\\  \\     /  /", c);                print("                                |\n");
+	print("|                                 ");                 print("\\  \\   /  /", c);                print("                                 |\n");
+	print("|                                  ");                 print("\\  \\ /  /", c);                print("                                  |\n");
+	print("|                                   ");                 print("\\  '  /", c);                 print("                                   |\n");
+	print("|                                    ");                 print("\\   /", c);                 print("                                    |\n");
+	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.13 |\n");
+	print("|                                      ");                 print( "'", c);                 print("     Copyright (c) Dr. Moritz Lehmann |\n");
 	print("|-----------------------------------------------------------------------------|\n");
 }
 void Info::print_initialize() {

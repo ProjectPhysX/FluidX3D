@@ -27,7 +27,7 @@ private:
 	float nu = 1.0f/6.0f; // kinematic shear viscosity
 	float fx=0.0f, fy=0.0f, fz=0.0f; // global force per volume
 	float sigma=0.0f; // surface tension coefficient
-	float alpha=1.0f, beta=1.0f, T_avg=1.0f; // alpha = thermal diffusion coefficient, beta = thermal expansion coefficient, T_avg = 1 = average temperature
+	float alpha=1.0f, beta=1.0f, T_avg=1.0f; // alpha = thermal diffusion coefficient, beta = (volumetric) thermal expansion coefficient, T_avg = 1 = average temperature
 	uint particles_N = 0u;
 	float particles_rho = 1.0f;
 
@@ -279,8 +279,16 @@ public:
 			else print_error("Error in vtk_type(): Type not supported.");
 			return "";
 		}
-		inline void write_vtk(const string& path) { // write binary .vtk file
-			const float spacing = units.si_x(1.0f);
+		inline void write_vtk(const string& path, const bool convert_to_si_units=true) { // write binary .vtk file
+			float spacing = 1.0f;
+			T unit_conversion_factor = (T)1;
+			if(convert_to_si_units) {
+				spacing = units.si_x(1.0f);
+				if(name=="rho") unit_conversion_factor = (T)units.si_rho(1.0f);
+				if(name=="u"  ) unit_conversion_factor = (T)units.si_u  (1.0f);
+				if(name=="F"  ) unit_conversion_factor = (T)units.si_F  (1.0f);
+				if(name=="T"  ) unit_conversion_factor = (T)units.si_T  (1.0f);
+			}
 			const float3 origin = spacing*float3(0.5f-0.5f*(float)Nx, 0.5f-0.5f*(float)Ny, 0.5f-0.5f*(float)Nz);
 			const string header =
 				"# vtk DataFile Version 3.0\nData\nBINARY\nDATASET STRUCTURED_POINTS\n"
@@ -290,11 +298,11 @@ public:
 				"POINT_DATA "+to_string((ulong)Nx*(ulong)Ny*(ulong)Nz)+"\nSCALARS data "+vtk_type()+" "+to_string(dimensions())+"\nLOOKUP_TABLE default\n"
 			;
 			T* data = new T[range()];
-			for(uint d=0u; d<dimensions(); d++) {
-				for(ulong i=0ull; i<length(); i++) {
-					data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes(reference(i, d)); // SoA <- AoS
+			parallel_for(length(), [&](ulong i) {
+				for(uint d=0u; d<dimensions(); d++) {
+					data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes((T)(unit_conversion_factor*reference(i, d))); // SoA <- AoS
 				}
-			}
+			});
 			const string filename = create_file_extension(path, ".vtk");
 			create_folder(filename);
 			std::ofstream file(filename, std::ios::out|std::ios::binary);
@@ -366,12 +374,12 @@ public:
 			for(uint domain=0u; domain<D; domain++) buffers[domain]->enqueue_write_to_device();
 			for(uint domain=0u; domain<D; domain++) buffers[domain]->finish_queue();
 		}
-		inline void write_host_to_vtk(const string& path="") { // write binary .vtk file
-			write_vtk(default_filename(path, name, ".vtk", lbm->get_t()));
+		inline void write_host_to_vtk(const string& path="", const bool convert_to_si_units=true) { // write binary .vtk file
+			write_vtk(default_filename(path, name, ".vtk", lbm->get_t()), convert_to_si_units);
 		}
-		inline void write_device_to_vtk(const string& path="") { // write binary .vtk file
+		inline void write_device_to_vtk(const string& path="", const bool convert_to_si_units=true) { // write binary .vtk file
 			read_from_device();
-			write_host_to_vtk(path);
+			write_host_to_vtk(path, convert_to_si_units);
 		}
 	};
 
@@ -502,7 +510,7 @@ public:
 
 	void voxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S, const float3& rotation_center=float3(0.0f), const float3& linear_velocity=float3(0.0f), const float3& rotational_velocity=float3(0.0f)); // voxelize mesh
 	void unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // remove voxelized triangle mesh from LBM grid
-	void write_mesh_to_vtk(const Mesh* mesh, const string& path="") const; // write mesh to binary .vtk file
+	void write_mesh_to_vtk(const Mesh* mesh, const string& path="", const bool convert_to_si_units=true) const; // write mesh to binary .vtk file
 	void voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file
 	void voxelize_stl(const string& path, const float3x3& rotation, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center)
 	void voxelize_stl(const string& path, const float3& center, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (no rotation)

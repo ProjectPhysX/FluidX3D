@@ -113,9 +113,20 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed flickering with frustrum culling at very small field of view
   - fixed bug where rendered/exported frame was not updated when `visualization_modes` changed
 - v2.12 (18.01.2024)
-  - significantly (~3x) faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
+  - ~3x faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
   - significantly faster simulation initialization (~40% single-GPU, ~15% multi-GPU)
   - minor bug fix in `Memory_Container::reset()` function
+- v2.13 (11.02.2024)
+  - data in exported `.vtk` files is now automatically converted to SI units
+  - ~2x faster `.vtk` export with multithreading
+  - added unit conversion functions for `TEMPERATURE` extension
+  - fixed graphical artifacts with axis-aligned camera in raytracing
+  - fixed `get_exe_path()` for macOS
+  - fixed X11 multi-monitor issues on Linux
+  - workaround for Nvidia driver bug: `enqueueFillBuffer` is broken for large buffers on Nvidia GPUs
+  - fixed slow numeric drift issues caused by `-cl-fast-relaxed-math`
+  - fixed wrong Maximum Allocation Size reporting in `LBM::write_status()`
+  - fixed missing scaling of coordinates to SI units in `LBM::write_mesh_to_vtk()`
 
 </details>
 
@@ -218,7 +229,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 
   - domain decomposition allows pooling VRAM from multiple GPUs for much larger grid resolution
   - each domain (GPU) can hold up to 4.29 billion (2³², 1624³) lattice points (225 GB memory)
-  - GPUs don't have to be identical (not even from the same vendor), but similar VRAM capacity/bandwidth is recommended
+  - GPUs don't have to be identical (<a href="https://youtu.be/PscbxGVs52o">not even from the same vendor</a>), but similar VRAM capacity/bandwidth is recommended
   - domain communication architecture (simplified)
     ```diff
     ++   .-----------------------------------------------------------------.   ++
@@ -339,7 +350,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - FluidX3D can do simulations so large that storing the volumetric data for later rendering becomes unmanageable (like 120GB for a single frame, hundreds of TeraByte for a video)
 - instead, FluidX3D allows [rendering raw simulation data directly in VRAM](https://www.researchgate.net/publication/360501260_Combined_scientific_CFD_simulation_and_interactive_raytracing_with_OpenCL), so no large volumetric files have to be exported to the hard disk (see my [technical talk](https://youtu.be/pD8JWAZ2f8o))
 - the rendering is so fast that it works interactively in real time for both rasterization and raytracing
-- if no monitor is available (like on a remote Linux server), there is an ASCII rendering mode to interactively visualize the simulation in the terminal (even in WSL and/or through SSH)
+- rasterization and raytracing are done in OpenCL and work on all GPUs, even the ones without RTX/DXR raytracing cores or without any rendering hardware at all (like A100, MI200, ...)
+- if no monitor is available (like on a remote Linux server), there is an [ASCII rendering mode](https://youtu.be/pD8JWAZ2f8o&t=1456) to interactively visualize the simulation in the terminal (even in WSL and/or through SSH)
 - rendering is fully multi-GPU-parallelized via seamless domain decomposition rasterization
 - with interactive graphics mode disabled, image resolution can be as large as VRAM allows for (4K/8K/16K and above)
 - (interacitive) visualization modes:
@@ -365,8 +377,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - native cross-vendor multi-GPU implementation
   - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
   - single-node parallelization, so no MPI installation required
-  - GPUs don't even have to be from the same vendor, but similar memory capacity and bandwidth are recommended
-- works in [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux) with C++17, with limited support also for [macOS](DOCUMENTATION.md#macos) and [Android](DOCUMENTATION.md#android)
+  - [GPUs don't even have to be from the same vendor](https://youtu.be/PscbxGVs52o), but similar memory capacity and bandwidth are recommended
+- works on [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux--macos--android) with C++17, with limited support also for [macOS](DOCUMENTATION.md#linux--macos--android) and [Android](DOCUMENTATION.md#linux--macos--android)
 - supports [importing and voxelizing triangle meshes](DOCUMENTATION.md#loading-stl-files) from binary `.stl` files, with fast GPU voxelization
 - supports [exporting volumetric data](DOCUMENTATION.md#data-export) as binary `.vtk` files
 - supports [exporting triangle meshes](DOCUMENTATION.md#data-export) as binary `.vtk` files
@@ -440,13 +452,15 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                   |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
 | 🟢&nbsp;L40S                                     |              91.61 |          48 |          864 |             3788 (67%) |              7637 (68%) |              7617 (68%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Ti&nbsp;Super |         44.10 |          16 |          672 |             3694 (84%) |              6435 (74%) |              7295 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070               |              29.15 |          12 |          504 |             2646 (80%) |              4548 (69%) |              5016 (77%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080M              |              33.85 |          12 |          432 |             2577 (91%) |              5086 (91%) |              5114 (91%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090&nbsp;Ti       |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090               |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;Ti       |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;12GB     |              32.26 |          12 |          912 |             5071 (85%) |              9657 (81%) |              8615 (73%) |
 | 🟢&nbsp;RTX&nbsp;A6000                           |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
-| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080               |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;10GB     |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3070               |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060&nbsp;Ti       |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
 | 🟢&nbsp;RTX&nbsp;A4000                           |              19.17 |          16 |          448 |             2500 (85%) |              4945 (85%) |              4664 (80%) |
@@ -457,15 +471,15 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050M              |               7.13 |           4 |          192 |             1180 (94%) |              2339 (94%) |              2016 (81%) |
 | 🟢&nbsp;Titan&nbsp;RTX                           |              16.31 |          24 |          672 |             3471 (79%) |              7456 (85%) |              7554 (87%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;6000                |              16.31 |          24 |          672 |             3307 (75%) |              6836 (78%) |              6879 (79%) |
-| 🟢&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pass.     |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
+| 🟢&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Passive   |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti       |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
-| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Sup.     |              11.34 |           8 |          496 |             2434 (75%) |              5284 (82%) |              5087 (79%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Super    |              11.34 |           8 |          496 |             2434 (75%) |              5284 (82%) |              5087 (79%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;5000                |              11.15 |          16 |          448 |             2341 (80%) |              4766 (82%) |              4773 (82%) |
-| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;Sup.     |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;Super    |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;4000                |               7.12 |           8 |          416 |             2284 (84%) |              4584 (85%) |              4062 (75%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;KO       |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060               |               6.74 |           6 |          336 |             1681 (77%) |              3604 (83%) |              3571 (82%) |
-| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Sup.     |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Super    |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
 | 🟢&nbsp;Tesla&nbsp;T4                            |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Ti       |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660               |               5.07 |           6 |          192 |             1016 (81%) |              1924 (77%) |              1992 (80%) |

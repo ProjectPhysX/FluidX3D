@@ -24,31 +24,16 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 - Compile and run by clicking the <kbd>► Local Windows Debugger</kbd> button.
 - To select a specific GPU, open Windows CMD in the `FluidX3D` folder (type `cmd` in File Explorer in the directory field and press <kbd>Enter</kbd>), then run `bin\FluidX3D.exe 0` to select device `0`. You can also select multiple GPUs with `bin\FluidX3D.exe 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 
-### Linux
+### Linux / macOS / Android
 - Compile and run with:
   ```bash
   chmod +x make.sh
   ./make.sh
   ```
 - Compiling requires [`g++`](https://gcc.gnu.org/) with `C++17`, which is supported since version `8` (check with `g++ --version`). If you have [`make`](https://www.gnu.org/software/make/) installed (check with `make --version`), compiling will will be faster using multiple CPU cores; otherwise compiling falls back to using a single CPU core.
-- If you use [`INTERACTIVE_GRAPHICS`](src/defines.hpp), select [`TARGET=Linux-X11`](make.sh#L3) in [`make.sh`](make.sh#L3).
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
-
-### macOS
-- Select [`TARGET=macOS`](make.sh#L5) in [`make.sh`](make.sh#L5).
-- Compile and run with:
-  ```bash
-  chmod +x make.sh
-  ./make.sh
-  ```
-
-### Android
-- Select [`TARGET=Android`](make.sh#L6) in [`make.sh`](make.sh#L6).
-- Compile and run with:
-  ```bash
-  chmod +x make.sh
-  ./make.sh
-  ```
+- Operating system (Linux/macOS/Android) and X11 support (required for [`INTERACTIVE_GRAPHICS`](src/defines.hpp)) are detected automatically. In case problems arise, you can still manually select [`target=...`](make.sh#L13) in [`make.sh`](make.sh#L13).
+- On macOS and Android, [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
 
 <br>
 
@@ -115,7 +100,10 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   ```c
   const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 2000u);
   ```
-  This takes as inputs the desired aspect ratio of the simulation box and the VRAM occupation in MB, and returns the grid resolution as a `uint3` with `.x`/`.y`/`.z` components. You can also directly feed the `uint3` into the LBM constructor as resolution: `LBM lbm(lbm_N, nu, ...);`
+  This takes as inputs the desired aspect ratio of the simulation box and the VRAM occupation in MB, and returns the grid resolution as a `uint3` with `.x`/`.y`/`.z` components. You can also directly feed the `uint3` into the LBM constructor as resolution:
+  ```c
+  LBM lbm(lbm_N, nu, ...);
+  ```
 
 ### Unit Conversion
 - The LBM simulation uses a different unit system from SI units, where density `rho=1` and velocity `u≈0.001-0.1`, because floating-point arithmetic is most accurate close to `1`.
@@ -235,6 +223,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
   lbm.write_mesh_to_vtk(const Mesh* mesh); // for exporting triangle meshes
   ```
 - These functions first pull the data from the GPU(s) into CPU RAM, and then write it to the hard drive.
+- If [unit conversion](#unit-conversion) with `units.set_m_kg_s(...)` was specified, the data in exported `.vtk` files is automaticlally converted to SI units.
 - Exported files will automatically be assigned the current simulation time step in their name, in the format `bin/export/u-123456789.vtk`.
 - Be aware that these volumetric files can be gigantic in file size, tens of GigaByte for a single file.
 - You can view/evaluate the `.vtk` files for example in [ParaView](https://www.paraview.org/).
