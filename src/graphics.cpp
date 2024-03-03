@@ -67,24 +67,15 @@ void set_light(const uint i, const float3& position) {
 	}
 }
 int shading(const int color, const float3& p, const float3& normal, const bool translucent=false) {
-	const float snb = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one sqrt instead of two
+	const float nl2 = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one sqrt instead of two
 	float br = 0.0f;
 	for(uint i=0u; i<light_sources_n; i++) {
 		const float3 d = light_sources[i]-p; // direction of light source
-		const float sdb = sq(d.x)+sq(d.y)+sq(d.z);
-		const float nbr = dot(d, normal)/sqrt(snb*sdb);
-		br = fmax(br, translucent ? abs(nbr) : nbr);
+		const float dl2 = sq(d.x)+sq(d.y)+sq(d.z);
+		const float bri = dot(d, normal)/sqrt(nl2*dl2);
+		br = fmax(br, translucent ? fabs(bri) : bri);
 	}
-	br = fmax(0.2f, br);
-	return ::color((int)(br*(float)red(color)), (int)(br*(float)green(color)), (int)(br*(float)blue(color)));
-}
-int color_mix_3(const int c0, const int c1, const int c2, const float w0, const float w1, const float w2) { // w0+w1+w2 = 1
-	const int r0=red(c0), g0=green(c0), b0=blue(c0);
-	const int r1=red(c1), g1=green(c1), b1=blue(c1);
-	const int r2=red(c2), g2=green(c2), b2=blue(c2);
-	const float3 fc0=float3((float)r0, (float)g0, (float)b0),  fc1=float3((float)r1, (float)g1, (float)b1), fc2=float3((float)r2, (float)g2, (float)b2);
-	const float3 fcm = w0*fc0+(w1*fc1+(w2*fc2+float3(0.5f, 0.5f, 0.5f)));
-	return ::color((int)fcm.x, (int)fcm.y, (int)fcm.z);
+	return color_mul(color, fmax(1.25f*br, 0.3f));
 }
 ulong get_font_pixels(const int character) {
 	ulong pixels[224] = { // font data (my own 6x11 monospace font)
@@ -330,6 +321,17 @@ void draw_label(const int x, const int y, const string& s, const int color) {
 		}
 		if(x+(int)camera.width/2<(int)camera.width) {
 			draw_text(x+(int)camera.width/2, y, s, color);
+		}
+	}
+}
+void draw_line_label(const int x0, const int y0, const int x1, const int y1, const int color) {
+	draw_line(x0, y0, x1, y1, color);
+	if(camera.vr) {
+		if((x0+x1)/2-camera.width/2>0) {
+			draw_line(x0-(int)camera.width/2, y0, x1-(int)camera.width/2, y1, color);
+		}
+		if((x0+x1)/2+(int)camera.width/2<(int)camera.width) {
+			draw_line(x0+(int)camera.width/2, y0, x1+(int)camera.width/2, y1, color);
 		}
 	}
 }

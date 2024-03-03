@@ -78,6 +78,7 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 | <kbd>6</kbd>              | raytraced free surface                                                                                                             |
 | <kbd>7</kbd>              | particles                                                                                                                          |
 | <kbd>T</kbd>              | toggle slice visualization mode                                                                                                    |
+| <kbd>Z</kbd>              | toggle field visualization mode                                                                                                    |
 | <kbd>Q</kbd> <kbd>E</kbd> | move slice in slice visualization mode                                                                                             |
 
 <br>

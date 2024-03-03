@@ -2,7 +2,7 @@ Copyright (c) 2022-2024 Dr. Moritz Lehmann
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to use this software for public research, education or personal use, and to alter it and redistribute it freely, subject to the following restrictions:
 
-1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+1. The [origin of this software](https://github.com/ProjectPhysX/FluidX3D) must not be misrepresented; you must not claim that you wrote the original software. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
 2. Commercial use is not allowed. You may not sell this software, altered source versions, any part thereof or any of the rights granted to you under the license. You may not provide to third parties, for a fee or other consideration (including without limitation fees for hosting or consulting/support services related to the software), a product or service whose value derives from the functionality of this software, altered source versions or any part thereof, unless explicit permission is granted to you by the copyright owner.
 3. Military use is not allowed. You may not use this software, altered source versions or any part thereof for military research or any military or defense industry purposes, or within a military institution.
 4. You may not train AI models on the source code of this software, altered source versions or any part thereof.
