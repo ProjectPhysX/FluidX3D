@@ -79,6 +79,11 @@ public:
 		R.xx =  cosrx;       R.xy =  sinrx;       R.xz = 0.0f;
 		R.yx =  sinrx*sinry; R.yy = -cosrx*sinry; R.yz = cosry;
 		R.zx = -sinrx*cosry; R.zy =  cosrx*cosry; R.zz = sinry;
+		if(!free) {
+			pos.x = R.zx*dis/zoom;
+			pos.y = R.zy*dis/zoom;
+			pos.z = R.zz*dis/zoom;
+		}
 	}
 	void set_key_state(const int key, const bool state) {
 		key_state[clamp(256+key, 0, 511)] = state;
@@ -329,6 +334,7 @@ void set_light(const uint i, const float3& p);
 
 void draw_bitmap(const int* bitmap);
 void draw_label(const int x, const int y, const string& s, const int color);
+void draw_line_label(const int x0, const int y0, const int x1, const int y1, const int color);
 
 void draw_pixel(const int x, const int y, const int color); // 2D drawing functions
 void draw_circle(const int x, const int y, const int r, const int color);

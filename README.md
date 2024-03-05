@@ -8,40 +8,40 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
 
 <details><summary>Update History</summary>
 
-- v1.0 (04.08.2022)
-  - initial release
-- v1.1 (29.09.2022)
+- [v1.0](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.0) (04.08.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/commit/768073501af725e392a4b85885009e2fa6400e48) (public release)
+  - public release
+- [v1.1](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.1) (29.09.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.0...v1.1) (GPU voxelization)
   - added solid voxelization on GPU (slow algorithm)
-  - added tool to print current camera position (key <kbd>H</kbd>)
+  - added tool to print current camera position (key <kbd>G</kbd>)
   - minor bug fix (workaround for Intel iGPU driver bug with triangle rendering)
-- v1.2 (24.10.2022)
+- [v1.2](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.2) (24.10.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.1...v1.2) (force/torque compuatation)
   - added functions to compute force/torque on objects
   - added function to translate Mesh
   - added Stokes drag validation setup
-- v1.3 (10.11.2022)
+- [v1.3](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.3) (10.11.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.2...v1.3) (minor bug fixes)
   - added unit conversion functions for torque
   - `FORCE_FIELD` and `VOLUME_FORCE` can now be used independently
   - minor bug fix (workaround for AMD legacy driver bug with binary number literals)
-- v1.4 (14.12.2022)
+- [v1.4](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.4) (14.12.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.3...v1.4) (Linux graphics)
   - complete rewrite of C++ graphics library to minimize API dependencies
   - added interactive graphics mode on Linux with X11
   - fixed streamline visualization bug in 2D
-- v2.0 (09.01.2023)
+- [v2.0](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.0) (09.01.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.4...v2.0) (multi-GPU upgrade)
   - added (cross-vendor) multi-GPU support on a single node (PC/laptop/server)
-- v2.1 (15.01.2023)
+- [v2.1](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.1) (15.01.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.0...v2.1) (fast voxelization)
   - made solid voxelization on GPU lightning fast (new algorithm, from minutes to milliseconds)
-- v2.2 (20.01.2023)
+- [v2.2](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.0) (20.01.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.1...v2.2) (velocity voxelization)
   - added option to voxelize moving/rotating geometry on GPU, with automatic velocity initialization for each grid point based on center of rotation, linear velocity and rotational velocity
   - cells that are converted from solid->fluid during re-voxelization now have their DDFs properly initialized
   - added option to not auto-scale mesh during `read_stl(...)`, with negative `size` parameter
   - added kernel for solid boundary rendering with marching-cubes
-- v2.3 (30.01.2023)
+- [v2.3](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.3) (30.01.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.2...v2.3) (particles)
   - added particles with immersed-boundary method (either passive or 2-way-coupled, only supported with single-GPU)
   - minor optimization to GPU voxelization algorithm (workgroup threads outside mesh bounding-box return after ray-mesh intersections have been found)
   - displayed GPU memory allocation size is now fully accurate
   - fixed bug in `write_line()` function in `src/utilities.hpp`
   - removed `.exe` file extension for Linux/macOS
-- v2.4 (11.03.2023)
+- [v2.4](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.4) (11.03.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.3...v2.4) (UI improvements)
   - added a help menu with key <kbd>H</kbd> that shows keyboard/mouse controls, visualization settings and simulation stats
   - improvements to keyboard/mouse control (<kbd>+</kbd>/<kbd>-</kbd> for zoom, <kbd>mouseclick</kbd> frees/locks cursor)
   - added suggestion of largest possible grid resolution if resolution is set larger than memory allows
@@ -51,14 +51,14 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in make.sh where multi-GPU device IDs would not get forwarded to the executable
   - minor bug fixes in graphics engine (free cursor not centered during rotation, labels in VR mode)
   - fixed bug in `LBM::voxelize_stl()` size parameter standard initialization
-- v2.5 (11.04.2023)
+- [v2.5](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.5) (11.04.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.4...v2.5) (raytracing overhaul)
   - implemented light absorption in fluid for raytracing graphics (no performance impact)
   - improved raytracing framerate when camera is inside fluid
   - fixed skybox pole flickering artifacts
   - fixed bug where moving objects during re-voxelization would leave an erroneous trail of solid grid cells behind
-- v2.6 (16.04.2023)
+- [v2.6](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.6) (16.04.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.5...v2.6) (Intel Arc patch)
   - patched OpenCL issues of Intel Arc GPUs: now VRAM allocations >4GB are possible and correct VRAM capacity is reported
-- v2.7 (29.05.2023)
+- [v2.7](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.7) (29.05.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.6...v2.7) (visualization upgrade)
   - added slice visualization (key <kbd>2</kbd> / key <kbd>3</kbd> modes, then switch through slice modes with key <kbd>T</kbd>, move slice with keys <kbd>Q</kbd>/<kbd>E</kbd>)
   - made flag wireframe / solid surface visualization kernels toggleable with key <kbd>1</kbd>
   - added surface pressure visualization (key <kbd>1</kbd> when `FORCE_FIELD` is enabled and `lbm.calculate_force_on_boundaries();` is called)
@@ -69,7 +69,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - reverted back to separate `cl::Context` for each OpenCL device, as the shared Context otherwise would allocate extra VRAM on all other unused Nvidia GPUs
   - removed Debug and x86 configurations from Visual Studio solution file (one less complication for compiling)
   - fixed bug that particles could get too close to walls and get stuck, or leave the fluid phase (added boundary force)
-- v2.8 (24.06.2023)
+- [v2.8](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.8) (24.06.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.7...v2.8) (documentation + polish)
   - finally added more [documentation](DOCUMENTATION.md)
   - cleaned up all sample setups in `setup.cpp` for more beginner-friendliness, and added required extensions in `defines.hpp` as comments to all setups
   - improved loading of composite `.stl` geometries, by adding an option to omit automatic mesh repositioning, added more functionality to `Mesh` struct in `utilities.hpp`
@@ -87,7 +87,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in Q-criterion rendering of halo data in multi-GPU mode, reduced gap width between domains
   - removed shared memory optimization from mesh voxelization kernel, as it crashes on Nvidia GPUs with new GPU drivers and is incompatible with old OpenCL 1.0 GPUs
   - fixed raytracing attenuation color when no surface is at the simulation box walls with periodic boundaries
-- v2.9 (31.07.2023)
+- [v2.9](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.9) (31.07.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.8...v2.9) (multithreading)
   - added cross-platform `parallel_for` implementation in `utilities.hpp` using `std::threads`
   - significantly (>4x) faster simulation startup with multithreaded geometry initialization and sanity checks
   - faster `calculate_force_on_object()` and `calculate_torque_on_object()` functions with multithreading
@@ -95,7 +95,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in voxelization ray direction for re-voxelizing rotating objects
   - fixed bug in `Mesh::get_bounding_box_size()`
   - fixed bug in `print_message()` function in `utilities.hpp`
-- v2.10 (05.11.2023)
+- [v2.10](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.10) (05.11.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.9...v2.10) (frustrum culling)
   - improved rasterization performance via frustrum culling when only part of the simulation box is visible
   - improved switching between centered/free camera mode
   - refactored OpenCL rendering library
@@ -106,17 +106,17 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - replaced slow (in multithreading) `std::rand()` function with standard C99 LCG
   - more robust correction of wrong VRAM capacity reporting on Intel Arc GPUs
   - fixed some minor compiler warnings
-- v2.11 (07.12.2023)
+- [v2.11](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.11) (07.12.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.10...v2.11) (improved Linux graphics)
   - interactive graphics on Linux are now in fullscreen mode too, fully matching Windows
   - made CPU/GPU buffer initialization significantly faster with `std::fill` and `enqueueFillBuffer` (overall ~8% faster simulation startup)
   - added operating system info to OpenCL device driver version printout
   - fixed flickering with frustrum culling at very small field of view
   - fixed bug where rendered/exported frame was not updated when `visualization_modes` changed
-- v2.12 (18.01.2024)
+- [v2.12](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.12) (18.01.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.11...v2.12) (faster startup)
   - ~3x faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
   - significantly faster simulation initialization (~40% single-GPU, ~15% multi-GPU)
   - minor bug fix in `Memory_Container::reset()` function
-- v2.13 (11.02.2024)
+- [v2.13](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.13) (11.02.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.12...v2.13) (improved .vtk export)
   - data in exported `.vtk` files is now automatically converted to SI units
   - ~2x faster `.vtk` export with multithreading
   - added unit conversion functions for `TEMPERATURE` extension
@@ -127,6 +127,16 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed slow numeric drift issues caused by `-cl-fast-relaxed-math`
   - fixed wrong Maximum Allocation Size reporting in `LBM::write_status()`
   - fixed missing scaling of coordinates to SI units in `LBM::write_mesh_to_vtk()`
+- [v2.14](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.14) (03.03.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.13...v2.14) (visualization upgrade)
+  - coloring can now be switched between velocity/density/temperature with key <kbd>Z</kbd>
+  - uniform improved color palettes for velocity/density/temperature visualization
+  - color scale with automatic unit conversion can now be shown with key <kbd>H</kbd>
+  - slice mode for field visualization now draws fully filled-in slices instead of only lines for velocity vectors
+  - shading in `VIS_FLAG_SURFACE` and `VIS_PHI_RASTERIZE` modes is smoother now
+  - `make.sh` now automatically detects operating system and X11 support on Linux and only runs FluidX3D if last compilation was successful
+  - fixed compiler warnings on Android
+  - fixed `make.sh` failing on some systems due to nonstandard interpreter path
+  - fixed that `make` would not compile with multiple cores on some systems
 
 </details>
 

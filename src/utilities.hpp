@@ -2973,6 +2973,15 @@ inline int color(const int red, const int green, const int blue) {
 inline int color(const int red, const int green, const int blue, const int alpha) {
 	return (alpha&255)<<24|(red&255)<<16|(green&255)<<8|(blue&255);
 }
+inline int color(const float red, const float green, const float blue) {
+	return clamp((int)(255.0f*red+0.5f), 0, 255)<<16|clamp((int)(255.0f*green+0.5f), 0, 255)<<8|clamp((int)(255.0f*blue+0.5f), 0, 255);
+}
+inline int color(const float red, const float green, const float blue, const float alpha) {
+	return clamp((int)(255.0f*alpha+0.5f), 0, 255)<<24|clamp((int)(255.0f*red+0.5f), 0, 255)<<16|clamp((int)(255.0f*green+0.5f), 0, 255)<<8|clamp((int)(255.0f*blue+0.5f), 0, 255);
+}
+inline int color(const float3 rgb) {
+	return color(rgb.x, rgb.y, rgb.z);
+}
 inline int red(const int color) {
 	return (color>>16)&255;
 }
@@ -2990,30 +2999,40 @@ inline int brightness(const int color) {
 }
 inline int grayscale(const int color) {
 	const int b = brightness(color);
-	return ::color(b, b, b);
+	return b<<16|b<<8|b;
 }
 inline int invert(const int color) { // invert color
-	return ::color(255-red(color), 255-green(color), 255-blue(color));
+	return (255-red(color))<<16|(255-green(color))<<8|(255-blue(color));
 }
 inline int invert_brightness(const int color) { // invert brightness, but retain color
 	const int r = red(color), g=green(color), b=blue(color);
 	return ::color(255-(g+b)/2, 255-(r+b)/2, 255-(r+g)/2);
 }
-inline int color_average(const int c1, const int c2) {
-	const int r1=red(c1), g1=green(c1), b1=blue(c1);
-	const int r2=red(c2), g2=green(c2), b2=blue(c2);
-	return color((r1+r2)/2, (g1+g2)/2, (b1+b2)/2);
+inline int color_mul(const int c, const float x) { // c*x
+	const int r = min((int)fma((float)red  (c), x, 0.5f), 255);
+	const int g = min((int)fma((float)green(c), x, 0.5f), 255);
+	const int b = min((int)fma((float)blue (c), x, 0.5f), 255);
+	return r<<16|g<<8|b; // values are already clamped
 }
 inline int color_add(const int c1, const int c2) {
 	const int r1=red(c1), g1=green(c1), b1=blue(c1);
 	const int r2=red(c2), g2=green(c2), b2=blue(c2);
-	return color(min(r1+r2, 255), min(g1+g2, 255), min(b1+b2, 255));
+	return min(r1+r2, 255)<<16|min(g1+g2, 255)<<8|min(b1+b2, 255); // values are already clamped
 }
-inline int color_dim(const int c, const float x) {
-	const int r = clamp((int)fma((float)red  (c), x, 0.5f), 0, 255);
-	const int g = clamp((int)fma((float)green(c), x, 0.5f), 0, 255);
-	const int b = clamp((int)fma((float)blue (c), x, 0.5f), 0, 255);
-	return color(r, g, b);
+inline int color_average(const int c1, const int c2) {
+	const int r1=red(c1), g1=green(c1), b1=blue(c1);
+	const int r2=red(c2), g2=green(c2), b2=blue(c2);
+	return ((r1+r2)/2)<<16|((g1+g2)/2)<<8|((b1+b2)/2);
+}
+inline int color_mix(const int c1, const int c2, const float w) { // w*c1+(1-w)*c2
+	const float3 fc1=float3((float)red(c1), (float)green(c1), (float)blue(c1)), fc2=float3((float)red(c2), (float)green(c2), (float)blue(c2));
+	const float3 fcm = w*fc1+(1.0f-w)*fc2+0.5f;
+	return color((int)fcm.x, (int)fcm.y, (int)fcm.z);
+}
+inline int color_mix_3(const int c0, const int c1, const int c2, const float w0, const float w1, const float w2) { // w1*c1+w2*c2+w3*c3, w0+w1+w2 = 1
+	const float3 fc0=float3((float)red(c0), (float)green(c0), (float)blue(c0)),  fc1=float3((float)red(c1), (float)green(c1), (float)blue(c1)), fc2=float3((float)red(c2), (float)green(c2), (float)blue(c2));
+	const float3 fcm = w0*fc0+w1*fc1+w2*fc2+0.5f;
+	return color((int)fcm.x, (int)fcm.y, (int)fcm.z);
 }
 inline float3 rgb_to_hsv(const int red, const int green, const int blue) {
 	const int cmax = max(max(red, green), blue);
@@ -3028,7 +3047,7 @@ inline float3 rgb_to_hsv(const int red, const int green, const int blue) {
 inline float3 rgb_to_hsv(const int color) {
 	return rgb_to_hsv(red(color), green(color), blue(color));
 }
-inline uint hsv_to_rgb(const float h, const float s, const float v) {
+inline int hsv_to_rgb(const float h, const float s, const float v) {
 	const float c = v*s;
 	const float x = c*(1.0f-fabs(fmod(h/60.0f, 2.0f)-1.0f));
 	const float m = v-c;
@@ -3039,10 +3058,54 @@ inline uint hsv_to_rgb(const float h, const float s, const float v) {
 	else if(h<240.0f) { g = x; b = c; }
 	else if(h<300.0f) { r = x; b = c; }
 	else if(h<360.0f) { r = c; b = x; }
-	return color((uchar)((r+m)*255.0f), (uchar)((g+m)*255.0f), (uchar)((b+m)*255.0f));
+	return color(r+m, g+m, b+m);
 }
-inline uint hsv_to_rgb(const float3& hsv) {
+inline int hsv_to_rgb(const float3& hsv) {
 	return hsv_to_rgb(hsv.x, hsv.y, hsv.z);
+}
+inline int colorscale_rainbow(float x) { // coloring scheme (float [0, 1] -> int color)
+	x = clamp(6.0f*(1.0f-x), 0.0f, 6.0f);
+	float r=0.0f, g=0.0f, b=0.0f; // black
+	if(x<1.2f) { // red - yellow
+		r = 1.0f;
+		g = x*0.83333333f;
+	} else if(x>=1.2f&&x<2.0f) { // yellow - green
+		r = 2.5f-x*1.25f;
+		g = 1.0f;
+	} else if(x>=2.0f&&x<3.0f) { // green - cyan
+		g = 1.0f;
+		b = x-2.0f;
+	} else if(x>=3.0f&&x<4.0f) { // cyan - blue
+		g = 4.0f-x;
+		b = 1.0f;
+	} else if(x>=4.0f&&x<5.0f) { // blue - violet
+		r = x*0.4f-1.6f;
+		b = 3.0f-x*0.5f;
+	} else { // violet - black
+		r = 2.4f-x*0.4f;
+		b = 3.0f-x*0.5f;
+	}
+	return color(r, g, b);
+}
+inline int colorscale_iron(float x) { // coloring scheme (float [0, 1] -> int color)
+	x = clamp(4.0f*(1.0f-x), 0.0f, 4.0f);
+	float r=1.0f, g=0.0f, b=0.0f;
+	if(x<0.66666667f) { // white - yellow
+		g = 1.0f;
+		b = 1.0f-x*1.5f;
+	} else if(x<2.0f) { // yellow - red
+		g = 1.5f-x*0.75f;
+	} else if(x<3.0f) { // red - violet
+		r = 2.0f-x*0.5f;
+		b = x-2.0f;
+	} else { // violet - black
+		r = 2.0f-x*0.5f;
+		b = 4.0f-x;
+	}
+	return color(r, g, b);
+}
+inline int colorscale_twocolor(float x) { // coloring scheme (float [0, 1] -> int color)
+	return x>0.5f ? color_mix(0xFFAA00, 0x181818, clamp(2.0f*x-1.0f, 0.0f, 1.0f)) : color_mix(0x181818, 0x0080FF, clamp(2.0f*x, 0.0f, 1.0f)); // red - gray - blue
 }
 
 #define color_black      0

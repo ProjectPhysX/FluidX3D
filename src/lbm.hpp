@@ -15,7 +15,7 @@ string default_filename(const string& path, const string& name, const string& ex
 string default_filename(const string& name, const string& extension, const ulong t); // generate a default filename with timestamp at exe_path/export/
 
 #pragma warning(disable:26812)
-enum enum_transfer_field { fi, rho_u_flags, flags, phi_massex_flags, gi, enum_transfer_field_length };
+enum enum_transfer_field { fi, rho_u_flags, flags, phi_massex_flags, gi, T, enum_transfer_field_length };
 
 class LBM_Domain {
 private:
@@ -150,6 +150,7 @@ public:
 		Kernel kernel_graphics_flags; // render flag lattice with wireframe
 		Kernel kernel_graphics_flags_mc; // render flag lattice with marching-cubes
 		Kernel kernel_graphics_field; // render a colored velocity vector for each cell
+		Kernel kernel_graphics_field_slice; // render one slice of velocity field according to slics settings
 		Kernel kernel_graphics_streamline; // render streamlines
 		Kernel kernel_graphics_q; // render vorticity (Q-criterion)
 
@@ -185,7 +186,7 @@ public:
 			return *this;
 		}
 		void allocate(Device& device); // allocate memory for bitmap and zbuffer
-		bool enqueue_draw_frame(const int visualization_modes, const int slice_mode=0, const int slice_x=0, const int slice_y=0, const int slice_z=0, const bool visualization_change=true); // main rendering function, calls rendering kernels, returns true if new frame is rendered, false if old frame is returned when camera has not moved
+		bool enqueue_draw_frame(const int visualization_modes, const int field_mode=0, const int slice_mode=0, const int slice_x=0, const int slice_y=0, const int slice_z=0, const bool visualization_change=true); // main rendering function, calls rendering kernels, returns true if new frame is rendered, false if old frame is returned when camera has not moved
 		int* get_bitmap(); // returns pointer to bitmap
 		int* get_zbuffer(); // returns pointer to zbuffer
 		string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
@@ -217,6 +218,7 @@ private:
 #endif // SURFACE
 #ifdef TEMPERATURE
 	void communicate_gi();
+	void communicate_T();
 #endif // TEMPERATURE
 
 public:
@@ -365,7 +367,7 @@ public:
 		inline const T operator()(const ulong i, const uint dimension) const { return reference(i, dimension); } // array of structures
 		inline void read_from_device() {
 #ifndef UPDATE_FIELDS
-			for(uint domain=0u; domain<D; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
+			for(uint domain=0u; domain<D; domain++) lbm->lbm_domain[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
 #endif // UPDATE_FIELDS
 			for(uint domain=0u; domain<D; domain++) buffers[domain]->enqueue_read_from_device();
 			for(uint domain=0u; domain<D; domain++) buffers[domain]->finish_queue();
@@ -383,7 +385,7 @@ public:
 		}
 	};
 
-	LBM_Domain** lbm; // one LBM object per domain
+	LBM_Domain** lbm_domain; // one LBM domain per GPU
 
 	Memory_Container<float> rho; // density of every cell
 	Memory_Container<float> u; // velocity of every cell
@@ -435,20 +437,20 @@ public:
 	uint get_Dy() const { return Dy; } // get lattice domains in y-direction
 	uint get_Dz() const { return Dz; } // get lattice domains in z-direction
 	uint get_D() const { return Dx*Dy*Dz; } // get number of lattice domains
-	float get_nu() const { return lbm[0]->get_nu(); } // get kinematic shear viscosity
+	float get_nu() const { return lbm_domain[0]->get_nu(); } // get kinematic shear viscosity
 	float get_tau() const { return 3.0f*get_nu()+0.5f; } // get LBM relaxation time
 	float get_Re_max() const { return 0.57735027f*(float)min(min(Nx, Ny), Nz)/get_nu(); } // Re < c*L/nu
-	float get_fx() const { return lbm[0]->get_fx(); } // get global froce per volume
-	float get_fy() const { return lbm[0]->get_fy(); } // get global froce per volume
-	float get_fz() const { return lbm[0]->get_fz(); } // get global froce per volume
-	float get_sigma() const { return lbm[0]->get_sigma(); } // get surface tension coefficient
-	float get_alpha() const { return lbm[0]->get_alpha(); } // get thermal diffusion coefficient
-	float get_beta() const { return lbm[0]->get_beta(); } // get thermal expansion coefficient
-	ulong get_t() const { return lbm[0]->get_t(); } // get discrete time step in LBM units
-	uint get_velocity_set() const { return lbm[0]->get_velocity_set(); }
-	void set_fx(const float fx) { for(uint d=0u; d<get_D(); d++) lbm[d]->set_fx(fx); } // set global froce per volume
-	void set_fy(const float fy) { for(uint d=0u; d<get_D(); d++) lbm[d]->set_fy(fy); } // set global froce per volume
-	void set_fz(const float fz) { for(uint d=0u; d<get_D(); d++) lbm[d]->set_fz(fz); } // set global froce per volume
+	float get_fx() const { return lbm_domain[0]->get_fx(); } // get global froce per volume
+	float get_fy() const { return lbm_domain[0]->get_fy(); } // get global froce per volume
+	float get_fz() const { return lbm_domain[0]->get_fz(); } // get global froce per volume
+	float get_sigma() const { return lbm_domain[0]->get_sigma(); } // get surface tension coefficient
+	float get_alpha() const { return lbm_domain[0]->get_alpha(); } // get thermal diffusion coefficient
+	float get_beta() const { return lbm_domain[0]->get_beta(); } // get thermal expansion coefficient
+	ulong get_t() const { return lbm_domain[0]->get_t(); } // get discrete time step in LBM units
+	uint get_velocity_set() const { return lbm_domain[0]->get_velocity_set(); }
+	void set_fx(const float fx) { for(uint d=0u; d<get_D(); d++) lbm_domain[d]->set_fx(fx); } // set global froce per volume
+	void set_fy(const float fy) { for(uint d=0u; d<get_D(); d++) lbm_domain[d]->set_fy(fy); } // set global froce per volume
+	void set_fz(const float fz) { for(uint d=0u; d<get_D(); d++) lbm_domain[d]->set_fz(fz); } // set global froce per volume
 	void set_f(const float fx, const float fy, const float fz) { set_fx(fx); set_fy(fy); set_fz(fz); } // set global froce per volume
 
 	void coordinates(const ulong n, uint& x, uint& y, uint& z) const { // disassemble 1D linear index to 3D coordinates (n -> x,y,z)
@@ -522,7 +524,7 @@ public:
 		LBM* lbm = nullptr;
 		std::atomic_int running_encoders = 0;
 		uint last_exported_frame = 0u; // for next_frame(...) function
-		int last_visualization_modes=0, last_slice_mode=0, last_slice_x=0, last_slice_y=0, last_slice_z=0; // don't render a new frame if the scene hasn't changed since last frame
+		int last_visualization_modes=0, last_field_mode=0, last_slice_mode=0, last_slice_x=0, last_slice_y=0, last_slice_z=0; // don't render a new frame if the scene hasn't changed since last frame
 		void default_settings() {
 			visualization_modes |= VIS_FLAG_LATTICE;
 #ifdef PARTICLES
@@ -531,7 +533,7 @@ public:
 		}
 
 	public:
-		int visualization_modes=0, slice_mode=0, slice_x=0, slice_y=0, slice_z=0; // slice visualization: mode = { 0 (no slice), 1 (x), 2 (y), 3 (z), 4 (xz), 5 (xyz), 6 (yz), 7 (xy) }, slice_{xyz} = position of slices
+		int visualization_modes=0, field_mode=0, slice_mode=0, slice_x=0, slice_y=0, slice_z=0; // field_mode = { 0 (u), 1 (rho), 2 (T) }, slice_mode = { 0 (no slice), 1 (x), 2 (y), 3 (z), 4 (xz), 5 (xyz), 6 (yz), 7 (xy) }, slice_{xyz} = position of slices
 
 		Graphics() {} // default constructor
 		Graphics(LBM* lbm) {
@@ -556,6 +558,7 @@ public:
 		Graphics& operator=(const Graphics& graphics) { // copy assignment
 			lbm = graphics.lbm;
 			visualization_modes = graphics.visualization_modes;
+			field_mode = graphics.field_mode;
 			slice_mode = graphics.slice_mode;
 			slice_x = graphics.slice_x;
 			slice_y = graphics.slice_y;

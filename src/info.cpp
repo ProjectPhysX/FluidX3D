@@ -18,7 +18,7 @@ void Info::initialize(LBM* lbm) {
 	collision += " (FP32/FP32)";
 #endif // FP32
 	cpu_mem_required = (uint)(lbm->get_N()*(ulong)bytes_per_cell_host()/1048576ull); // reset to get valid values for consecutive simulations
-	gpu_mem_required = lbm->lbm[0]->get_device().info.memory_used;
+	gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
 	print_info("Allocating memory. This may take a few seconds.");
 }
 void Info::append(const ulong steps, const ulong t) {
@@ -40,13 +40,13 @@ double Info::time() const { // returns either elapsed time or remaining time
 void Info::print_logo() const {
 	const int a=color_light_blue, b=color_orange, c=color_pink;
 	print(".-----------------------------------------------------------------------------.\n");
-	print("|                      "); print(  " ______________  ", a);              print(" ______________ ", b);     print("                      |\n");
-	print("|                       "); print( "\\   ________  | ", a);              print("|  ________   /", b);     print("                       |\n");
-	print("|                        "); print("\\  \\       | | ", a);              print("| |       /  /", b);     print("                        |\n");
-	print("|                         "); print("\\  \\      | | ", a);              print("| |      /  /", b);     print("                         |\n");
-	print("|                          "); print("\\  \\     | | ", a);              print("| |     /  /", b);     print("                          |\n");
-	print("|                           "); print("\\  \\_.-\"  | ", a);            print("|  \"-._/  /", b);     print("                           |\n");
-	print("|                            "); print("\\    _.-\" ", a);  print("_ ", c); print("\"-._    /", b);  print("                            |\n");
+	print("|                      "); print(  " ______________  ", a);                  print(" ______________ ", b); print("                      |\n");
+	print("|                       "); print( "\\   ________  | ", a);                  print("|  ________   /", b); print("                       |\n");
+	print("|                        "); print("\\  \\       | | ", a);                  print("| |       /  /", b); print("                        |\n");
+	print("|                         "); print("\\  \\      | | ", a);                  print("| |      /  /", b); print("                         |\n");
+	print("|                          "); print("\\  \\     | | ", a);                  print("| |     /  /", b); print("                          |\n");
+	print("|                           "); print("\\  \\_.-\"  | ", a);                print("|  \"-._/  /", b); print("                           |\n");
+	print("|                            "); print("\\    _.-\" ", a);  print("_ ", c);  print("\"-._    /", b); print("                            |\n");
 	print("|                             "); print("\\.-\" ", a); print("_.-\" \"-._ ", c); print("\"-./", b); print("                             |\n");
 	print("|                              ");                 print(" .-\"  .-\"-.  \"-. ", c);               print("                              |\n");
 	print("|                               ");                 print("\\  v\"     \"v  /", c);               print("                               |\n");
@@ -55,7 +55,7 @@ void Info::print_logo() const {
 	print("|                                  ");                 print("\\  \\ /  /", c);                print("                                  |\n");
 	print("|                                   ");                 print("\\  '  /", c);                 print("                                   |\n");
 	print("|                                    ");                 print("\\   /", c);                 print("                                    |\n");
-	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.13 |\n");
+	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.14 |\n");
 	print("|                                      ");                 print( "'", c);                 print("     Copyright (c) Dr. Moritz Lehmann |\n");
 	print("|-----------------------------------------------------------------------------|\n");
 }
