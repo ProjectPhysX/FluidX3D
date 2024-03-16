@@ -52,7 +52,7 @@ public:
 	float sigma(const float si_sigma) const { return si_sigma*sq(unit_s)/unit_kg; } // surface tension si_sigma = sigma*[kg/s^2]
 	float T(const float si_T) { return si_T/unit_K; } // temperature si_T = T*[K]
 	float alpha(const float si_alpha) { return si_alpha*unit_s/sq(unit_m); } // thermal diffusion coefficient si_alpha = alpha*[m^2/s]
-	float beta(const float si_beta) { return si_beta*unit_K/cb(unit_m); } // (volumetric) thermal expansion coefficient si_beta = beta*[m^3/K]
+	float beta(const float si_beta) { return si_beta*unit_K; } // (volumetric) thermal expansion coefficient si_beta = beta*[1/K]
 
 	// the following methods convert simulation units into SI units (have to be called after set_m_kg_s(...);)
 	float si_x(const uint x) const { return (float)x*unit_m; } // length si_x = x*[m]
@@ -73,7 +73,7 @@ public:
 	float si_sigma(const float sigma) const { return sigma*unit_kg/sq(unit_s); } // surface tension si_sigma = sigma*[kg/s^2]
 	float si_T(const float T) { return T*unit_K; } // temperature si_T = T*[K]
 	float si_alpha(const float alpha) { return alpha*sq(unit_m)/unit_s; } // thermal diffusion coefficient si_alpha = alpha*[m^2/s]
-	float si_beta(const float beta) { return beta*cb(unit_m)/unit_K; } // (volumetric) thermal expansion coefficient si_beta = beta*[m^3/K]
+	float si_beta(const float beta) { return beta/unit_K; } // (volumetric) thermal expansion coefficient si_beta = beta*[1/K]
 
 	// other conversions in simulation units (can be called before set_m_kg_s(...);)
 	float Re(const float si_Re) const { return si_Re; } // Reynolds number Re = x*u/nu = [1] no unit

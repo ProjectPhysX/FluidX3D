@@ -758,8 +758,8 @@ void LBM::sanity_checks_initialization() { // sanity checks during initializatio
 	bool moving_boundaries_used=false, equilibrium_boundaries_used=false, surface_used=false, temperature_used=false; // identify used extensions based used flags
 	const uint threads = thread::hardware_concurrency();
 	vector<uchar> t_flags_used(threads, 0u);
-	vector<bool> t_moving_boundaries_used(threads, false);
-	vector<bool> t_equilibrium_boundaries_used(threads, false);
+	vector<char> t_moving_boundaries_used(threads, false); // don't use vector<bool> as it uses bit-packing which is broken for multithreading
+	vector<char> t_equilibrium_boundaries_used(threads, false); // don't use vector<bool> as it uses bit-packing which is broken for multithreading
 	parallel_for(get_N(), threads, [&](ulong n, uint t) {
 		const uchar flagsn = flags[n];
 		const uchar flagsn_bo = flagsn&(TYPE_S|TYPE_E);
