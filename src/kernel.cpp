@@ -697,7 +697,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float tmy = tdy*(dy>0 ? 1.0f-fya : fya);
 	float tmz = tdz*(dz>0 ? 1.0f-fza : fza);
 	uchar flags_cell = 0u;
-	for(uint i=0u; i<Nx+Ny+Nz; i++) {
+	for(uint tc=0u; tc<Nx+Ny+Nz; tc++) { // limit number of traversed cells to space diagonal
 		if(tmx<tmy) {
 			if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; }
 		} else {
