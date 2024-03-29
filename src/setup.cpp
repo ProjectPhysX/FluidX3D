@@ -1109,7 +1109,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	print_info("Fr = "+to_string(units.si_Fr(si_D, si_u, si_g), 6u));
 	print_info("Ca = "+to_string(units.si_Ca(si_u, si_rho, si_nu, si_sigma), 6u));
 	print_info("Bo = "+to_string(units.si_Bo(si_D, si_rho, si_g, si_sigma), 6u));
-	print_info("10ms = "+to_string(units.t(0.01f))+" LBM time steps");
+	print_info(to_string(to_uint(1000.0f*si_T))+" ms = "+to_string(units.t(0.01f))+" LBM time steps");
 	const float lbm_H = 0.4f*(float)lbm_N.x;
 	const float lbm_R = 0.5f*lbm_D; // drop radius
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu), 0.0f, 0.0f, -units.f(si_rho, si_g), units.sigma(si_sigma)); // calculate values for remaining parameters in simulation units
@@ -1143,9 +1143,9 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.run(0u); // initialize simulation
 	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) { // generate video
+		if(lbm.graphics.next_frame(units.t(si_T), 20.0f)) { // generate video
 			lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
-			lbm.graphics.write_frame(get_exe_path()+"export/new/");
+			lbm.graphics.write_frame(get_exe_path()+"export/n/");
 			lbm.graphics.set_camera_centered(10.0f, 40.0f, 100.0f, 1.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/p/");
 			lbm.graphics.set_camera_centered(0.0f, 0.0f, 45.0f, 1.0f);

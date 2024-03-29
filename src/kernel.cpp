@@ -512,17 +512,17 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float intersect_triangle(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<-0.001f||s>1.001f||t<-0.001f||s+t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
+	return (f<0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_triangle_bidirectional(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (s<-0.001f||s>1.001f||t<-0.001f||s+t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
+	return (s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_rhombus(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<-0.001f||s>1.001f||t<-0.001f||t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
+	return (f<0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||t>1.0001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_plane(const ray r, const float3 p0, const float3 p1, const float3 p2) { // ray-triangle intersection, but skip barycentric coordinates
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v);
@@ -682,28 +682,34 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(int last_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global int* skybox) {
 	return color_mix(skybox_color(reflection, skybox), color_mix(skybox_color(transmission, skybox), def_absorption_color, transmissivity), reflectivity);
 }
+)+R(float interpolate_phi(const float3 p, const global float* phi, const uint Nx, const uint Ny, const uint Nz) { // trilinear interpolation of velocity at point p
+	const float xa=p.x-0.5f+1.5f*(float)Nx, ya=p.y-0.5f+1.5f*(float)Ny, za=p.z-0.5f+1.5f*(float)Nz; // subtract lattice offsets
+	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
+	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	float phin[8]; // phi at unit cube corner points
+	for(uint c=0u; c<8u; c++) { // count over eight corner points
+		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
+		const uint x=(xb+i)%Nx, y=(yb+j)%Ny, z=(zb+k)%Nz; // calculate corner lattice positions
+		const uint n = x+(y+z*Ny)*Nx; // calculate lattice linear index
+		phin[c] = phi[n]; // load velocity from lattice point
+	}
+	return (x0*y0*z0)*phin[0]+(x0*y0*z1)*phin[1]+(x0*y1*z0)*phin[2]+(x0*y1*z1)*phin[3]+(x1*y0*z0)*phin[4]+(x1*y0*z1)*phin[5]+(x1*y1*z0)*phin[6]+(x1*y1*z1)*phin[7]; // perform trilinear interpolation
+}
 )+R(float ray_grid_traverse(const ray r, const global float* phi, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
-	const float3 pa = r.origin;
-	const float3 pb = r.origin+r.direction;
-	const float xa=pa.x-0.5f+0.5f*(float)Nx, ya=pa.y-0.5f+0.5f*(float)Ny, za=pa.z-0.5f+0.5f*(float)Nz; // start point
-	const float xb=pb.x-0.5f+0.5f*(float)Nx, yb=pb.y-0.5f+0.5f*(float)Ny, zb=pb.z-0.5f+0.5f*(float)Nz; // end point
-	const int dx=(int)sign(xb-xa), dy=(int)sign(yb-ya), dz=(int)sign(zb-za); // fast ray-grid-traversal
-	const float fxa=xa-floor(xa), fya=ya-floor(ya), fza=za-floor(za);
-	int3 xyz = (int3)(floor(xa), floor(ya), floor(za));
-	const float tdx = fmin((float)dx/(xb-xa), 1E7f);
-	const float tdy = fmin((float)dy/(yb-ya), 1E7f);
-	const float tdz = fmin((float)dz/(zb-za), 1E7f);
-	float tmx = tdx*(dx>0 ? 1.0f-fxa : fxa);
-	float tmy = tdy*(dy>0 ? 1.0f-fya : fya);
-	float tmz = tdz*(dz>0 ? 1.0f-fza : fza);
-	uchar flags_cell = 0u;
+	const float3 p = (float3)(r.origin.x-0.5f+0.5f*(float)Nx, r.origin.y-0.5f+0.5f*(float)Ny, r.origin.z-0.5f+0.5f*(float)Nz); // start point
+	const int dx=(int)sign(r.direction.x), dy=(int)sign(r.direction.y), dz=(int)sign(r.direction.z); // fast ray-grid-traversal
+	int3 xyz = (int3)((int)floor(p.x), (int)floor(p.y), (int)floor(p.z));
+	const float fxa=p.x-floor(p.x), fya=p.y-floor(p.y), fza=p.z-floor(p.z);
+	const float tdx = 1.0f/fmax(fabs(r.direction.x), 1E-6f);
+	const float tdy = 1.0f/fmax(fabs(r.direction.y), 1E-6f);
+	const float tdz = 1.0f/fmax(fabs(r.direction.z), 1E-6f);
+	float tmx = tdx*(dx>0 ? 1.0f-fxa : dx<0 ? fxa : 0.0f);
+	float tmy = tdy*(dy>0 ? 1.0f-fya : dy<0 ? fya : 0.0f);
+	float tmz = tdz*(dz>0 ? 1.0f-fza : dz<0 ? fza : 0.0f);
 	for(uint tc=0u; tc<Nx+Ny+Nz; tc++) { // limit number of traversed cells to space diagonal
-		if(tmx<tmy) {
-			if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; }
-		} else {
-			if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; }
-		}
-		if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break;
+		if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
+		else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
+		if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
 		else if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx-1 || xyz.y>=(int)Ny-1 || xyz.z>=(int)Nz-1) continue;
 		const uint x0 =  (uint)xyz.x; // cube stencil
 		const uint xp =  (uint)xyz.x+1u;
@@ -720,7 +726,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		j[5] = xp+yp+z0; // ++0
 		j[6] = xp+yp+zp; // +++
 		j[7] = x0+yp+zp; // 0++
-		flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
+		uchar flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
 		for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
 		if(!(flags_cell&(TYPE_S|TYPE_E|TYPE_I))) continue; // cell is entirely inside/outside of the isosurface
 		float v[8];
@@ -762,11 +768,12 @@ string opencl_c_container() { return R( // ########################## begin of O
 					(x1*y1*z1*rsqrt(fma(n[6].x, n[6].x, fma(n[6].y, n[6].y, fma(n[6].z, n[6].z, 1E-9f)))))*n[6]+
 					(x0*y1*z1*rsqrt(fma(n[7].x, n[7].x, fma(n[7].y, n[7].y, fma(n[7].z, n[7].z, 1E-9f)))))*n[7]
 				); // perform normalization and trilinear interpolation
-				return intersect; // intersection found, exit loop, process transmission ray
+				return intersect; // intersection found, exit loop
 			}
 		}
 	}
-	return (flags_cell&TYPE_F)&&!(flags_cell&TYPE_S) ? intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx, (float)Ny, (float)Nz, normal) : -1.0f;
+	const float intersect = intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx-1.0f, (float)Ny-1.0f, (float)Nz-1.0f, normal); // -1 because marching-cubes surface ends between cells
+	return intersect>0.0f ? (interpolate_phi(r.origin+intersect*r.direction, phi, Nx, Ny, Nz)>0.5f ? intersect : -1.0f) : -1.0f; // interpolate phi at ray intersection point with simulation box, to check if ray is inside fluid
 }
 )+R(bool raytrace_phi_mirror(const ray ray_in, ray* ray_reflect, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) { // only reflection
 	float3 normal;
@@ -1007,10 +1014,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return load_u(n, u);
 } // closest_u()
 )+R(float3 interpolate_u(const float3 p, const global float* u) { // trilinear interpolation of velocity at point p
-	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
 	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-	float3 un[8]; // velocities of unit cube corner points
+	float3 un[8]; // velocitiy at unit cube corner points
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
 		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
@@ -1950,7 +1957,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	F[2ul*def_N+(ulong)n] = 0.0f;
 } // reset_force_field()
 )+R(void spread_force(volatile global float* F, const float3 p, const float3 Fn) {
-	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
 	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb; // calculate interpolation factors
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
@@ -1967,7 +1974,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef PARTICLES"+R(
 )+R(float3 particle_boundary_force(const float3 p, const global uchar* flags) { // normalized pseudo-force to prevent particles from entering solid boundaries or exiting fluid phase
-	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
 	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb; // calculate interpolation factors
 	float3 boundary_force = (float3)(0.0f, 0.0f, 0.0f);
