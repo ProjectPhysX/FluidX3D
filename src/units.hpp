@@ -63,7 +63,7 @@ public:
 	float si_V(const float V) const { return V*cb(unit_m); } // volume si_V = V*[m^3]
 	float si_u(const float u) const { return u*unit_m/unit_s; } // velocity si_u = u*[m/s]
 	float si_rho(const float rho) const { return rho*unit_kg/cb(unit_m); } // density si_rho = rho*[kg/m^3]
-	float si_p(const float p) const { return p*unit_kg/(unit_m*sq(unit_s)); } // pressure si_p = p*[kg/(m*s^2)]
+	float si_p(const float p) const { return p*unit_kg/(unit_m*sq(unit_s)); } // pressure si_p = p*[kg/(m*s^2)] = p*[Pa]
 	float si_Q(const float Q) const { return Q*cb(unit_m)/unit_s; } // flow rate si_Q = Q*[m^3/s]
 	float si_nu(const float nu) const { return nu*sq(unit_m)/unit_s; } // kinematic shear viscosity si_nu = nu*[m^2/s]
 	float si_g(const float g) const { return g*unit_m/sq(unit_s); } // gravitational acceleration si_g = g*[m/s^2]
@@ -88,7 +88,8 @@ public:
 	float Ga(const float x, const float nu, const float g) { return cb(x)*g/sq(nu); } // Galilei number Ga = x^3*g/nu^2 = [1] no unit
 	float Ga(const float x, const float rho, const float nu, const float f) { return cb(x)*f/(sq(nu)*rho); } // Galilei number Ga = x^3*g/nu^2 = [1] no unit
 	float Ma(const float u) const { return u/0.57735027f; } // Mach number Ma = u/c = [1] no unit, c = 1/sqrt(3) is lattice speed of sound
-	float rho_from_p(const float p) const { return 3.0f*p; } // density rho = p/c^2 = 3*p = [kg/(m*s^2)], p is pressure, c = 1/sqrt(3) is lattice speed of sound
+	float p_from_rho(const float rho) const { return (rho-1.0f)/3.0f; } // pressure p = (rho-rho0)*c^2 = (rho-1)/3 = [kg/(m*s^2)] = [Pa], rho is density, c = 1/sqrt(3) is lattice speed of sound
+	float rho_from_p(const float p) const { return 1.0f+3.0f*p; } // density rho = p0/c^2+p/c^2 = 1+3*p = [kg/m^3], p is pressure, c = 1/sqrt(3) is lattice speed of sound
 	float rho_laplace(const float sigma, const float R) { return 6.0f*sigma/R; } // sphere laplace pressure p = 2*sigma/R, density rho = 3*p
 	float rho_hydrostatic(const float f, const float z, const float h) { return 3.0f*f*(h-z)+1.0f; } // hydrostatic pressure p = rho*g*h+p0 = f*h+1/3, density rho = 3*p, force per volume f = rho*g, rho0 = 1
 	float nu_from_mu(const float mu, const float rho) const { return mu/rho; } // kinematic shear viscosity nu = mu/rho = [m^2/s]
