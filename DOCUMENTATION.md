@@ -216,11 +216,12 @@ git clone https://github.com/ProjectPhysX/FluidX3D.git
 ### Data Export
 - At any point in time, you can export volumetric data as binary `.vtk` files with:
   ```c
-  lbm.rho.write_device_to_vtk();
-  lbm.u.write_device_to_vtk();
-  lbm.flags.write_device_to_vtk();
-  lbm.phi.write_device_to_vtk(); // only for SURFACE extension
-  lbm.T.write_device_to_vtk(); // only for TEMPERATURE extension
+  lbm.rho.write_device_to_vtk(); // density
+  lbm.u.write_device_to_vtk(); // velocity
+  lbm.flags.write_device_to_vtk(); // flags
+  lbm.F.write_device_to_vtk(); // force, only for FORCE_FIELD extension
+  lbm.phi.write_device_to_vtk(); // fill fraction, only for SURFACE extension
+  lbm.T.write_device_to_vtk(); // temperature, only for TEMPERATURE extension
   lbm.write_mesh_to_vtk(const Mesh* mesh); // for exporting triangle meshes
   ```
 - These functions first pull the data from the GPU(s) into CPU RAM, and then write it to the hard drive.
