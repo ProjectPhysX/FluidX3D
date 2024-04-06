@@ -272,7 +272,7 @@ public:
 				return buffers[domain]->data()[local_i+local_dimension*local_N]; // array of structures
 			}
 		}
-		inline static string vtk_type() {
+		inline string vtk_type() const {
 			/**/ if constexpr(std::is_same<T, char >::value) return "char" ; else if constexpr(std::is_same<T, uchar >::value) return "unsigned_char" ;
 			else if constexpr(std::is_same<T, short>::value) return "short"; else if constexpr(std::is_same<T, ushort>::value) return "unsigned_short";
 			else if constexpr(std::is_same<T, int  >::value) return "int"  ; else if constexpr(std::is_same<T, uint  >::value) return "unsigned_int"  ;
