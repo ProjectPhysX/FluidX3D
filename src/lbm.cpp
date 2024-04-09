@@ -1138,6 +1138,7 @@ int* LBM::Graphics::draw_frame() {
 #endif // GRAPHICS_TRANSPARENCY
 		}
 	}
+	info.allow_labeling = new_frame;
 	return bitmap;
 }
 

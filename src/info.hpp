@@ -6,6 +6,7 @@ class LBM;
 struct Info { // contains redundant information for console printing
 	LBM* lbm = nullptr;
 	bool allow_rendering = false; // allows interactive redering if true
+	bool allow_labeling = true; // allows drawing label if true
 	double runtime_lbm=0.0, runtime_total=0.0f; // lbm (compute) and total (compute + rendering + data evaluation) runtime
 	double runtime_lbm_timestep_last=1.0, runtime_lbm_timestep_smooth=1.0, runtime_lbm_last=0.0; // for printing simulation info
 	Clock clock; // for measuring total runtime

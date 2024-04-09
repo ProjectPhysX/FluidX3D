@@ -335,8 +335,8 @@ void draw_line_label(const int x0, const int y0, const int x1, const int y1, con
 		}
 	}
 }
-void draw_bitmap(const int* bitmap) {
-	std::copy(bitmap, bitmap+(int)camera.width*(int)camera.height, camera.bitmap);
+void draw_bitmap(int* bitmap) {
+	std::swap(camera.bitmap, bitmap); // swap pointers instead of memory copy
 }
 
 void draw_pixel(const float3& p, const int color) {
@@ -471,7 +471,7 @@ void update_frame(const double frametime) {
 	main_label(frametime);
 	SetBitmapBits(frameDC, 4*(int)camera.width*(int)camera.height, camera.bitmap);
 	BitBlt(displayDC, 0, 0, (int)camera.width, (int)camera.height, memDC, 0, 0, SRCCOPY); // copy back buffer to front buffer
-	camera.clear_frame(); // clear frame
+	//camera.clear_frame(); // clear frame
 }
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
 	if(message==WM_DESTROY) {
@@ -618,10 +618,11 @@ int key_linux(const int keycode) {
 }
 void update_frame(const double frametime) {
 	main_label(frametime);
+	x11_image->data = (char*)camera.bitmap; // camera.bitmap pointer might have been changed, so update x11_image->data pointer here
 	updating_frame = true;
 	XPutImage(x11_display, x11_window, x11_gc, x11_image, 0, 0, 0, 0, camera.width, camera.height);
 	updating_frame = false;
-	camera.clear_frame(); // clear frame
+	//camera.clear_frame(); // clear frame
 	if(!camera.lockmouse) XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // center cursor
 }
 void hide_cursor() {
@@ -766,7 +767,7 @@ void update_frame(const double frametime) {
 	print_video_dither(&image, textwidth, textheight);
 	print(alignr(textwidth, to_string(textwidth)+"x"+to_string(textheight)+" "+alignr(4, to_int(1.0/frametime))+"fps"));
 	show_console_cursor(true);
-	camera.clear_frame(); // clear frame
+	//camera.clear_frame(); // clear frame
 }
 void input_detection() {
 	while(running) {

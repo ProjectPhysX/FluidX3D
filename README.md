@@ -137,6 +137,15 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed compiler warnings on Android
   - fixed `make.sh` failing on some systems due to nonstandard interpreter path
   - fixed that `make` would not compile with multiple cores on some systems
+- [v2.15](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.15) (09.04.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.14...v2.15) (framerate boost)
+  - eliminated one frame memory copy and one clear frame operation in rendering chain, for 20-70% higher framerate on both Windows and Linux
+  - enabled `g++` compiler optimizations for faster startup and higher rendering framerate
+  - fixed bug in multithreaded sanity checks
+  - fixed wrong unit conversion for thermal expansion coefficient
+  - fixed density to pressure conversion in LBM units
+  - fixed bug that raytracing kernel could lock up simulation
+  - fixed minor visual artifacts with raytracing
+  - fixed that console sometimes was not cleared before `INTERACTIVE_GRAPHICS_ASCII` rendering starts
 
 </details>
 

@@ -56,7 +56,7 @@ void draw_scale(const int field_mode, const int color) {
 	draw_label(ox+min(0, w+7+label_length_max*(FONT_WIDTH)-(int)length(title)*(FONT_WIDTH)), oy-(FONT_HEIGHT)*3/2-6, title, color); // colorbar title
 }
 void main_label(const double frametime) {
-	if(info.allow_rendering) {
+	if(info.allow_rendering&&info.allow_labeling) {
 		info.print_update();
 		const int c = invert(GRAPHICS_BACKGROUND_COLOR);
 		{
@@ -77,7 +77,7 @@ void main_label(const double frametime) {
 			draw_label(ox, oy+i, "Steps "          +alignr(31u, /************************************/ alignr(10u, info.lbm->get_t())+" ("+alignr(5, to_uint(1.0/info.runtime_lbm_timestep_smooth))+" Steps/s)"), c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "FPS "            +alignr(33u, /************************************************************/ alignr(4u, to_uint(1.0/frametime))+" ("+alignr(5u, camera.fps_limit)+" fps max)"), c);
 		}
-		draw_label(2, camera.height-1*(FONT_HEIGHT)-1, "FluidX3D v2.14 Copyright (c) Dr. Moritz Lehmann", c);
+		draw_label(2, camera.height-1*(FONT_HEIGHT)-1, "FluidX3D v2.15 Copyright (c) Dr. Moritz Lehmann", c);
 		if(!key_H) {
 			draw_label(camera.width-16*(FONT_WIDTH)-1, 2, "Press H for Help", c);
 		} else {

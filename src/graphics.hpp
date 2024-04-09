@@ -157,10 +157,8 @@ public:
 		if(!lockmouse) update_rotation(mouse_x, mouse_y);
 	}
 	void clear_frame() {
-		for(uint i=0u; i<width*height; i++) {
-			bitmap[i] = GRAPHICS_BACKGROUND_COLOR;
-			zbuffer[i] = min_int;
-		}
+		std::fill(bitmap, bitmap+width*height, GRAPHICS_BACKGROUND_COLOR); // faster than "for(uint i=0u; i<width*height; i++) bitmap[i] = GRAPHICS_BACKGROUND_COLOR;"
+		std::fill(zbuffer, zbuffer+width*height, min_int); // faster than "for(uint i=0u; i<width*height; i++) zbuffer[i] = min_int;"
 	}
 	float data(const uint i) const { // returns all camera data required for rendering
 		switch(i) {
@@ -332,7 +330,7 @@ extern bool key_1, key_2, key_3, key_4, key_5, key_6, key_7, key_8, key_9, key_0
 
 void set_light(const uint i, const float3& p);
 
-void draw_bitmap(const int* bitmap);
+void draw_bitmap(int* bitmap);
 void draw_label(const int x, const int y, const string& s, const int color);
 void draw_line_label(const int x0, const int y0, const int x1, const int y1, const int color);
 
