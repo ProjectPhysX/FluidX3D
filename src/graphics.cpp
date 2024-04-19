@@ -562,6 +562,9 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 #elif defined(__linux__)||defined(__APPLE__)
 
 #include "X11/include/X11/Xlib.h" // sources: libx11-dev, x11proto-dev, libxrandr-dev, libxrender-dev
+#define register // to avoid compiler warning in XKBlib.h
+#include "X11/include/X11/XKBlib.h" // for keyboard layout
+#undef register // to avoid compiler warning in XKBlib.h
 #include "X11/include/X11/extensions/Xrandr.h" // for multi-monitor
 
 Display* x11_display;
@@ -571,49 +574,42 @@ XImage* x11_image;
 std::atomic_bool updating_frame = true;
 
 int key_linux(const int keycode) {
-	switch(keycode) {
-		case  38: return  'A'; case 42: return 'G'; case 58: return 'M'; case 39: return 'S'; case 52: return 'Y'; case 15: return '6';
-		case  56: return  'B'; case 43: return 'H'; case 57: return 'N'; case 28: return 'T'; case 29: return 'Z'; case 16: return '7';
-		case  54: return  'C'; case 31: return 'I'; case 32: return 'O'; case 30: return 'U'; case 10: return '1'; case 17: return '8';
-		case  40: return  'D'; case 44: return 'J'; case 33: return 'P'; case 55: return 'V'; case 11: return '2'; case 18: return '9';
-		case  26: return  'E'; case 45: return 'K'; case 24: return 'Q'; case 25: return 'W'; case 12: return '3'; case 14: return '5';
-		case  41: return  'F'; case 46: return 'L'; case 27: return 'R'; case 53: return 'X'; case 13: return '4'; case 19: return '0';
-		case  51: return  '#'; case 94: return '<'; case 35: return '+'; case 61: return '-'; case 59: return ','; case 60: return '.';
-		case  65: return  ' '; // space
-		case  36: return   10; // enter
-		case  22: return    8; // backspace
-		case   9: return   27; // escape
-		case 107: return  127; // delete
-		case  48: return  142; // Ä
-		case  47: return  153; // Ö
-		case  34: return  154; // Ü
-		case  20: return  225; // ß
-		case  49: return  248; // ^
-		case  21: return  239; // ´
-		case 106: return  -45; // insert
-		case  77: return -144; // num lock
-		case  66: return  -20; // caps lock
-		case 115: return  -91; // windows key
-		case 117: return  -93; // kontext menu key
-		case  87: return  '1'; case  85: return  '6'; // numpad
-		case  88: return  '2'; case  79: return  '7'; // numpad
-		case  89: return  '3'; case  80: return  '8'; // numpad
-		case  83: return  '4'; case  81: return  '9'; // numpad
-		case  84: return  '5'; case  90: return  '0'; // numpad
-		case  86: return  '+'; case  82: return  '-'; // numpad
-		case  63: return  '*'; case 112: return  '/'; // numpad
-		case  91: return  ','; case 108: return   10; // numpad
-		case  98: return  -38; case 104: return  -40; // up/down arrow
-		case 100: return  -37; case 102: return  -39; // left/right arrow
-		case  99: return  -33; case 105: return  -34; // page up/down
-		case  97: return  -36; case 103: return  -35; // pos1/end
-		case  67: return -112; case  73: return -118; // F1/F7
-		case  68: return -113; case  74: return -119; // F2/F8
-		case  69: return -114; case  75: return -120; // F3/F9
-		case  70: return -115; case  76: return -121; // F4/F10
-		case  71: return -116; case  95: return -122; // F5/F11
-		case  72: return -117; case  96: return -123; // F6/F12
-		default: return 0;
+	const int keysym = (int)XkbKeycodeToKeysym(x11_display, keycode, 0, 0);
+	switch(keysym) { // keysym to upper case ASCII and Windows Virtual-Key Codes (negative numbers)
+		case 65293: return   10; // enter
+		case 65288: return    8; // backspace
+		case 65307: return   27; // escape
+		case 65535: return  127; // delete
+		case   228: return  142; // Ä
+		case   246: return  153; // Ö
+		case   252: return  154; // Ü
+		case   223: return  225; // ß
+		case 65106: return  248; // ^
+		case 65105: return  239; // ´
+		case 65379: return  -45; // insert
+		case 65407: return -144; // num lock
+		case 65509: return  -20; // caps lock
+		case 65515: return  -91; // windows key
+		case 65383: return  -93; // kontext menu key
+		case 65436: return  '1'; case 65432: return  '6'; // numpad
+		case 65433: return  '2'; case 65429: return  '7'; // numpad
+		case 65435: return  '3'; case 65431: return  '8'; // numpad
+		case 65430: return  '4'; case 65434: return  '9'; // numpad
+		case 65437: return  '5'; case 65438: return  '0'; // numpad
+		case 65451: return  '+'; case 65453: return  '-'; // numpad
+		case 65450: return  '*'; case 65455: return  '/'; // numpad
+		case 65439: return  ','; case 65421: return   10; // numpad
+		case 65362: return  -38; case 65364: return  -40; // up/down arrow
+		case 65361: return  -37; case 65363: return  -39; // left/right arrow
+		case 65365: return  -33; case 65366: return  -34; // page up/down
+		case 65360: return  -36; case 65367: return  -35; // pos1/end
+		case 65470: return -112; case 65476: return -118; // F1/F7
+		case 65471: return -113; case 65477: return -119; // F2/F8
+		case 65472: return -114; case 65478: return -120; // F3/F9
+		case 65473: return -115; case 65479: return -121; // F4/F10
+		case 65474: return -116; case 65480: return -122; // F5/F11
+		case 65475: return -117; case 65481: return -123; // F6/F12
+		default: return keysym>96&&keysym<123 ? keysym-32 : keysym; // convert letters to upper case
 	}
 }
 void update_frame(const double frametime) {

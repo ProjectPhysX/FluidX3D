@@ -199,6 +199,7 @@ public:
 		} else if(!lockmouse) {
 			free_camera_velocity *= 1.284;
 		}
+		key_update = true;
 	}
 	void input_scroll_down() {
 		if(!free) { // zoom
@@ -206,6 +207,7 @@ public:
 		} else if(!lockmouse) {
 			free_camera_velocity /= 1.284;
 		}
+		key_update = true;
 	}
 
 private:
