@@ -394,7 +394,6 @@ void draw_text(const float3& p, const float r, const string& s, const int color)
 }
 
 void key_bindings(const int key) {
-	camera.key_update = true;
 	switch(key) {
 		// reserved keys for graphics: W,A,S,D, I,J,K,L, R,U, V,B, C,VK_SPACE, Y,X, N,M
 		//case 'A': key_A = !key_A; break;
@@ -433,8 +432,8 @@ void key_bindings(const int key) {
 		case '8': key_8 = !key_8; break;
 		case '9': key_9 = !key_9; break;
 		case '0': key_0 = !key_0; break;
-		default: camera.input_key(key);
 	}
+	camera.input_key(key);
 }
 
 #if defined(INTERACTIVE_GRAPHICS)

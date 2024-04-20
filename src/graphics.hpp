@@ -92,6 +92,7 @@ public:
 		return key_state[clamp(256+key, 0, 511)];
 	}
 	void input_key(const int key) {
+		key_update = true;
 		switch(key) {
 			case 'R': input_R(); break;
 			case 'U': input_U(); break;
