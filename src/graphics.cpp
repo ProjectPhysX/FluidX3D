@@ -648,7 +648,7 @@ void input_detection() {
 					camera.input_scroll_up();
 				} else if(x11_button==Button5) { // scroll down
 					camera.input_scroll_down();
-				} else {
+				} else if(x11_button==Button1||x11_button==Button2||x11_button==Button3) {
 					if(!camera.lockmouse) {
 						show_cursor();
 					} else {
