@@ -729,6 +729,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	XFreeGC(x11_display, x11_gc);
+	x11_image->data = nullptr; // XDestroyImage would double-delete x11_image->data pointer, so remove pointer here
+	XDestroyImage(x11_image);
 	XDestroyWindow(x11_display, x11_window);
 	XCloseDisplay(x11_display);
 	compute_thread.join();

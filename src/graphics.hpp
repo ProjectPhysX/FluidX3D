@@ -105,7 +105,7 @@ public:
 			case '+': input_scroll_down(); break;
 			case '-': input_scroll_up(); break;
 			case 'F': input_F(); break;
-			case 27: running=false; exit(0);
+			case 27: running=false; println(); exit(0);
 		}
 #ifdef INTERACTIVE_GRAPHICS_ASCII
 		if(free) { // move free camera
