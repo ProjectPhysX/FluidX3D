@@ -570,7 +570,6 @@ Display* x11_display;
 Window x11_window;
 GC x11_gc;
 XImage* x11_image;
-std::atomic_bool updating_frame = true;
 
 int key_linux(const int keycode) {
 	const int keysym = (int)XkbKeycodeToKeysym(x11_display, keycode, 0, 0);
@@ -614,9 +613,9 @@ int key_linux(const int keycode) {
 void update_frame(const double frametime) {
 	main_label(frametime);
 	x11_image->data = (char*)camera.bitmap; // camera.bitmap pointer might have been changed, so update x11_image->data pointer here
-	updating_frame = true;
+	XLockDisplay(x11_display);
 	XPutImage(x11_display, x11_window, x11_gc, x11_image, 0, 0, 0, 0, camera.width, camera.height);
-	updating_frame = false;
+	XUnlockDisplay(x11_display);
 	//camera.clear_frame(); // clear frame
 	if(!camera.lockmouse) XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // center cursor
 }
@@ -638,49 +637,46 @@ void show_cursor() {
 void input_detection() {
 	XEvent x11_event;
 	while(running) {
-		if(!updating_frame) {
-			XNextEvent(x11_display, &x11_event);
-			if(x11_event.type==MotionNotify) {
-				camera.input_mouse_moved((int)x11_event.xmotion.x, (int)x11_event.xmotion.y);
-			} else if(x11_event.type==ButtonPress) { // counterpart: ButtonRelease
-				const int x11_button = x11_event.xbutton.button;
-				if(x11_button==Button4) { // scroll up
-					camera.input_scroll_up();
-				} else if(x11_button==Button5) { // scroll down
-					camera.input_scroll_down();
-				} else if(x11_button==Button1||x11_button==Button2||x11_button==Button3) {
-					if(!camera.lockmouse) {
-						show_cursor();
-					} else {
-						hide_cursor();
-						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, (int)camera.width/2, (int)camera.height/2); // reset cursor
-					}
-					camera.input_key('U');
+		XNextEvent(x11_display, &x11_event);
+		if(x11_event.type==MotionNotify) {
+			camera.input_mouse_moved((int)x11_event.xmotion.x, (int)x11_event.xmotion.y);
+		} else if(x11_event.type==ButtonPress) { // counterpart: ButtonRelease
+			const int x11_button = x11_event.xbutton.button;
+			if(x11_button==Button4) { // scroll up
+				camera.input_scroll_up();
+			} else if(x11_button==Button5) { // scroll down
+				camera.input_scroll_down();
+			} else if(x11_button==Button1||x11_button==Button2||x11_button==Button3) {
+				if(!camera.lockmouse) {
+					show_cursor();
+				} else {
+					hide_cursor();
+					XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, (int)camera.width/2, (int)camera.height/2); // reset cursor
 				}
-			} else if(x11_event.type==KeyPress) {
-				const int key = key_linux((int)x11_event.xkey.keycode);
-				if(key=='U') {
-					if(!camera.lockmouse) {
-						show_cursor();
-					} else {
-						hide_cursor();
-						XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, (int)camera.width/2, (int)camera.height/2); // reset cursor
-					}
-				}
-				camera.set_key_state(key, true);
-				key_bindings(key);
-			} else if(x11_event.type==KeyRelease) {
-				const int key = key_linux((int)x11_event.xkey.keycode);
-				camera.set_key_state(key, false);
+				camera.input_key('U');
 			}
-		} else {
-			sleep(0.01);
+		} else if(x11_event.type==KeyPress) {
+			const int key = key_linux((int)x11_event.xkey.keycode);
+			if(key=='U') {
+				if(!camera.lockmouse) {
+					show_cursor();
+				} else {
+					hide_cursor();
+					XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, (int)camera.width/2, (int)camera.height/2); // reset cursor
+				}
+			}
+			camera.set_key_state(key, true);
+			key_bindings(key);
+		} else if(x11_event.type==KeyRelease) {
+			const int key = key_linux((int)x11_event.xkey.keycode);
+			camera.set_key_state(key, false);
 		}
 	}
 }
 int main(int argc, char* argv[]) {
 	main_arguments = get_main_arguments(argc, argv);
 
+	XInitThreads();
 	x11_display = XOpenDisplay(0);
 	if(!x11_display) print_error("No X11 display available.");
 
