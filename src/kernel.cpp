@@ -2212,7 +2212,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 
 
-)+R(kernel void voxelize_mesh(const uint direction, global fpxx* fi, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu) { // voxelize triangle mesh
+)+R(kernel void voxelize_mesh)+"("+R(const uint direction, global fpxx* fi, const global float* rho, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu // ) { // voxelize triangle mesh
+)+"#ifdef SURFACE"+R(
+	, global float* mass, global float* massex // argument order is important
+)+"#endif"+R( // SURFACE
+)+") {"+R( // voxelize_mesh()
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
 	const uint triangle_number = as_uint(bbu[0]);
@@ -2284,7 +2288,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 					uint j[def_velocity_set]; // neighbor indices
 					neighbors(n, j); // calculate neighbor indices
 					float feq[def_velocity_set]; // f_equilibrium
-					calculate_f_eq(1.0f, un.x, un.y, un.z, feq);
+					calculate_f_eq(rho[n], un.x, un.y, un.z, feq);
 					store_f(n, feq, fi, j, t); // write to fi
 				}
 				if(sq(un.x)+sq(un.y)+sq(un.z)>0.0f) {
@@ -2295,6 +2299,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 			}
 		}
 		flags[n] = flagsn;
+)+"#ifdef SURFACE"+R(
+		mass[n] += massex[n]; // apply distributed excess mass
+		massex[n] = 0.0f; // clear excess mass
+)+"#endif"+R( // SURFACE
 	}
 } // voxelize_mesh()
 
