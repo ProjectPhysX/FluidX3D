@@ -44,6 +44,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 		x[i] /= M[N*i+i];
 	}
 }
+)+R(float trilinear(const float3 p, const float* v) { // trilinear interpolation, p: position in unit cube, v: corner values in unit cube
+	const float x1=p.x, y1=p.y, z1=p.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	return (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
+}
+)+R(float3 trilinear3(const float3 p, const float3* v) { // trilinear interpolation, p: position in unit cube, v: corner vectors in unit cube
+	const float x1=p.x, y1=p.y, z1=p.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	return (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
+}
 //bool workgroup_any(const bool condition) { // returns true if any thread within the workgroup enters true
 //	volatile local uint workgroup_condition; // does not work on AMD GPUs (error: non-kernel function variable cannot be declared in local address space)
 //	workgroup_condition = 0u;
@@ -186,7 +194,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float3 pos = (float3)(camera_cache[ 2], camera_cache[ 3], camera_cache[ 4])-(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
 	const float3 Rz  = (float3)(camera_cache[11], camera_cache[12], camera_cache[13]);
 	const float3 d = p-Rz*(dis/zoom)-pos; // distance vector between p and camera position
-	const float nl2 = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one native_sqrt instead of two
+	const float nl2 = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one rsqrt instead of two
 	const float dl2 = sq(d.x)+sq(d.y)+sq(d.z);
 	return color_mul(c, max(1.5f*fabs(dot(normal, d))*rsqrt(nl2*dl2), 0.3f));
 )+"#else"+R( // GRAPHICS_TRANSPARENCY
@@ -397,16 +405,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	bitmap[n] = def_background_color; // black background = 0x000000, use 0xFFFFFF for white background
 	zbuffer[n] = -2147483648;
 }
-)+R(constant ushort edge_table_data[128] = { // source: Paul Bourke, http://paulbourke.net/geometry/polygonise/, mirror symmetry applied, makes marching-cubes 31% faster
-	0x000, 0x109, 0x203, 0x30A, 0x406, 0x50F, 0x605, 0x70C, 0x80C, 0x905, 0xA0F, 0xB06, 0xC0A, 0xD03, 0xE09, 0xF00,
-	0x190, 0x099, 0x393, 0x29A, 0x596, 0x49F, 0x795, 0x69C, 0x99C, 0x895, 0xB9F, 0xA96, 0xD9A, 0xC93, 0xF99, 0xE90,
-	0x230, 0x339, 0x033, 0x13A, 0x636, 0x73F, 0x435, 0x53C, 0xA3C, 0xB35, 0x83F, 0x936, 0xE3A, 0xF33, 0xC39, 0xD30,
-	0x3A0, 0x2A9, 0x1A3, 0x0AA, 0x7A6, 0x6AF, 0x5A5, 0x4AC, 0xBAC, 0xAA5, 0x9AF, 0x8A6, 0xFAA, 0xEA3, 0xDA9, 0xCA0,
-	0x460, 0x569, 0x663, 0x76A, 0x066, 0x16F, 0x265, 0x36C, 0xC6C, 0xD65, 0xE6F, 0xF66, 0x86A, 0x963, 0xA69, 0xB60,
-	0x5F0, 0x4F9, 0x7F3, 0x6FA, 0x1F6, 0x0FF, 0x3F5, 0x2FC, 0xDFC, 0xCF5, 0xFFF, 0xEF6, 0x9FA, 0x8F3, 0xBF9, 0xAF0,
-	0x650, 0x759, 0x453, 0x55A, 0x256, 0x35F, 0x055, 0x15C, 0xE5C, 0xF55, 0xC5F, 0xD56, 0xA5A, 0xB53, 0x859, 0x950,
-	0x7C0, 0x6C9, 0x5C3, 0x4CA, 0x3C6, 0x2CF, 0x1C5, 0x0CC, 0xFCC, 0xEC5, 0xDCF, 0xCC6, 0xBCA, 0xAC3, 0x9C9, 0x8C0
-};
 )+R(constant uchar triangle_table_data[1920] = { // source: Paul Bourke, http://paulbourke.net/geometry/polygonise/, termination value 15, bit packed
 	255,255,255,255,255,255,255, 15, 56,255,255,255,255,255,255, 16,249,255,255,255,255,255, 31, 56,137,241,255,255,255,255, 33,250,255,255,255,255,255, 15, 56, 33,250,255,255,255,255, 41, 10,146,
 	255,255,255,255, 47, 56,162,168,137,255,255,255,179,242,255,255,255,255,255, 15, 43,184,240,255,255,255,255,145, 32,179,255,255,255,255, 31, 43,145,155,184,255,255,255,163,177, 58,255,255,255,
@@ -449,43 +447,55 @@ string opencl_c_container() { return R( // ########################## begin of O
 	 59,250,255,255,255,255, 33, 27,155,185,248,255,255, 63,144,147, 27,146,178,249,255, 32,139,176,255,255,255,255, 63,178,255,255,255,255,255,255, 50, 40,168,138,249,255,255,159, 42,144,242,255,
 	255,255,255, 50, 40,168, 16, 24,138,255, 31, 42,255,255,255,255,255,255, 49,152,129,255,255,255,255, 15, 25,255,255,255,255,255,255, 48,248,255,255,255,255,255,255,255,255,255,255,255,255,255
 };
-)+R(ushort edge_table(const uint i) {
-	return edge_table_data[i<128u?i:255u-i];
-}
 )+R(uchar triangle_table(const uint i) {
 	return (triangle_table_data[i/2u]>>(4u*(i%2u)))&0xF;
 }
-)+R(float3 interpolate_vertex(const float3 p1, const float3 p2, const float v1, const float v2, const float iso) { // linearly interpolate position where isosurface cuts an edge between 2 vertices
-	const float w = (iso-v1)/(v2-v1);
-	return (1.0f-w)*p1+w*p2;
+)+R(float interpolate(const float v1, const float v2, const float iso) { // linearly interpolate position where isosurface cuts an edge between 2 vertices at 0 and 1
+	return (iso-v1)/(v2-v1);
 }
 )+R(uint marching_cubes(const float* v, const float iso, float3* triangles) { // input: 8 values v, isovalue; output: returns number of triangles, 15 triangle vertices t
 	uint cube = 0u; // determine index of which vertices are inside of the isosurface
 	for(uint i=0u; i<8u; i++) cube |= (v[i]<iso)<<i;
 	if(cube==0u||cube==255u) return 0u; // cube is entirely inside/outside of the isosurface
-	float3 p[8]; // definition of unit cube corners
-	p[0] = (float3)(0.0f, 0.0f, 0.0f);
-	p[1] = (float3)(1.0f, 0.0f, 0.0f);
-	p[2] = (float3)(1.0f, 0.0f, 1.0f);
-	p[3] = (float3)(0.0f, 0.0f, 1.0f);
-	p[4] = (float3)(0.0f, 1.0f, 0.0f);
-	p[5] = (float3)(1.0f, 1.0f, 0.0f);
-	p[6] = (float3)(1.0f, 1.0f, 1.0f);
-	p[7] = (float3)(0.0f, 1.0f, 1.0f);
-	const uint edges = edge_table(cube);
 	float3 vertex[12]; // find the vertices where the surface intersects the cube
-	if(edges&   1u) vertex[ 0] = interpolate_vertex(p[0], p[1], v[0], v[1], iso); // calculate vertices on all 12 edges
-	if(edges&   2u) vertex[ 1] = interpolate_vertex(p[1], p[2], v[1], v[2], iso);
-	if(edges&   4u) vertex[ 2] = interpolate_vertex(p[2], p[3], v[2], v[3], iso);
-	if(edges&   8u) vertex[ 3] = interpolate_vertex(p[3], p[0], v[3], v[0], iso);
-	if(edges&  16u) vertex[ 4] = interpolate_vertex(p[4], p[5], v[4], v[5], iso);
-	if(edges&  32u) vertex[ 5] = interpolate_vertex(p[5], p[6], v[5], v[6], iso);
-	if(edges&  64u) vertex[ 6] = interpolate_vertex(p[6], p[7], v[6], v[7], iso);
-	if(edges& 128u) vertex[ 7] = interpolate_vertex(p[7], p[4], v[7], v[4], iso);
-	if(edges& 256u) vertex[ 8] = interpolate_vertex(p[0], p[4], v[0], v[4], iso);
-	if(edges& 512u) vertex[ 9] = interpolate_vertex(p[1], p[5], v[1], v[5], iso);
-	if(edges&1024u) vertex[10] = interpolate_vertex(p[2], p[6], v[2], v[6], iso);
-	if(edges&2048u) vertex[11] = interpolate_vertex(p[3], p[7], v[3], v[7], iso);
+	vertex[ 0] = (float3)(interpolate(v[0], v[1], iso), 0.0f, 0.0f); // interpolate vertices on all 12 edges
+	vertex[ 1] = (float3)(1.0f, 0.0f, interpolate(v[1], v[2], iso)); // do interpolation only in 1D to reduce operations
+	vertex[ 2] = (float3)(interpolate(v[3], v[2], iso), 0.0f, 1.0f);
+	vertex[ 3] = (float3)(0.0f, 0.0f, interpolate(v[0], v[3], iso));
+	vertex[ 4] = (float3)(interpolate(v[4], v[5], iso), 1.0f, 0.0f);
+	vertex[ 5] = (float3)(1.0f, 1.0f, interpolate(v[5], v[6], iso));
+	vertex[ 6] = (float3)(interpolate(v[7], v[6], iso), 1.0f, 1.0f);
+	vertex[ 7] = (float3)(0.0f, 1.0f, interpolate(v[4], v[7], iso));
+	vertex[ 8] = (float3)(0.0f, interpolate(v[0], v[4], iso), 0.0f);
+	vertex[ 9] = (float3)(1.0f, interpolate(v[1], v[5], iso), 0.0f);
+	vertex[10] = (float3)(1.0f, interpolate(v[2], v[6], iso), 1.0f);
+	vertex[11] = (float3)(0.0f, interpolate(v[3], v[7], iso), 1.0f);
+	cube *= 15u;
+	uint i; // number of triangle vertices
+	for(i=0u; i<15u&&triangle_table(cube+i)!=15u; i+=3u) { // create the triangles
+		triangles[i   ] = vertex[triangle_table(cube+i   )];
+		triangles[i+1u] = vertex[triangle_table(cube+i+1u)];
+		triangles[i+2u] = vertex[triangle_table(cube+i+2u)];
+	}
+	return i/3u; // return number of triangles
+}
+)+R(uint marching_cubes_halfway(const bool* v, float3* triangles) { // input: 8 bool values v; output: returns number of triangles, 15 triangle vertices t
+	uint cube = 0u; // determine index of which vertices are inside of the isosurface
+	for(uint i=0u; i<8u; i++) cube |= (uint)(!v[i])<<i;
+	if(cube==0u||cube==255u) return 0u; // cube is entirely inside/outside of the isosurface
+	float3 vertex[12]; // find the vertices where the surface intersects the cube
+	vertex[ 0] = (float3)(0.5f, 0.0f, 0.0f); // vertices on all 12 edges
+	vertex[ 1] = (float3)(1.0f, 0.0f, 0.5f);
+	vertex[ 2] = (float3)(0.5f, 0.0f, 1.0f);
+	vertex[ 3] = (float3)(0.0f, 0.0f, 0.5f);
+	vertex[ 4] = (float3)(0.5f, 1.0f, 0.0f);
+	vertex[ 5] = (float3)(1.0f, 1.0f, 0.5f);
+	vertex[ 6] = (float3)(0.5f, 1.0f, 1.0f);
+	vertex[ 7] = (float3)(0.0f, 1.0f, 0.5f);
+	vertex[ 8] = (float3)(0.0f, 0.5f, 0.0f);
+	vertex[ 9] = (float3)(1.0f, 0.5f, 0.0f);
+	vertex[10] = (float3)(1.0f, 0.5f, 1.0f);
+	vertex[11] = (float3)(0.0f, 0.5f, 1.0f);
 	cube *= 15u;
 	uint i; // number of triangle vertices
 	for(i=0u; i<15u&&triangle_table(cube+i)!=15u; i+=3u) { // create the triangles
@@ -748,26 +758,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 				const uint zq = (((uint)xyz.z   +2u)%Nz)*Ny*Nx;
 				const uint zm = (((uint)xyz.z+Nz-1u)%Nz)*Ny*Nx;
 				float3 n[8];
-				n[0] = (float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3]); // central difference stencil on each cube corner point
-				n[1] = (float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2]); // compute normal vectors from gradient
-				n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later during trilinear interpolation more efficiently
-				n[3] = (float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]);
-				n[4] = (float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]);
-				n[5] = (float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]);
-				n[6] = (float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]);
-				n[7] = (float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]);
+				n[0] = normalize((float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3])); // central difference stencil on each cube corner point
+				n[1] = normalize((float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2])); // compute normal vectors from gradient
+				n[2] = normalize((float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq])); // normalize later during trilinear interpolation more efficiently
+				n[3] = normalize((float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]));
+				n[4] = normalize((float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]));
+				n[5] = normalize((float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]));
+				n[6] = normalize((float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]));
+				n[7] = normalize((float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]));
 				const float3 p = r.origin+intersect*r.direction-offset; // intersection point minus offset
-				const float x1=p.x-floor(p.x), y1=p.y-floor(p.y), z1=p.z-floor(p.z), x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-				*normal = normalize(
-					(x0*y0*z0*rsqrt(fma(n[0].x, n[0].x, fma(n[0].y, n[0].y, fma(n[0].z, n[0].z, 1E-9f)))))*n[0]+
-					(x1*y0*z0*rsqrt(fma(n[1].x, n[1].x, fma(n[1].y, n[1].y, fma(n[1].z, n[1].z, 1E-9f)))))*n[1]+
-					(x1*y0*z1*rsqrt(fma(n[2].x, n[2].x, fma(n[2].y, n[2].y, fma(n[2].z, n[2].z, 1E-9f)))))*n[2]+
-					(x0*y0*z1*rsqrt(fma(n[3].x, n[3].x, fma(n[3].y, n[3].y, fma(n[3].z, n[3].z, 1E-9f)))))*n[3]+
-					(x0*y1*z0*rsqrt(fma(n[4].x, n[4].x, fma(n[4].y, n[4].y, fma(n[4].z, n[4].z, 1E-9f)))))*n[4]+
-					(x1*y1*z0*rsqrt(fma(n[5].x, n[5].x, fma(n[5].y, n[5].y, fma(n[5].z, n[5].z, 1E-9f)))))*n[5]+
-					(x1*y1*z1*rsqrt(fma(n[6].x, n[6].x, fma(n[6].y, n[6].y, fma(n[6].z, n[6].z, 1E-9f)))))*n[6]+
-					(x0*y1*z1*rsqrt(fma(n[7].x, n[7].x, fma(n[7].y, n[7].y, fma(n[7].z, n[7].z, 1E-9f)))))*n[7]
-				); // perform normalization and trilinear interpolation
+				*normal = trilinear3(p-floor(p), n); // perform normalization and trilinear interpolation
 				return intersect; // intersection found, exit loop
 			}
 		}
@@ -872,6 +872,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 )+R(float3 position(const uint3 xyz) { // 3D coordinates to 3D position
 	return (float3)((float)xyz.x+0.5f-0.5f*(float)def_Nx, (float)xyz.y+0.5f-0.5f*(float)def_Ny, (float)xyz.z+0.5f-0.5f*(float)def_Nz);
+}
+)+R(uint3 closest_coordinates(const float3 p) { // return closest lattice point to point p
+	return (uint3)((uint)(p.x+1.5f*(float)def_Nx)%def_Nx, (uint)(p.y+1.5f*(float)def_Ny)%def_Ny, (uint)(p.z+1.5f*(float)def_Nz)%def_Nz);
 }
 )+R(float3 mirror_position(const float3 p) { // mirror position into periodic boundaries
 	float3 r;
@@ -1003,28 +1006,24 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // D3Q27
 } // neighbors()
 
-)+R(float3 load_u(const uint n, const global float* u) {
-	return (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]);
+)+R(float3 load3(const uint n, const global float* v) {
+	return (float3)(v[n], v[def_N+(ulong)n], v[2ul*def_N+(ulong)n]);
 }
 )+R(float3 closest_u(const float3 p, const global float* u) { // return velocity of closest lattice point to point p
-	const uint x = (uint)(p.x+1.5f*(float)def_Nx)%def_Nx;
-	const uint y = (uint)(p.y+1.5f*(float)def_Ny)%def_Ny;
-	const uint z = (uint)(p.z+1.5f*(float)def_Nz)%def_Nz;
-	const uint n = x+(y+z*def_Ny)*def_Nx;
-	return load_u(n, u);
-} // closest_u()
+	return load3(index(closest_coordinates(p)), u);
+}
 )+R(float3 interpolate_u(const float3 p, const global float* u) { // trilinear interpolation of velocity at point p
 	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
-	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	const float3 pn = (float3)(xa-(float)xb, ya-(float)yb, za-(float)zb); // calculate interpolation factors
 	float3 un[8]; // velocitiy at unit cube corner points
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
 		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
 		const uint n = x+(y+z*def_Ny)*def_Nx; // calculate lattice linear index
-		un[c] = load_u(n, u); // load velocity from lattice point
+		un[c] = load3(n, u); // load velocity from lattice point
 	}
-	return (x0*y0*z0)*un[0]+(x0*y0*z1)*un[1]+(x0*y1*z0)*un[2]+(x0*y1*z1)*un[3]+(x1*y0*z0)*un[4]+(x1*y0*z1)*un[5]+(x1*y1*z0)*un[6]+(x1*y1*z1)*un[7]; // perform trilinear interpolation
+	return trilinear3(pn, un); // perform trilinear interpolation
 } // interpolate_u()
 )+R(float calculate_Q_cached(const float3 u0, const float3 u1, const float3 u2, const float3 u3, const float3 u4, const float3 u5) { // Q-criterion
 	const float duxdx=u0.x-u1.x, duydx=u0.y-u1.y, duzdx=u0.z-u1.z; // du/dx = (u2-u0)/2
@@ -1044,7 +1043,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	j[0] = xp+y0+z0; j[1] = xm+y0+z0; // +00 -00
 	j[2] = x0+yp+z0; j[3] = x0+ym+z0; // 0+0 0-0
 	j[4] = x0+y0+zp; j[5] = x0+y0+zm; // 00+ 00-
-	return calculate_Q_cached(load_u(j[0], u), load_u(j[1], u), load_u(j[2], u), load_u(j[3], u), load_u(j[4], u), load_u(j[5], u));
+	return calculate_Q_cached(load3(j[0], u), load3(j[1], u), load3(j[2], u), load3(j[3], u), load3(j[4], u), load3(j[5], u));
 } // calculate_Q()
 
 )+R(void calculate_f_eq(const float rho, float ux, float uy, float uz, float* feq) { // calculate f_equilibrium from density and velocity field (perturbation method / DDF-shifting)
@@ -2318,6 +2317,69 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef GRAPHICS"+R(
 
+)+R(void calculate_j8(const uint3 xyz, uint* j) {
+	const uint x0 =  xyz.x; // cube stencil
+	const uint xp =  xyz.x+1u;
+	const uint y0 =  xyz.y    *def_Nx;
+	const uint yp = (xyz.y+1u)*def_Nx;
+	const uint z0 =  xyz.z    *def_Ny*def_Nx;
+	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
+	j[0] = x0+y0+z0; // 000 // cube stencil
+	j[1] = xp+y0+z0; // +00
+	j[2] = xp+y0+zp; // +0+
+	j[3] = x0+y0+zp; // 00+
+	j[4] = x0+yp+z0; // 0+0
+	j[5] = xp+yp+z0; // ++0
+	j[6] = xp+yp+zp; // +++
+	j[7] = x0+yp+zp; // 0++
+} // calculate_j8()
+)+R(void calculate_j32(const uint3 xyz, uint* j) {
+	const uint x0 =   xyz.x; // cube stencil
+	const uint xp =   xyz.x+1u;
+	const uint y0 =   xyz.y    *def_Nx;
+	const uint yp =  (xyz.y+1u)*def_Nx;
+	const uint z0 =   xyz.z    *def_Ny*def_Nx;
+	const uint zp =  (xyz.z+1u)*def_Ny*def_Nx;
+	const uint xq =  (xyz.x       +2u)%def_Nx; // central difference stencil on each cube corner point
+	const uint xm =  (xyz.x+def_Nx-1u)%def_Nx;
+	const uint yq = ((xyz.y       +2u)%def_Ny)*def_Nx;
+	const uint ym = ((xyz.y+def_Ny-1u)%def_Ny)*def_Nx;
+	const uint zq = ((xyz.z       +2u)%def_Nz)*def_Ny*def_Nx;
+	const uint zm = ((xyz.z+def_Nz-1u)%def_Nz)*def_Ny*def_Nx;
+	j[ 0] = x0+y0+z0; // 000 // cube stencil
+	j[ 1] = xp+y0+z0; // +00
+	j[ 2] = xp+y0+zp; // +0+
+	j[ 3] = x0+y0+zp; // 00+
+	j[ 4] = x0+yp+z0; // 0+0
+	j[ 5] = xp+yp+z0; // ++0
+	j[ 6] = xp+yp+zp; // +++
+	j[ 7] = x0+yp+zp; // 0++
+	j[ 8] = xm+y0+z0; // -00 // central difference stencil on each cube corner point
+	j[ 9] = x0+ym+z0; // 0-0
+	j[10] = x0+y0+zm; // 00-
+	j[11] = xq+y0+z0; // #00
+	j[12] = xp+ym+z0; // +-0
+	j[13] = xp+y0+zm; // +0-
+	j[14] = xq+y0+zp; // #0+
+	j[15] = xp+ym+zp; // +-+
+	j[16] = xp+y0+zq; // +0#
+	j[17] = xm+y0+zp; // -0+
+	j[18] = x0+ym+zp; // 0-+
+	j[19] = x0+y0+zq; // 00#
+	j[20] = xm+yp+z0; // -+0
+	j[21] = x0+yq+z0; // 0#0
+	j[22] = x0+yp+zm; // 0+-
+	j[23] = xq+yp+z0; // #+0
+	j[24] = xp+yq+z0; // +#0
+	j[25] = xp+yp+zm; // ++-
+	j[26] = xq+yp+zp; // #++
+	j[27] = xp+yq+zp; // +#+
+	j[28] = xp+yp+zq; // ++#
+	j[29] = xm+yp+zp; // -++
+	j[30] = x0+yq+zp; // 0#+
+	j[31] = x0+yp+zq; // 0+#
+} // calculate_j32()
+
 )+"#ifndef FORCE_FIELD"+R( // render flags as grid
 )+R(kernel void graphics_flags(const global float* camera, global int* bitmap, global int* zbuffer, const global uchar* flags) {
 )+"#else"+R( // FORCE_FIELD
@@ -2328,7 +2390,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uchar flagsn = flags[n]; // cache flags
 	const uchar flagsn_bo = flagsn&TYPE_BO; // extract boundary flags
 	if(flagsn==0u||flagsn==TYPE_G) return; // don't draw regular fluid cells
-	//if(flagsn&TYPE_SU) return; // don't draw surface
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const uint3 xyz = coordinates(n);
@@ -2397,61 +2458,38 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
 	const uint3 xyz = coordinates(n);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
-	//if(xyz.x==0u||xyz.y==0u||xyz.z==0u||xyz.x>=def_Nx-2u||xyz.y>=def_Ny-2u||xyz.z>=def_Nz-2u) return;
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float3 p = position(xyz);
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
 	uint j[8];
-	const uint x0 =  xyz.x; // cube stencil
-	const uint xp =  xyz.x+1u;
-	const uint y0 =  xyz.y    *def_Nx;
-	const uint yp = (xyz.y+1u)*def_Nx;
-	const uint z0 =  xyz.z    *def_Ny*def_Nx;
-	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
-	j[0] = n       ; // 000
-	j[1] = xp+y0+z0; // +00
-	j[2] = xp+y0+zp; // +0+
-	j[3] = x0+y0+zp; // 00+
-	j[4] = x0+yp+z0; // 0+0
-	j[5] = xp+yp+z0; // ++0
-	j[6] = xp+yp+zp; // +++
-	j[7] = x0+yp+zp; // 0++
-	float v[8];
-	for(uint i=0u; i<8u; i++) v[i] = (float)((flags[j[i]]&TYPE_BO)==TYPE_S);
+	calculate_j8(xyz, j);
+	bool v[8];
+	for(uint i=0u; i<8u; i++) v[i] = (flags[j[i]]&TYPE_BO)==TYPE_S;
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
-	const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
+	const uint tn = marching_cubes_halfway(v, triangles); // run marching cubes algorithm
 	if(tn==0u) return;
 )+"#ifdef FORCE_FIELD"+R(
 	float3 Fj[8];
-	for(uint i=0u; i<8u; i++) Fj[i] = v[i]==1.0f ? (float3)(F[j[i]], F[def_N+(ulong)j[i]], F[2ul*def_N+(ulong)j[i]]) : (float3)(0.0f, 0.0f, 0.0f);
+	for(uint i=0u; i<8u; i++) Fj[i] = v[i] ? load3(j[i], F) : (float3)(0.0f, 0.0f, 0.0f);
 )+"#endif"+R( // FORCE_FIELD
 	for(uint i=0u; i<tn; i++) {
 		const float3 p0 = triangles[3u*i   ];
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		int c0=0xDFDFDF, c1=0xDFDFDF, c2=0xDFDFDF;
 )+"#ifdef FORCE_FIELD"+R(
-		int c0, c1, c2; {
-			const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-			const float3 Fi = (x0*y0*z0)*Fj[0]+(x1*y0*z0)*Fj[1]+(x1*y0*z1)*Fj[2]+(x0*y0*z1)*Fj[3]+(x0*y1*z0)*Fj[4]+(x1*y1*z0)*Fj[5]+(x1*y1*z1)*Fj[6]+(x0*y1*z1)*Fj[7]; // perform trilinear interpolation
-			c0 = shading(colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal)), p+p0, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal));
-		} {
-			const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-			const float3 Fi = (x0*y0*z0)*Fj[0]+(x1*y0*z0)*Fj[1]+(x1*y0*z1)*Fj[2]+(x0*y0*z1)*Fj[3]+(x0*y1*z0)*Fj[4]+(x1*y1*z0)*Fj[5]+(x1*y1*z1)*Fj[6]+(x0*y1*z1)*Fj[7]; // perform trilinear interpolation
-			c1 = shading(colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal)), p+p1, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal));
-		} {
-			const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-			const float3 Fi = (x0*y0*z0)*Fj[0]+(x1*y0*z0)*Fj[1]+(x1*y0*z1)*Fj[2]+(x0*y0*z1)*Fj[3]+(x0*y1*z0)*Fj[4]+(x1*y1*z0)*Fj[5]+(x1*y1*z1)*Fj[6]+(x0*y1*z1)*Fj[7]; // perform trilinear interpolation
-			c2 = shading(colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal)), p+p2, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal));
-		}
-		draw_triangle_interpolated(p+p0, p+p1, p+p2, c0, c1, c2, camera_cache, bitmap, zbuffer); // draw triangle with interpolated colors
+		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		c0 = colorscale_twocolor(0.5f+def_scale_F*dot(trilinear3(p0, Fj), normal));
+		c1 = colorscale_twocolor(0.5f+def_scale_F*dot(trilinear3(p1, Fj), normal));
+		c2 = colorscale_twocolor(0.5f+def_scale_F*dot(trilinear3(p2, Fj), normal));
 )+"#else"+R( // FORCE_FIELD
-		const int c0 = shading(0xDFDFDF, p+p0, normal, camera_cache);
-		const int c1 = shading(0xDFDFDF, p+p1, normal, camera_cache);
-		const int c2 = shading(0xDFDFDF, p+p2, normal, camera_cache);
-		draw_triangle_interpolated(p+p0, p+p1, p+p2, c0, c1, c2, camera_cache, bitmap, zbuffer);
+		const float3 normal = cross(p1-p0, p2-p0); // no normalize needed for shading()
 )+"#endif"+R( // FORCE_FIELD
+		c0 = shading(c0, p+p0, normal, camera_cache);
+		c1 = shading(c1, p+p1, normal, camera_cache);
+		c2 = shading(c2, p+p2, normal, camera_cache);
+		draw_triangle_interpolated(p+p0, p+p1, p+p2, c0, c1, c2, camera_cache, bitmap, zbuffer); // draw triangle with interpolated colors
 	}
 }
 
@@ -2472,7 +2510,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // EQUILIBRIUM_BOUNDARIES
 	if(flags[n]&(TYPE_I|TYPE_G)) return;
 )+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
-	const float3 un = load_u(n, u); // cache velocity
+	const float3 un = load3(n, u); // cache velocity
 	const float ul = length(un);
 	if(def_scale_u*ul<0.1f) return; // don't draw lattice points where the velocity is lower than this threshold
 	int c = 0; // coloring
@@ -2517,10 +2555,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	int c00=0, c01=0, c10=0, c11=0;
 	switch(field_mode) {
 		case 0: // coloring by velocity
-			c00 = colorscale_rainbow(def_scale_u*length(load_u(n00, u)));
-			c01 = colorscale_rainbow(def_scale_u*length(load_u(n01, u)));
-			c10 = colorscale_rainbow(def_scale_u*length(load_u(n10, u)));
-			c11 = colorscale_rainbow(def_scale_u*length(load_u(n11, u)));
+			c00 = colorscale_rainbow(def_scale_u*length(load3(n00, u)));
+			c01 = colorscale_rainbow(def_scale_u*length(load3(n01, u)));
+			c10 = colorscale_rainbow(def_scale_u*length(load3(n10, u)));
+			c11 = colorscale_rainbow(def_scale_u*length(load3(n11, u)));
 			break;
 		case 1: // coloring by density
 			c00 = colorscale_twocolor(0.5f+def_scale_rho*(rho[n00]-1.0f));
@@ -2586,7 +2624,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			const uint z = (uint)(p1.z+1.5f*(float)def_Nz)%def_Nz;
 			const uint n = x+(y+z*def_Ny)*def_Nx;
 			if(flags[n]&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
-			const float3 un = load_u(n, u); // interpolate_u(p1, u)
+			const float3 un = load3(n, u); // interpolate_u(p1, u)
 			const float ul = length(un);
 			p0 = p1;
 			p1 += (dt/ul)*un; // integrate forward in time
@@ -2616,7 +2654,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	float3 un = load_u(n, u); // cache velocity
+	float3 un = load3(n, u); // cache velocity
 	const float ul = length(un);
 	const float Q = calculate_Q(n, u);
 	if(Q<def_scale_Q_min||ul==0.0f) return; // don't draw lattice points where the velocity is very low
@@ -2643,65 +2681,22 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	const uint x0 =  xyz.x; // cube stencil
-	const uint xp =  xyz.x+1u;
-	const uint y0 =  xyz.y    *def_Nx;
-	const uint yp = (xyz.y+1u)*def_Nx;
-	const uint z0 =  xyz.z    *def_Ny*def_Nx;
-	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
-	const uint xq =  (xyz.x       +2u)%def_Nx; // central difference stencil on each cube corner point
-	const uint xm =  (xyz.x+def_Nx-1u)%def_Nx;
-	const uint yq = ((xyz.y       +2u)%def_Ny)*def_Nx;
-	const uint ym = ((xyz.y+def_Ny-1u)%def_Ny)*def_Nx;
-	const uint zq = ((xyz.z       +2u)%def_Nz)*def_Ny*def_Nx;
-	const uint zm = ((xyz.z+def_Nz-1u)%def_Nz)*def_Ny*def_Nx;
 	uint j[32];
-	j[ 0] = n       ; // 000 // cube stencil
-	j[ 1] = xp+y0+z0; // +00
-	j[ 2] = xp+y0+zp; // +0+
-	j[ 3] = x0+y0+zp; // 00+
-	j[ 4] = x0+yp+z0; // 0+0
-	j[ 5] = xp+yp+z0; // ++0
-	j[ 6] = xp+yp+zp; // +++
-	j[ 7] = x0+yp+zp; // 0++
-	j[ 8] = xm+y0+z0; // -00 // central difference stencil on each cube corner point
-	j[ 9] = x0+ym+z0; // 0-0
-	j[10] = x0+y0+zm; // 00-
-	j[11] = xq+y0+z0; // #00
-	j[12] = xp+ym+z0; // +-0
-	j[13] = xp+y0+zm; // +0-
-	j[14] = xq+y0+zp; // #0+
-	j[15] = xp+ym+zp; // +-+
-	j[16] = xp+y0+zq; // +0#
-	j[17] = xm+y0+zp; // -0+
-	j[18] = x0+ym+zp; // 0-+
-	j[19] = x0+y0+zq; // 00#
-	j[20] = xm+yp+z0; // -+0
-	j[21] = x0+yq+z0; // 0#0
-	j[22] = x0+yp+zm; // 0+-
-	j[23] = xq+yp+z0; // #+0
-	j[24] = xp+yq+z0; // +#0
-	j[25] = xp+yp+zm; // ++-
-	j[26] = xq+yp+zp; // #++
-	j[27] = xp+yq+zp; // +#+
-	j[28] = xp+yp+zq; // ++#
-	j[29] = xm+yp+zp; // -++
-	j[30] = x0+yq+zp; // 0#+
-	j[31] = x0+yp+zq; // 0+#
+	calculate_j32(xyz, j);
 	uchar flags_cell = 0u;
 	for(uint i=0u; i<32u; i++) flags_cell |= flags[j[i]];
-	if(flags_cell&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
-	float3 uj[8];
-	for(uint i=0u; i<8u; i++) uj[i] = load_u(j[i], u);
+	if(flags_cell&(TYPE_E|TYPE_I|TYPE_G)) return;
+	float3 uj[32];
+	for(uint i=0u; i<32u; i++) uj[i] = load3(j[i], u);
 	float v[8]; // don't load any velocity twice from global memory
-	v[0] = calculate_Q_cached(      uj[ 1]    , load_u(j[ 8], u),       uj[ 4]    , load_u(j[ 9], u),       uj[ 3]    , load_u(j[10], u));
-	v[1] = calculate_Q_cached(load_u(j[11], u),       uj[ 0]    ,       uj[ 5]    , load_u(j[12], u),       uj[ 2]    , load_u(j[13], u));
-	v[2] = calculate_Q_cached(load_u(j[14], u),       uj[ 3]    ,       uj[ 6]    , load_u(j[15], u), load_u(j[16], u),       uj[ 1]    );
-	v[3] = calculate_Q_cached(      uj[ 2]    , load_u(j[17], u),       uj[ 7]    , load_u(j[18], u), load_u(j[19], u),       uj[ 0]    );
-	v[4] = calculate_Q_cached(      uj[ 5]    , load_u(j[20], u), load_u(j[21], u),       uj[ 0]    ,       uj[ 7]    , load_u(j[22], u));
-	v[5] = calculate_Q_cached(load_u(j[23], u),       uj[ 4]    , load_u(j[24], u),       uj[ 1]    ,       uj[ 6]    , load_u(j[25], u));
-	v[6] = calculate_Q_cached(load_u(j[26], u),       uj[ 7]    , load_u(j[27], u),       uj[ 2]    , load_u(j[28], u),       uj[ 5]    );
-	v[7] = calculate_Q_cached(      uj[ 6]    , load_u(j[29], u), load_u(j[30], u),       uj[ 3]    , load_u(j[31], u),       uj[ 4]    );
+	v[0] = calculate_Q_cached(uj[ 1], uj[ 8], uj[ 4], uj[ 9], uj[ 3], uj[10]);
+	v[1] = calculate_Q_cached(uj[11], uj[ 0], uj[ 5], uj[12], uj[ 2], uj[13]);
+	v[2] = calculate_Q_cached(uj[14], uj[ 3], uj[ 6], uj[15], uj[16], uj[ 1]);
+	v[3] = calculate_Q_cached(uj[ 2], uj[17], uj[ 7], uj[18], uj[19], uj[ 0]);
+	v[4] = calculate_Q_cached(uj[ 5], uj[20], uj[21], uj[ 0], uj[ 7], uj[22]);
+	v[5] = calculate_Q_cached(uj[23], uj[ 4], uj[24], uj[ 1], uj[ 6], uj[25]);
+	v[6] = calculate_Q_cached(uj[26], uj[ 7], uj[27], uj[ 2], uj[28], uj[ 5]);
+	v[7] = calculate_Q_cached(uj[ 6], uj[29], uj[30], uj[ 3], uj[31], uj[ 4]);
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
 	const uint tn = marching_cubes(v, def_scale_Q_min, triangles); // run marching cubes algorithm
 	if(tn==0u) return;
@@ -2709,56 +2704,26 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float3 p0 = triangles[3u*i   ]; // triangle coordinates in [0,1] (local cell)
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		const float3 normal = cross(p1-p0, p2-p0); // no normalize needed for shading()
 		int c0=0, c1=0, c2=0;
 		switch(field_mode) {
 			case 0: // coloring by velocity
-				{
-					const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-					c0 = shading(colorscale_rainbow(def_scale_u*length(ui)), p+p0, normal, camera_cache); // colorscale_rainbow(def_scale_u*length(ui));
-				} {
-					const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-					c1 = shading(colorscale_rainbow(def_scale_u*length(ui)), p+p1, normal, camera_cache); // colorscale_rainbow(def_scale_u*length(ui));
-				} {
-					const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-					c2 = shading(colorscale_rainbow(def_scale_u*length(ui)), p+p2, normal, camera_cache); // colorscale_rainbow(def_scale_u*length(ui));
-				}
+				c0 = shading(colorscale_rainbow(def_scale_u*length(trilinear3(p0, uj))), p+p0, normal, camera_cache);
+				c1 = shading(colorscale_rainbow(def_scale_u*length(trilinear3(p1, uj))), p+p1, normal, camera_cache);
+				c2 = shading(colorscale_rainbow(def_scale_u*length(trilinear3(p2, uj))), p+p2, normal, camera_cache);
 				break;
 			case 1: // coloring by density
 				for(uint i=0u; i<8u; i++) v[i] = rho[j[i]];
-				{
-					const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c0 = shading(colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f)), p+p0, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f));
-				} {
-					const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c1 = shading(colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f)), p+p1, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f));
-				} {
-					const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c2 = shading(colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f)), p+p2, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f));
-				}
+				c0 = shading(colorscale_twocolor(0.5f+def_scale_rho*(trilinear(p0, v)-1.0f)), p+p0, normal, camera_cache);
+				c1 = shading(colorscale_twocolor(0.5f+def_scale_rho*(trilinear(p1, v)-1.0f)), p+p1, normal, camera_cache);
+				c2 = shading(colorscale_twocolor(0.5f+def_scale_rho*(trilinear(p2, v)-1.0f)), p+p2, normal, camera_cache);
 				break;
 )+"#ifdef TEMPERATURE"+R(
 			case 2: // coloring by temperature
 				for(uint i=0u; i<8u; i++) v[i] = T[j[i]];
-				{
-					const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c0 = shading(colorscale_iron(0.5f+def_scale_T*(vi-def_T_avg)), p+p0, normal, camera_cache); // colorscale_iron(0.5f+def_scale_T*(T[n]-def_T_avg));
-				} {
-					const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c1 = shading(colorscale_iron(0.5f+def_scale_T*(vi-def_T_avg)), p+p1, normal, camera_cache); // colorscale_iron(0.5f+def_scale_T*(T[n]-def_T_avg));
-				} {
-					const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c2 = shading(colorscale_iron(0.5f+def_scale_T*(vi-def_T_avg)), p+p2, normal, camera_cache); // colorscale_iron(0.5f+def_scale_T*(T[n]-def_T_avg));
-				}
+				c0 = shading(colorscale_iron(0.5f+def_scale_T*(trilinear(p0, v)-def_T_avg)), p+p0, normal, camera_cache);
+				c1 = shading(colorscale_iron(0.5f+def_scale_T*(trilinear(p1, v)-def_T_avg)), p+p1, normal, camera_cache);
+				c2 = shading(colorscale_iron(0.5f+def_scale_T*(trilinear(p2, v)-def_T_avg)), p+p2, normal, camera_cache);
 				break;
 )+"#endif"+R( // TEMPERATURE
 		}
@@ -2776,20 +2741,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
 	uint j[8];
-	const uint x0 =  xyz.x; // cube stencil
-	const uint xp =  xyz.x+1u;
-	const uint y0 =  xyz.y    *def_Nx;
-	const uint yp = (xyz.y+1u)*def_Nx;
-	const uint z0 =  xyz.z    *def_Ny*def_Nx;
-	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
-	j[0] = n       ; // 000
-	j[1] = xp+y0+z0; // +00
-	j[2] = xp+y0+zp; // +0+
-	j[3] = x0+y0+zp; // 00+
-	j[4] = x0+yp+z0; // 0+0
-	j[5] = xp+yp+z0; // ++0
-	j[6] = xp+yp+zp; // +++
-	j[7] = x0+yp+zp; // 0++
+	calculate_j8(xyz, j);
 	float v[8];
 	for(uint i=0u; i<8u; i++) v[i] = phi[j[i]];
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
@@ -2799,7 +2751,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float3 p0 = triangles[3u*i   ];
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		const float3 normal = cross(p1-p0, p2-p0); // no normalize needed for shading()
 		const int c0 = shading(0x379BFF, p+p0, normal, camera_cache);
 		const int c1 = shading(0x379BFF, p+p1, normal, camera_cache);
 		const int c2 = shading(0x379BFF, p+p2, normal, camera_cache);
