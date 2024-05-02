@@ -52,7 +52,7 @@ temp/setup.o: src/setup.cpp src/defines.hpp src/graphics.hpp src/info.hpp src/lb
 	@mkdir -p temp
 	$(CC) -c src/setup.cpp -o temp/setup.o $(CFLAGS) $(LDFLAGS_OPENCL)
 
-temp/shapes.o: src/shapes.cpp src/defines.hpp src/graphics.hpp src/info.hpp src/lbm.hpp src/lodepng.hpp src/opencl.hpp src/shapes.hpp src/units.hpp src/utilities.hpp make.sh
+temp/shapes.o: src/shapes.cpp src/shapes.hpp src/utilities.hpp make.sh
 	@mkdir -p temp
 	$(CC) -c src/shapes.cpp -o temp/shapes.o $(CFLAGS) $(LDFLAGS_OPENCL)
 

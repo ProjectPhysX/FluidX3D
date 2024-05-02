@@ -212,8 +212,8 @@ private:
 
 	void communicate_fi();
 	void communicate_rho_u_flags();
-#ifdef SURFACE
 	void communicate_flags();
+#ifdef SURFACE
 	void communicate_phi_massex_flags();
 #endif // SURFACE
 #ifdef TEMPERATURE

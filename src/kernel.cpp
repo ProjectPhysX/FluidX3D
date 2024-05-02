@@ -2129,7 +2129,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	insert_rho_u_flags(a, A, index_insert_m(a, direction), transfer_buffer_m, rho, u, flags);
 }
 
-)+"#ifdef SURFACE"+R(
 )+R(kernel void transfer_extract_flags(const uint direction, const ulong t, global uchar* transfer_buffer_p, global uchar* transfer_buffer_m, const global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
@@ -2143,6 +2142,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	flags[index_insert_m(a, direction)] = transfer_buffer_m[a];
 }
 
+)+"#ifdef SURFACE"+R(
 )+R(void extract_phi_massex_flags(const uint a, const uint A, const uint n, global char* transfer_buffer, const global float* phi, const global float* massex, const global uchar* flags) {
 	((global float*)transfer_buffer)[     a] = phi   [n];
 	((global float*)transfer_buffer)[   A+a] = massex[n];
@@ -2222,9 +2222,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float x0=bbu[ 1], y0=bbu[ 2], z0=bbu[ 3], x1=bbu[ 4], y1=bbu[ 5], z1=bbu[ 6];
 	const float cx=bbu[ 7], cy=bbu[ 8], cz=bbu[ 9], ux=bbu[10], uy=bbu[11], uz=bbu[12], rx=bbu[13], ry=bbu[14], rz=bbu[15];
 	const uint3 xyz = direction==0u ? (uint3)((uint)clamp((int)x0-def_Ox, 0, (int)def_Nx-1), a%def_Ny, a/def_Ny) : direction==1u ? (uint3)(a/def_Nz, (uint)clamp((int)y0-def_Oy, 0, (int)def_Ny-1), a%def_Nz) : (uint3)(a%def_Nx, a/def_Nx, (uint)clamp((int)z0-def_Oz, 0, (int)def_Nz-1));
-	const float3 p = position(xyz);
-	const float3 offset = (float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
-	const float3 r_origin = p+offset;
+	const float3 offset = (float3)(0.5f*(float)((int)def_Nx+2*def_Ox)-0.5f, 0.5f*(float)((int)def_Ny+2*def_Oy)-0.5f, 0.5f*(float)((int)def_Nz+2*def_Oz)-0.5f);
+	const float3 r_origin = position(xyz)+offset;
 	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
 	uint intersections=0u, intersections_check=0u;
 	ushort distances[64]; // allow up to 64 mesh intersections
@@ -2307,7 +2306,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+R(kernel void unvoxelize_mesh(global uchar* flags, const uchar flag, float x0, float y0, float z0, float x1, float y1, float z1) { // remove voxelized triangle mesh
 	const uint n = get_global_id(0);
-	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
+	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((int)def_Nx+2*def_Ox)-0.5f, 0.5f*(float)((int)def_Ny+2*def_Oy)-0.5f, 0.5f*(float)((int)def_Nz+2*def_Oz)-0.5f);
 	if(p.x>=x0-1.0f&&p.y>=y0-1.0f&&p.z>=z0-1.0f&&p.x<=x1+1.0f&&p.y<=y1+1.0f&&p.z<=z1+1.0f) flags[n] &= ~flag;
 } // unvoxelize_mesh()
 
@@ -2669,11 +2668,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 	draw_line(p-(0.5f/ul)*un, p+(0.5f/ul)*un, c, camera_cache, bitmap, zbuffer);
 }
 
-)+"#ifndef TEMPERATURE"+R(
-)+R(kernel void graphics_q(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags) {
-)+"#else"+R( // TEMPERATURE
-)+R(kernel void graphics_q(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
+)+R(kernel void graphics_q)+"("+R(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u // ) {
+)+"#ifdef SURFACE"+R(
+	, const global uchar* flags // argument order is important
+)+"#endif"+R( // SURFACE
+)+"#ifdef TEMPERATURE"+R(
+	, const global float* T // argument order is important
 )+"#endif"+R( // TEMPERATURE
+)+") {"+R( // graphics_q()
 	const uint n = get_global_id(0);
 	const uint3 xyz = coordinates(n);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_q(xyz)) return; // don't execute graphics_q_field() on marching-cubes halo
@@ -2683,9 +2685,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
 	uint j[32];
 	calculate_j32(xyz, j);
+)+"#ifdef SURFACE"+R(
 	uchar flags_cell = 0u;
-	for(uint i=0u; i<32u; i++) flags_cell |= flags[j[i]];
-	if(flags_cell&(TYPE_E|TYPE_I|TYPE_G)) return;
+	for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
+	if(flags_cell&(TYPE_I|TYPE_G)) return;
+)+"#endif"+R( // SURFACE
 	float3 uj[32];
 	for(uint i=0u; i<32u; i++) uj[i] = load3(j[i], u);
 	float v[8]; // don't load any velocity twice from global memory
@@ -2745,7 +2749,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float v[8];
 	for(uint i=0u; i<8u; i++) v[i] = phi[j[i]];
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
-	const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
+	const uint tn = marching_cubes(v, 0.502f, triangles); // run marching cubes algorithm, isovalue slightly larger than 0.5f to fix z-fighting with graphics_flags_mc()
 	if(tn==0u) return;
 	for(uint i=0u; i<tn; i++) {
 		const float3 p0 = triangles[3u*i   ];

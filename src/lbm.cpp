@@ -306,9 +306,9 @@ string LBM_Domain::device_defines() const { return
 	"\n	#define def_Ay "+to_string(Nz*Nx)+"u"
 	"\n	#define def_Az "+to_string(Nx*Ny)+"u"
 
-	"\n	#define def_domain_offset_x "+to_string((float)Ox+(float)(Dx>1u)-0.5f*((float)Dx-1.0f)*(float)(Nx-2u*(Dx>1u)))+"f"
-	"\n	#define def_domain_offset_y "+to_string((float)Oy+(float)(Dy>1u)-0.5f*((float)Dy-1.0f)*(float)(Ny-2u*(Dy>1u)))+"f"
-	"\n	#define def_domain_offset_z "+to_string((float)Oz+(float)(Dz>1u)-0.5f*((float)Dz-1.0f)*(float)(Nz-2u*(Dz>1u)))+"f"
+	"\n	#define def_domain_offset_x "+to_string(0.5f*(float)((int)Nx+2*Ox+(int)Dx*(2*(int)(Dx>1u)-(int)Nx)))+"f"
+	"\n	#define def_domain_offset_y "+to_string(0.5f*(float)((int)Ny+2*Oy+(int)Dy*(2*(int)(Dy>1u)-(int)Ny)))+"f"
+	"\n	#define def_domain_offset_z "+to_string(0.5f*(float)((int)Nz+2*Oz+(int)Dz*(2*(int)(Dz>1u)-(int)Nz)))+"f"
 
 	"\n	#define D"+to_string(dimensions)+"Q"+to_string(velocity_set)+"" // D2Q9/D3Q15/D3Q19/D3Q27
 	"\n	#define def_velocity_set "+to_string(velocity_set)+"u" // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)
@@ -434,7 +434,7 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 #else // D2Q9
 	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 2D
 #endif // D2Q9
-	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u, lbm->flags);
+	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u);
 
 #ifdef FORCE_FIELD
 	kernel_graphics_flags.add_parameters(lbm->F);
@@ -445,6 +445,7 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	skybox = Memory<int>(device, skybox_image->width()*skybox_image->height(), 1u, skybox_image->data());
 	kernel_graphics_rasterize_phi = Kernel(device, lbm->get_N(), "graphics_rasterize_phi", camera_parameters, bitmap, zbuffer, lbm->phi);
 	kernel_graphics_raytrace_phi = Kernel(device, bitmap.length(), "graphics_raytrace_phi", camera_parameters, bitmap, skybox, lbm->phi, lbm->flags);
+	kernel_graphics_q.add_parameters(lbm->flags);
 #endif // SURFACE
 
 #ifdef TEMPERATURE
@@ -472,7 +473,7 @@ bool LBM_Domain::Graphics::update_camera() {
 bool LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, const int field_mode, const int slice_mode, const int slice_x, const int slice_y, const int slice_z, const bool visualization_change) {
 	const bool camera_update = update_camera();
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
-	if(!visualization_change&&!camera_update&&!camera.key_update&&lbm->get_t()==t_last_rendered_frame) return false; // don't render a new frame if the scene hasn't changed since last frame
+	if(!visualization_change&&!camera_update&&lbm->get_t()==t_last_rendered_frame) return false; // don't render a new frame if the scene hasn't changed since last frame
 #endif // INTERACTIVE_GRAPHICS||INTERACTIVE_GRAPHICS_ASCII
 	t_last_rendered_frame = lbm->get_t();
 	if(camera_update) camera_parameters.enqueue_write_to_device(); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
@@ -956,8 +957,11 @@ float3 LBM::calculate_torque_on_object(const float3& rotation_center, const ucha
 #ifdef MOVING_BOUNDARIES
 void LBM::update_moving_boundaries() { // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_update_moving_boundaries();
-	communicate_rho_u_flags();
+	communicate_flags();
 	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->finish_queue();
+#ifdef GRAPHICS
+	camera.key_update = true; // to prevent flickering of flags in interactive graphics when camera is not moved
+#endif // GRAPHICS
 }
 #endif // MOVING_BOUNDARIES
 
@@ -1113,7 +1117,8 @@ int* LBM::Graphics::draw_frame() {
 		if(key_Q) { slice_z = clamp(slice_z-1, 0, (int)lbm->get_Nz()-1); key_Q = false; }
 		if(key_E) { slice_z = clamp(slice_z+1, 0, (int)lbm->get_Nz()-1); key_E = false; }
 	}
-	const bool visualization_change = last_visualization_modes!=visualization_modes||last_field_mode!=field_mode||last_slice_mode!=slice_mode||last_slice_x!=slice_x||last_slice_y!=slice_y||last_slice_z!=slice_z;
+	const bool visualization_change = camera.key_update||last_visualization_modes!=visualization_modes||last_field_mode!=field_mode||last_slice_mode!=slice_mode||last_slice_x!=slice_x||last_slice_y!=slice_y||last_slice_z!=slice_z;
+	camera.key_update = false;
 	last_visualization_modes = visualization_modes;
 	last_field_mode = field_mode;
 	last_slice_mode = slice_mode;
@@ -1123,7 +1128,6 @@ int* LBM::Graphics::draw_frame() {
 	bool new_frame = true;
 	for(uint d=0u; d<lbm->get_D(); d++) new_frame = new_frame && lbm->lbm_domain[d]->graphics.enqueue_draw_frame(visualization_modes, field_mode, slice_mode, slice_x, slice_y, slice_z, visualization_change);
 	for(uint d=0u; d<lbm->get_D(); d++) lbm->lbm_domain[d]->finish_queue();
-	camera.key_update = false;
 	int* bitmap = lbm->lbm_domain[0]->graphics.get_bitmap();
 	int* zbuffer = lbm->lbm_domain[0]->graphics.get_zbuffer();
 	for(uint d=1u; d<lbm->get_D()&&new_frame; d++) {
@@ -1245,9 +1249,9 @@ void LBM_Domain::allocate_transfer(Device& device) { // allocate all memory for 
 	kernel_transfer[enum_transfer_field::fi              ][1] = Kernel(device, 0u, "transfer__insert_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
 	kernel_transfer[enum_transfer_field::rho_u_flags     ][0] = Kernel(device, 0u, "transfer_extract_rho_u_flags"     , 0u, t, transfer_buffer_p, transfer_buffer_m, rho, u, flags);
 	kernel_transfer[enum_transfer_field::rho_u_flags     ][1] = Kernel(device, 0u, "transfer__insert_rho_u_flags"     , 0u, t, transfer_buffer_p, transfer_buffer_m, rho, u, flags);
-#ifdef SURFACE
 	kernel_transfer[enum_transfer_field::flags           ][0] = Kernel(device, 0u, "transfer_extract_flags"           , 0u, t, transfer_buffer_p, transfer_buffer_m, flags);
 	kernel_transfer[enum_transfer_field::flags           ][1] = Kernel(device, 0u, "transfer__insert_flags"           , 0u, t, transfer_buffer_p, transfer_buffer_m, flags);
+#ifdef SURFACE
 	kernel_transfer[enum_transfer_field::phi_massex_flags][0] = Kernel(device, 0u, "transfer_extract_phi_massex_flags", 0u, t, transfer_buffer_p, transfer_buffer_m, phi, massex, flags);
 	kernel_transfer[enum_transfer_field::phi_massex_flags][1] = Kernel(device, 0u, "transfer__insert_phi_massex_flags", 0u, t, transfer_buffer_p, transfer_buffer_m, phi, massex, flags);
 #endif // SURFACE
@@ -1311,10 +1315,10 @@ void LBM::communicate_fi() {
 void LBM::communicate_rho_u_flags() {
 	communicate_field(enum_transfer_field::rho_u_flags, 17u);
 }
-#ifdef SURFACE
 void LBM::communicate_flags() {
 	communicate_field(enum_transfer_field::flags, 1u);
 }
+#ifdef SURFACE
 void LBM::communicate_phi_massex_flags() {
 	communicate_field(enum_transfer_field::phi_massex_flags, 9u);
 }

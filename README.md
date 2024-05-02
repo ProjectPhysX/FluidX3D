@@ -146,6 +146,19 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug that raytracing kernel could lock up simulation
   - fixed minor visual artifacts with raytracing
   - fixed that console sometimes was not cleared before `INTERACTIVE_GRAPHICS_ASCII` rendering starts
+- [v2.16](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.16) (02.05.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.15...v2.16) (bug fixes)
+  - simplified 10% faster marching-cubes implementation with 1D interpolation on edges instead of 3D interpolation, allowing to get rid of edge table
+  - added faster, simplified marching-cubes variant for solid surface rendering where edges are always halfway between grid cells
+  - refactoring in OpenCL rendering kernels
+  - fixed that voxelization failed in Intel OpenCL CPU Runtime due to array out-of-bounds access
+  - fixed that voxelization did not always produce binary identical results in multi-GPU compared to single-GPU
+  - fixed that velocity voxelization failed for free surface simulations
+  - fixed that <kbd>Y</kbd>/<kbd>Z</kbd> keys were incorrect for `QWERTY` keyboard layout in Linux
+  - fixed that free camera movement speed in help overlay was not updated in stationary image when scrolling
+  - fixed that cursor would sometimes flicker when scrolling on trackpads with Linux-X11 interactive graphics
+  - fixed flickering of interactive rendering with multi-GPU when camera is not moved
+  - fixed missing `XInitThreads()` call that could crash Linux interactive graphics on some systems
+  - fixed z-fighting between `graphics_rasterize_phi()` and `graphics_flags_mc()` kernels
 
 </details>
 
