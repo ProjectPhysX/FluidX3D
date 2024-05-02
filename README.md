@@ -153,6 +153,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed that voxelization failed in Intel OpenCL CPU Runtime due to array out-of-bounds access
   - fixed that voxelization did not always produce binary identical results in multi-GPU compared to single-GPU
   - fixed that velocity voxelization failed for free surface simulations
+  - fixed terrible performance on ARM GPUs by macro-replacing fused-multiply-add (`fma`) with `a*b+c`
   - fixed that <kbd>Y</kbd>/<kbd>Z</kbd> keys were incorrect for `QWERTY` keyboard layout in Linux
   - fixed that free camera movement speed in help overlay was not updated in stationary image when scrolling
   - fixed that cursor would sometimes flicker when scrolling on trackpads with Linux-X11 interactive graphics
@@ -552,9 +553,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;UHD&nbsp;Graphics&nbsp;P630              |               0.46 |          51 |           42 |              177 (65%) |               288 (53%) |               137 (25%) |
 | 🔵&nbsp;HD&nbsp;Graphics&nbsp;5500               |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
 | 🔵&nbsp;HD&nbsp;Graphics&nbsp;4600               |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
-| 🟡&nbsp;Mali-G610&nbsp;MP4 (Orange&nbsp;Pi&nbsp;5&nbsp;Plus) |   0.06 |          16 |           34 |               43 (19%) |                59 (13%) |                19 ( 4%) |
-| 🟡&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |               14 ( 7%) |                17 ( 5%) |                12 ( 3%) |
-| 🟡&nbsp;Qualcomm&nbsp;Adreno&nbsp;530 (LG&nbsp;G6) |             0.33 |           2 |           30 |                1 ( 1%) |                 1 ( 0%) |                 1 ( 0%) |
+| 🟡&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |              110 (59%) |               230 (62%) |                21 ( 6%) |
 |                                                  |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              29.49 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480 |              13.62 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
