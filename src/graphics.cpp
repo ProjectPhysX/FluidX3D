@@ -739,10 +739,8 @@ int main(int argc, char* argv[]) {
 
 #ifdef INTERACTIVE_GRAPHICS_ASCII
 
-uint last_textwidth=0u, last_textheight=0u;
 uint fontwidth=8u, fontheight=16u;
 void update_frame(const double frametime) {
-	if(last_textwidth==0u&&last_textheight==0u) get_console_font_size(fontwidth, fontheight);
 	uint textwidth=0u, textheight=0u;
 	get_console_size(textwidth, textheight);
 	textwidth = max(textwidth, 2u)-1u;
@@ -750,11 +748,6 @@ void update_frame(const double frametime) {
 	textheight = min(textheight, textwidth*camera.height*fontwidth/(camera.width*fontheight));
 	textwidth = max(textwidth, 1u);
 	textheight = max(textheight, 1u);
-	if(textwidth!=last_textwidth||textheight!=last_textheight) {
-		clear_console();
-		last_textwidth = textwidth;
-		last_textheight = textheight;
-	}
 	show_console_cursor(false);
 	const Image image(camera.width, camera.height, camera.bitmap);
 	print_video_dither(&image, textwidth, textheight);
@@ -776,10 +769,7 @@ int main(int argc, char* argv[]) {
 	thread input_thread(input_detection);
 	Clock clock;
 	double frametime = 1.0;
-#ifdef UTILITIES_CONSOLE_DITHER_LOOKUP
-	print_image_dither_initialize_lookup();
-#endif // UTILITIES_CONSOLE_DITHER_LOOKUP
-	clear_console();
+	get_console_font_size(fontwidth, fontheight);
 	while(running) {
 		// main loop ################################################################
 		camera.update_state();

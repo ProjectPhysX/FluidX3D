@@ -86,7 +86,6 @@ void Info::print_initialize() {
 	println("| MLUPs   | Bandwidth   | Steps/s   | Current Step      | "+string(steps==max_ulong?"Elapsed Time  ":"Time Remaining")+"      |");
 #else // INTERACTIVE_GRAPHICS_ASCII
 	println("'-----------------'-----------------------------------------------------------'");
-	clear_console();
 #endif // INTERACTIVE_GRAPHICS_ASCII
 	clock.start();
 	allow_rendering = true;
