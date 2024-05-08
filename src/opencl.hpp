@@ -339,14 +339,10 @@ public:
 		delete_host_buffer();
 	}
 	inline void reset(const T value=(T)0) {
-		if(host_buffer_exists) {
-			std::fill(host_buffer, host_buffer+range(), value); // faster than "for(ulong i=0ull; i<range(); i++) host_buffer[i] = value;"
-		}
+		//if(device_buffer_exists) cl_queue.enqueueFillBuffer(device_buffer, value, 0ull, capacity()); // faster than "write_to_device();"
+		if(host_buffer_exists) std::fill(host_buffer, host_buffer+range(), value); // faster than "for(ulong i=0ull; i<range(); i++) host_buffer[i] = value;"
 		write_to_device(); // enqueueFillBuffer is broken for large buffers on Nvidia GPUs!
-		//if(device_buffer_exists) {
-		//	cl_queue.enqueueFillBuffer(device_buffer, value, 0ull, capacity()); // faster than "write_to_device();"
-		//	cl_queue.finish();
-		//}
+		//if(device_buffer_exists) cl_queue.finish();
 	}
 	inline const ulong length() const { return N; }
 	inline const uint dimensions() const { return d; }
@@ -466,14 +462,21 @@ class Kernel {
 private:
 	ulong N = 0ull; // kernel range
 	uint number_of_parameters = 0u;
+	string name = "";
 	cl::Kernel cl_kernel;
 	cl::NDRange cl_range_global, cl_range_local;
 	cl::CommandQueue cl_queue;
+	inline void check_for_errors(const int error) {
+		if(error==-48) print_error("There is no OpenCL kernel with name \""+name+"(...)\" in the OpenCL C code! Check spelling!");
+		if(error<-48&&error>-53) print_error("Parameters for OpenCL kernel \""+name+"(...)\" don't match between C++ and OpenCL C!");
+		if(error==-54) print_error("Workgrop size "+to_string(WORKGROUP_SIZE)+" for OpenCL kernel \""+name+"(...)\" is invalid!");
+		if(error!=0) print_error("OpenCL kernel \""+name+"(...)\" failed with error code "+to_string(error)+"!");
+	}
 	template<typename T> inline void link_parameter(const uint position, const Memory<T>& memory) {
-		cl_kernel.setArg(position, memory.get_cl_buffer());
+		check_for_errors(cl_kernel.setArg(position, memory.get_cl_buffer()));
 	}
 	template<typename T> inline void link_parameter(const uint position, const T& constant) {
-		cl_kernel.setArg(position, sizeof(T), (void*)&constant);
+		check_for_errors(cl_kernel.setArg(position, sizeof(T), (void*)&constant));
 	}
 	inline void link_parameters(const uint starting_position) {
 		number_of_parameters = max(number_of_parameters, starting_position);
@@ -484,14 +487,15 @@ private:
 	}
 public:
 	template<class... T> inline Kernel(const Device& device, const ulong N, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
-		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
+		if(!device.is_initialized()) print_error("No OpenCL Device selected. Call Device constructor.");
+		this->name = name;
 		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
 		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
 		set_ranges(N);
 		cl_queue = device.get_cl_queue();
 	}
 	template<class... T> inline Kernel(const Device& device, const ulong N, const uint workgroup_size, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
-		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
+		if(!device.is_initialized()) print_error("No OpenCL Device selected. Call Device constructor.");
 		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
 		link_parameters(number_of_parameters, parameters...); // expand variadic template to link kernel parameters
 		set_ranges(N, (ulong)workgroup_size);
@@ -516,7 +520,7 @@ public:
 	}
 	inline Kernel& enqueue_run(const uint t=1u, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
 		for(uint i=0u; i<t; i++) {
-			cl_queue.enqueueNDRangeKernel(cl_kernel, cl::NullRange, cl_range_global, cl_range_local, event_waitlist, event_returned);
+			check_for_errors(cl_queue.enqueueNDRangeKernel(cl_kernel, cl::NullRange, cl_range_global, cl_range_local, event_waitlist, event_returned));
 		}
 		return *this;
 	}
