@@ -1240,8 +1240,7 @@ struct floatN {
 	floatN(const uint N, const floatNxN& m); // forward-declare floatNxN constructor
 	floatN() = default;
 	~floatN() {
-		if(N==0u) delete[] V;
-		N = 0u;
+		delete[] V;
 	}
 	inline float& operator[](const uint i) {
 		return V[i];
@@ -1383,8 +1382,7 @@ struct floatNxN {
 	}
 	floatNxN() = default;
 	~floatNxN() {
-		if(N==0u) delete[] M;
-		N = 0u;
+		delete[] M;
 	}
 	inline float& operator[](const uint i) {
 		return M[i];
@@ -1984,8 +1982,7 @@ struct doubleN {
 	doubleN(const uint N, const doubleNxN& m); // forward-declare doubleNxN constructor
 	doubleN() = default;
 	~doubleN() {
-		if(N==0u) delete[] V;
-		N = 0u;
+		delete[] V;
 	}
 	inline double& operator[](const uint i) {
 		return V[i];
@@ -2127,8 +2124,7 @@ struct doubleNxN {
 	}
 	doubleNxN() = default;
 	~doubleNxN() {
-		if(N==0u) delete[] M;
-		N = 0u;
+		delete[] M;
 	}
 	inline double& operator[](const uint i) {
 		return M[i];
