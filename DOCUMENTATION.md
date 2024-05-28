@@ -32,8 +32,8 @@
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
     sudo usermod -a -G render,video $(whoami)
     rm -r ~/amdgpu
+    sudo shutdown -r now
     ```
-  - Reboot.
 
   </details>
   <details><summary>Intel GPUs</summary>
@@ -57,8 +57,8 @@
     sudo apt install -y ocl-icd-libopencl1
     sudo usermod -a -G render $(whoami)
     rm -r ~/neo
+    sudo shutdown -r now
     ```
-  - Reboot.
 
   </details>
   <details><summary>Nvidia GPUs</summary>
@@ -69,8 +69,8 @@
     sudo apt upgrade -y
     sudo apt install -y g++ git make
     sudo apt install -y nvidia-driver-550
+    sudo shutdown -r now
     ```
-  - Reboot.
 
   </details>
   <details><summary>CPUs</summary>
@@ -99,8 +99,8 @@
     echo "/opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64" | sudo tee -a /etc/ld.so.conf.d/libintelopenclexp.conf
     sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
     rm -r ~/cpuruntime
+    sudo shutdown -r now
     ```
-  - Reboot.
 
   </details>
 
