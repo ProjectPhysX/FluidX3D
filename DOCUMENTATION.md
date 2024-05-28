@@ -1,8 +1,127 @@
 # FluidX3D Documentation - How to get started?
 
+## 0. Intstall GPU Drivers and OpenCL Runtime
 
+<details><summary>(click to expand section)</summary>
 
-## 1. Download
+- **Windows**
+  <details><summary>GPUs</summary>
+
+  - Download and install the [AMD](https://www.amd.com/en/support/download/drivers.html)/[Intel](https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html)/[Nvidia](https://www.nvidia.com/Download/index.aspx) GPU Drivers, which contain the OpenCL Runtime.
+  - Reboot.
+
+  </details>
+  <details><summary>CPUs</summary>
+
+  - Download and install the [Intel CPU Runtime for OpenCL](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) (this works for both AMD and Intel CPUs).
+  - Reboot.
+
+  </details>
+- **Linux**
+  <details><summary>AMD GPUs</summary>
+
+  - Download and install [AMD GPU Drivers](https://www.amd.com/en/support/linux-drivers), which contain the OpenCL Runtime, with:
+    ```bash
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install -y g++ git make
+    mkdir -p ~/amdgpu
+    cd ~/amdgpu
+    wget https://repo.radeon.com/amdgpu-install/23.40.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
+    sudo apt install -y ./amdgpu-install*.deb
+    sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
+    sudo usermod -a -G render,video $(whoami)
+    rm -r ~/amdgpu
+    ```
+  - Reboot.
+
+  </details>
+  <details><summary>Intel GPUs</summary>
+
+  - Intel GPU Drivers come already installed since Linux Kernel 6.2, but they don't contain the OpenCL Runtime.
+  - The the [OpenCL Runtime](https://github.com/intel/compute-runtime/releases) has to be installed separately with:
+    ```bash
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install -y g++ git make
+    mkdir -p ~/neo
+    cd ~/neo
+    wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.16695.4/intel-igc-core_1.0.16695.4_amd64.deb
+    wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.16695.4/intel-igc-opencl_1.0.16695.4_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-level-zero-gpu-dbgsym_1.3.29377.6_amd64.ddeb
+    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-level-zero-gpu_1.3.29377.6_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-opencl-icd-dbgsym_24.17.29377.6_amd64.ddeb
+    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-opencl-icd_24.17.29377.6_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/libigdgmm12_22.3.19_amd64.deb
+    sudo apt install -y *.deb
+    sudo apt install -y ocl-icd-libopencl1
+    sudo usermod -a -G render $(whoami)
+    rm -r ~/neo
+    ```
+  - Reboot.
+
+  </details>
+  <details><summary>Nvidia GPUs</summary>
+
+  - Download and install [Nvidia GPU Drivers](https://www.nvidia.com/Download/index.aspx), which contain the OpenCL Runtime, with:
+    ```bash
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install -y g++ git make
+    sudo apt install -y nvidia-driver-550
+    ```
+  - Reboot.
+
+  </details>
+  <details><summary>CPUs</summary>
+
+  - Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler) and [oneTBB](https://github.com/oneapi-src/oneTBB/releases) (this works for both AMD and Intel CPUs) with:
+    ```bash
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install -y g++ git make
+    mkdir -p ~/cpuruntime
+    cd ~/cpuruntime
+    wget https://github.com/intel/llvm/releases/download/2024-WW14/oclcpuexp-2024.17.3.0.09_rel.tar.gz
+    wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.12.0/oneapi-tbb-2021.12.0-lin.tgz
+    sudo mkdir -p /opt/intel/oclcpuexp_2024.17.3.0.09_rel
+    cd /opt/intel/oclcpuexp_2024.17.3.0.09_rel
+    sudo tar -zxvf ~/cpuruntime/oclcpuexp-*.tar.gz
+    sudo mkdir -p /etc/OpenCL/vendors
+    echo "/opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64/libintelocl.so" | sudo tee -a /etc/OpenCL/vendors/intel_expcpu.icd
+    cd /opt/intel
+    sudo tar -zxvf ~/cpuruntime/oneapi-tbb-*-lin.tgz
+    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64
+    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64
+    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64
+    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64
+    sudo mkdir -p /etc/ld.so.conf.d
+    echo "/opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64" | sudo tee -a /etc/ld.so.conf.d/libintelopenclexp.conf
+    sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
+    rm -r ~/cpuruntime
+    ```
+  - Reboot.
+
+  </details>
+
+- **Android**
+  <details><summary>ARM GPUs</summary>
+
+  - Download the [Termux `.apk`](https://github.com/termux/termux-app/releases) and install it.
+  - In the Termux app, run:
+    ```bash
+    apt update
+    apt upgrade -y
+    apt install -y libllvm git make
+    ```
+
+  </details>
+
+</details>
+
+<br>
+
+## 1. Download FluidX3D
 [Download](https://github.com/ProjectPhysX/FluidX3D/archive/refs/heads/master.zip) and unzip the source code, or clone with:
 ```bash
 git clone https://github.com/ProjectPhysX/FluidX3D.git

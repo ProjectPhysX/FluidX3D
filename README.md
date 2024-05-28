@@ -404,8 +404,8 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - gaming GPUs (desktop or laptop), like Nvidia GeForce, AMD Radeon, Intel Arc
   - professional/workstation GPUs, like Nvidia Quadro, AMD Radeon Pro / FirePro
   - integrated GPUs
-  - Intel Xeon Phi (requires installation of [Intel OpenCL CPU Runtime](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) ([Repo](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler)))
-  - Intel/AMD CPUs (requires installation of [Intel OpenCL CPU Runtime](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) ([Repo](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler)))
+  - CPUs (requires [installation of Intel CPU Runtime for OpenCL](DOCUMENTATION.md#0-intstall-gpu-drivers-and-opencl-runtime))
+  - Intel Xeon Phi (requires [installation of Intel CPU Runtime for OpenCL](DOCUMENTATION.md#0-intstall-gpu-drivers-and-opencl-runtime))
   - even smartphone ARM GPUs
 - native cross-vendor multi-GPU implementation
   - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
