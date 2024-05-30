@@ -13,7 +13,7 @@
   </details>
   <details><summary>CPUs</summary>
 
-  - Download and install the [Intel CPU Runtime for OpenCL](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) (this works for both AMD and Intel CPUs).
+  - Download and install the [Intel CPU Runtime for OpenCL](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-cpu-runtime-for-opencl-applications-with-sycl-support.html) (works for both AMD/Intel CPUs).
   - Reboot.
 
   </details>
@@ -24,9 +24,8 @@
     ```bash
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y g++ git make
-    mkdir -p ~/amdgpu
-    cd ~/amdgpu
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
+    mkdir -p ~/amdgpu && cd $_
     wget https://repo.radeon.com/amdgpu-install/23.40.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
     sudo apt install -y ./amdgpu-install*.deb
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
@@ -43,20 +42,8 @@
     ```bash
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y g++ git make
-    mkdir -p ~/neo
-    cd ~/neo
-    wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.16695.4/intel-igc-core_1.0.16695.4_amd64.deb
-    wget https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.16695.4/intel-igc-opencl_1.0.16695.4_amd64.deb
-    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-level-zero-gpu-dbgsym_1.3.29377.6_amd64.ddeb
-    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-level-zero-gpu_1.3.29377.6_amd64.deb
-    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-opencl-icd-dbgsym_24.17.29377.6_amd64.ddeb
-    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/intel-opencl-icd_24.17.29377.6_amd64.deb
-    wget https://github.com/intel/compute-runtime/releases/download/24.17.29377.6/libigdgmm12_22.3.19_amd64.deb
-    sudo apt install -y *.deb
-    sudo apt install -y ocl-icd-libopencl1
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev intel-opencl-icd
     sudo usermod -a -G render $(whoami)
-    rm -r ~/neo
     sudo shutdown -r now
     ```
 
@@ -67,25 +54,22 @@
     ```bash
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y g++ git make
-    sudo apt install -y nvidia-driver-550
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-550
     sudo shutdown -r now
     ```
 
   </details>
   <details><summary>CPUs</summary>
 
-  - Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler) and [oneTBB](https://github.com/oneapi-src/oneTBB/releases) (this works for both AMD and Intel CPUs) with:
+  - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler) and [oneTBB](https://github.com/oneapi-src/oneTBB/releases) with:
     ```bash
     sudo apt update
     sudo apt upgrade -y
-    sudo apt install -y g++ git make
-    mkdir -p ~/cpuruntime
-    cd ~/cpuruntime
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
+    mkdir -p ~/cpuruntime && cd $_
     wget https://github.com/intel/llvm/releases/download/2024-WW14/oclcpuexp-2024.17.3.0.09_rel.tar.gz
     wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.12.0/oneapi-tbb-2021.12.0-lin.tgz
-    sudo mkdir -p /opt/intel/oclcpuexp_2024.17.3.0.09_rel
-    cd /opt/intel/oclcpuexp_2024.17.3.0.09_rel
+    sudo mkdir -p /opt/intel/oclcpuexp_2024.17.3.0.09_rel && cd $_
     sudo tar -zxvf ~/cpuruntime/oclcpuexp-*.tar.gz
     sudo mkdir -p /etc/OpenCL/vendors
     echo "/opt/intel/oclcpuexp_2024.17.3.0.09_rel/x64/libintelocl.so" | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
@@ -101,7 +85,13 @@
     rm -r ~/cpuruntime
     sudo shutdown -r now
     ```
-
+  - Option 2: Download and install [PoCL](https://portablecl.org/) with:
+    ```bash
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev pocl-opencl-icd
+    sudo shutdown -r now
+    ```
   </details>
 
 - **Android**
