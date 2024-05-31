@@ -123,7 +123,7 @@ void main_label(const double frametime) {
 			draw_label(ox, oy+i, "Z: ("+field+"): toggle field visualization mode", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Q/E: move slice in slice visualization mode", c); i+=2*FONT_HEIGHT;
 			draw_label(ox, oy+i, "Mouse or I/J/K/L (rx="+alignr(4u, to_int(fmod(degrees(camera.rx)+90.0+360.0, 360.0)-180.0))+", ry="+alignr(3u, to_int(180.0-degrees(camera.ry)))+"): rotate camera", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "Scrollwheel or +/- ("+to_string(camera.free ? (float)camera.free_camera_velocity : camera.zoom*(float)fmax(fmax(info.lbm->get_Nx(), info.lbm->get_Ny()), info.lbm->get_Nz())/(float)min(camera.width, camera.height), 3u)+"): zoom (centered camera mode) or camera movement speed (free camera mode)", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "Scrollwheel or +/- ("+to_string(camera.free ? (float)camera.free_camera_velocity : camera.zoom*(float)fmax(fmax(info.lbm->get_Nx(), info.lbm->get_Ny()), info.lbm->get_Nz())/(float)min(camera.width, camera.height), 3u)+"): zoom (centered camera mode) or camera movement speed in cells/s (free camera mode)", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Mouseclick or U: toggle rotation with Mouse and angle snap rotation with I/J/K/L", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Y/X ("+alignr(3u, to_int(camera.fov))+"): adjust camera field of view", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "F ("+string(camera.free?"  free  ":"centered")+"): toggle centered/free camera mode", c); i+=FONT_HEIGHT;
