@@ -3100,8 +3100,8 @@ inline int colorscale_iron(float x) { // coloring scheme (float [0, 1] -> int co
 	}
 	return color(r, g, b);
 }
-inline int colorscale_twocolor(float x) { // coloring scheme (float [0, 1] -> int color)
-	return x>0.5f ? color_mix(0xFFAA00, 0x181818, clamp(2.0f*x-1.0f, 0.0f, 1.0f)) : color_mix(0x181818, 0x0080FF, clamp(2.0f*x, 0.0f, 1.0f)); // red - gray - blue
+inline int colorscale_twocolor(const float x, const int background_color) { // coloring scheme (float [0, 1] -> int color)
+	return x>0.5f ? color_mix(0xFFAA00, background_color, clamp(2.0f*x-1.0f, 0.0f, 1.0f)) : color_mix(background_color, 0x0080FF, clamp(2.0f*x, 0.0f, 1.0f)); // red - gray - blue
 }
 
 #define color_black      0

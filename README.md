@@ -160,6 +160,14 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed flickering of interactive rendering with multi-GPU when camera is not moved
   - fixed missing `XInitThreads()` call that could crash Linux interactive graphics on some systems
   - fixed z-fighting between `graphics_rasterize_phi()` and `graphics_flags_mc()` kernels
+- [v2.17](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.17) (05.06.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.16...v2.17) (unlimited domain resolution)
+  - domains are no longer limited to 4.29 billion (2³², 1624³) grid cells or 225 GB memory; if more are used, the OpenCL code will automatically compile with 64-bit indexing
+  - new, faster raytracing-based field visualization for single-GPU simulations
+  - added [GPU Driver and OpenCL Runtime installation instructions](DOCUMENTATION.md#0-intstall-gpu-drivers-and-opencl-runtime) to documentation
+  - refactored `INTERACTIVE_GRAPHICS_ASCII`
+  - fixed memory leak in destructors of `floatN`, `floatNxN`, `doubleN`, `doubleNxN` (all unused)
+  - made camera movement/rotation/zoom behavior independent of framerate
+  - fixed that `smart_device_selection()` would print a wrong warning if device reports 0 MHz clock speed
 
 </details>
 
@@ -261,7 +269,6 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 - <details><summary><a name="multi-gpu"></a>cross-vendor multi-GPU support on a single computer/server</summary>
 
   - domain decomposition allows pooling VRAM from multiple GPUs for much larger grid resolution
-  - each domain (GPU) can hold up to 4.29 billion (2³², 1624³) lattice points (225 GB memory)
   - GPUs don't have to be identical (<a href="https://youtu.be/PscbxGVs52o">not even from the same vendor</a>), but similar VRAM capacity/bandwidth is recommended
   - domain communication architecture (simplified)
     ```diff
@@ -489,6 +496,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Ti&nbsp;Super |         44.10 |          16 |          672 |             3694 (84%) |              6435 (74%) |              7295 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070               |              29.15 |          12 |          504 |             2646 (80%) |              4548 (69%) |              5016 (77%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080M              |              33.85 |          12 |          432 |             2577 (91%) |              5086 (91%) |              5114 (91%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4060               |              15.11 |           8 |          272 |             1614 (91%) |              3052 (86%) |              3124 (88%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090&nbsp;Ti       |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090               |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;Ti       |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
@@ -556,20 +564,21 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;HD&nbsp;Graphics&nbsp;4600               |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
 | 🟡&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |              110 (59%) |               230 (62%) |                21 ( 6%) |
 |                                                  |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              29.49 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480 |              13.62 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+    |              14.34 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380     |              11.78 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |              10.65 |         256 |          410 |             1285 (48%) |              1007 (19%) |              1120 (21%) |
-| 🔵&nbsp;1x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |               5.33 |         128 |          205 |              444 (33%) |               463 (17%) |               534 (20%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8256     |               1.95 |        1536 |          282 |              396 (22%) |               158 ( 4%) |               175 ( 5%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8153     |               4.10 |         384 |          256 |              691 (41%) |               290 ( 9%) |               328 (10%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6128         |               2.61 |         192 |          256 |              254 (15%) |               185 ( 6%) |               193 ( 6%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480 |              27.24 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+    |              28.67 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380     |              23.55 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |              21.30 |         256 |          410 |             1285 (48%) |              1007 (19%) |              1120 (21%) |
+| 🔵&nbsp;1x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |              10.65 |         128 |          205 |              444 (33%) |               463 (17%) |               534 (20%) |
+| 🔵&nbsp;1x&nbsp;Xeon&nbsp;Platinum&nbsp;8256     |               3.89 |        1536 |          141 |              396 (43%) |               158 ( 9%) |               175 (10%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8153     |               8.19 |         384 |          256 |              691 (41%) |               290 ( 9%) |               328 (10%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6128         |               5.22 |         192 |          256 |              254 (15%) |               185 ( 6%) |               193 ( 6%) |
 | 🔵&nbsp;Xeon&nbsp;Phi&nbsp;7210                  |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
 | 🔵&nbsp;4x&nbsp;Xeon&nbsp;E5-4620&nbsp;v4        |               2.69 |         512 |          273 |              460 (26%) |               275 ( 8%) |               239 ( 7%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2630&nbsp;v4        |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2623&nbsp;v4        |               0.67 |          64 |          137 |              125 (14%) |                66 ( 4%) |                59 ( 3%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2680&nbsp;v3        |               1.92 |          64 |          137 |              209 (23%) |               305 (17%) |               281 (16%) |
+| 🔴&nbsp;Threadripper&nbsp;PRO&nbsp;7995WX        |              15.36 |         256 |          333 |             1134 (52%) |              1697 (39%) |              1715 (40%) |
 | 🔵&nbsp;Core&nbsp;i7-13700K                      |               2.51 |          64 |           90 |              504 (86%) |               398 (34%) |               424 (36%) |
 | 🔵&nbsp;Core&nbsp;i7-1265U                       |               1.23 |          32 |           77 |              128 (26%) |                62 ( 6%) |                58 ( 6%) |
 | 🔵&nbsp;Core&nbsp;i9-11900KB                     |               0.84 |          32 |           51 |              109 (33%) |               195 (29%) |               208 (31%) |
@@ -669,8 +678,6 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 
 - <details><summary>FluidX3D only uses FP32 or even FP32/FP16, in contrast to FP64. Are simulation results physically accurate?</summary><br>Yes, in all but extreme edge cases. The code has been specially optimized to minimize arithmetic round-off errors and make the most out of lower precision. With these optimizations, accuracy in most cases is indistinguishable from FP64 double-precision, even with FP32/FP16 mixed-precision. Details can be found in <a href="https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats">this paper</a>.<br><br></details>
 
-- <details><summary>Why is the domain size limited to 2³² grid points?</summary><br>The 32-bit unsigned integer grid index will overflow above this number. Using 64-bit index calculation would slow the simulation down by ~20%, as 64-bit uint is calculated on special function units and not the regular GPU cores. 2³² grid points with FP32/FP16 mixed-precision is equivalent to 225GB memory and single GPUs currently are only at 128GB, so it should be fine for a while to come. For higher resolutions above the single-domain limit, use multiple domains (typically 1 per GPU, but multiple domains on the same GPU also work).<br><br></details>
-
 - <details><summary>Compared to the benchmark numbers stated <a href="https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats">here</a>, efficiency seems much lower but performance is slightly better for most devices. How can this be?</summary><br>In that paper, the One-Step-Pull swap algorithm is implemented, using only misaligned reads and coalesced writes. On almost all GPUs, the performance penalty for misaligned writes is much larger than for misaligned reads, and sometimes there is almost no penalty for misaligned reads at all. Because of this, One-Step-Pull runs at peak bandwidth and thus peak efficiency.<br>Here, a different swap algorithm termed <a href="https://doi.org/10.3390/computation10060092">Esoteric-Pull</a> is used, a type of in-place streaming. This makes the LBM require much less memory (93 vs. 169 (FP32/FP32) or 55 vs. 93 (FP32/FP16) Bytes/cell for D3Q19), and also less memory bandwidth (153 vs. 171 (FP32/FP32) or 77 vs. 95 (FP32/FP16) Bytes/cell per time step for D3Q19) due to so-called implicit bounce-back boundaries. However memory access now is half coalesced and half misaligned for both reads and writes, so memory access efficiency is lower. For overall performance, these two effects approximately cancel out. The benefit of Esoteric-Pull - being able to simulate domains twice as large with the same amount of memory - clearly outweights the cost of slightly lower memory access efficiency, especially since performance is not reduced overall.<br><br></details>
 
 - <details><summary>Why don't you use CUDA? Wouldn't that be more efficient?</summary><br>No, that is a wrong myth. OpenCL is exactly as efficient as CUDA on Nvidia GPUs if optimized properly. <a href="https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats">Here</a> I did roofline model and analyzed OpenCL performance on various hardware. OpenCL efficiency on modern Nvidia GPUs can be 100% with the right memory access pattern, so CUDA can't possibly be any more efficient. Without any performance advantage, there is no reason to use proprietary CUDA over OpenCL, since OpenCL is compatible with a lot more hardware.<br><br></details>
@@ -746,3 +753,12 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 - FluidX3D is solo-developed and maintained by Dr. Moritz Lehmann.
 - For any questions, feedback or other inquiries, contact me at [dr.moritz.lehmann@gmail.com](mailto:dr.moritz.lehmann@gmail.com?subject=FluidX3D).
 - Updates are posted on Mastodon via [@ProjectPhysX](https://mast.hpc.social/@ProjectPhysX)/[#FluidX3D](https://mast.hpc.social/tags/FluidX3D) and on [YouTube](https://youtube.com/@ProjectPhysX).
+
+
+
+## Support
+
+I'm developing FluidX3D in my spare time, to make computational fluid dynamics lightning fast, accessible on all hardware, and free for everyone.
+- You can support FluidX3D by reporting any bugs or things that don't work in the [issues](https://github.com/ProjectPhysX/FluidX3D/issues). I'm welcoming feedback!
+- If you like FluidX3D, share it with friends and colleagues. Spread the word that CFD is now lightning fast, accessible and free.
+- If you want to support FluidX3D financially, you can [buy me a coffee](https://buymeacoffee.com/projectphysx). Thank you!

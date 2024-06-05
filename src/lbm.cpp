@@ -293,6 +293,7 @@ string LBM_Domain::device_defines() const { return
 	"\n	#define def_Ny "+to_string(Ny)+"u"
 	"\n	#define def_Nz "+to_string(Nz)+"u"
 	"\n	#define def_N "+to_string(get_N())+"ul"
+	"\n	#define uxx "+(get_N()<=(ulong)max_uint ? "uint" : "ulong")+"" // switchable data type for index calculation (32-bit uint / 64-bit ulong)
 
 	"\n	#define def_Dx "+to_string(Dx)+"u"
 	"\n	#define def_Dy "+to_string(Dy)+"u"
@@ -427,7 +428,7 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", camera_parameters, bitmap, zbuffer, lbm->flags);
 	kernel_graphics_flags_mc = Kernel(device, lbm->get_N(), "graphics_flags_mc", camera_parameters, bitmap, zbuffer, lbm->flags);
-	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u, lbm->flags);
+	kernel_graphics_field = Kernel(device, lbm->get_D()==1u ? camera.width*camera.height : lbm->get_N(), lbm->get_D()==1u ? "graphics_field_rt" : "graphics_field", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u, lbm->flags); // raytraced field visualization only works for single-GPU
 	kernel_graphics_field_slice = Kernel(device, lbm->get_N(), "graphics_field_slice", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags);
 #ifndef D2Q9
 	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 3D
@@ -485,6 +486,11 @@ bool LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, con
 #endif // SURFACE
 	if(visualization_modes&VIS_FLAG_LATTICE) kernel_graphics_flags.enqueue_run();
 	if(visualization_modes&VIS_FLAG_SURFACE) kernel_graphics_flags_mc.enqueue_run();
+	if(visualization_modes&VIS_STREAMLINES) kernel_graphics_streamline.set_parameters(3u, field_mode, slice_mode, sx, sy, sz).enqueue_run();
+	if(visualization_modes&VIS_Q_CRITERION) kernel_graphics_q.set_parameters(3u, field_mode).enqueue_run();
+#ifdef PARTICLES
+	if(visualization_modes&VIS_PARTICLES) kernel_graphics_particles.enqueue_run();
+#endif // PARTICLES
 	if(visualization_modes&VIS_FIELD) {
 		switch(slice_mode) { // 0 (no slice), 1 (x), 2 (y), 3 (z), 4 (xz), 5 (xyz), 6 (yz), 7 (xy)
 			case 0: // no slice
@@ -512,11 +518,6 @@ bool LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, con
 				break;
 		}
 	}
-	if(visualization_modes&VIS_STREAMLINES) kernel_graphics_streamline.set_parameters(3u, field_mode, slice_mode, sx, sy, sz).enqueue_run();
-	if(visualization_modes&VIS_Q_CRITERION) kernel_graphics_q.set_parameters(3u, field_mode).enqueue_run();
-#ifdef PARTICLES
-	if(visualization_modes&VIS_PARTICLES) kernel_graphics_particles.enqueue_run();
-#endif // PARTICLES
 	bitmap.enqueue_read_from_device();
 	if(lbm->get_D()>1u) zbuffer.enqueue_read_from_device();
 	return true; // new frame has been rendered
@@ -596,7 +597,7 @@ vector<Device_Info> smart_device_selection(const uint D) {
 			}
 			if(!already_exists) device_type_ids.push_back(vector<Device_Info>(1, devices[i]));
 		}
-		float best_value = 0.0f;
+		float best_value = -1.0f;
 		int best_j = -1;
 		for(uint j=0u; j<(uint)device_type_ids.size(); j++) {
 			const float value = device_type_ids[j][0].tflops;
@@ -701,7 +702,6 @@ void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, con
 	if((ulong)Nx*(ulong)Ny*(ulong)Nz==0ull) print_error("Grid point number is 0: "+to_string(Nx)+"x"+to_string(Ny)+"x"+to_string(Nz)+" = 0.");
 	if(Dx*Dy*Dz==0u) print_error("You specified 0 LBM grid domains ("+to_string(Dx)+"x"+to_string(Dy)+"x"+to_string(Dz)+"). There has to be at least 1 domain in every direction. Check your input in LBM constructor.");
 	const uint local_Nx=Nx/Dx+2u*(Dx>1u), local_Ny=Ny/Dy+2u*(Dy>1u), local_Nz=Nz/Dz+2u*(Dz>1u);
-	if((ulong)local_Nx*(ulong)local_Ny*(ulong)local_Nz>=(ulong)max_uint) print_error("Single domain grid resolution is too large: "+to_string(local_Nx)+"x"+to_string(local_Ny)+"x"+to_string(local_Nz)+" > 2^32.");
 	uint memory_available = max_uint; // in MB
 	for(Device_Info device_info : device_infos) memory_available = min(memory_available, device_info.memory);
 	uint memory_required = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*(ulong)bytes_per_cell_device()/1048576ull); // in MB
