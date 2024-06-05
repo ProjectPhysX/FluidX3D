@@ -232,30 +232,30 @@ private:
 	void input_B() {
 		tv = !tv;
 	}
-	void input_W(const double frametime) {
+	void input_W(const double frametime=1.0/60.0) {
 		pos.x += R.xy*R.yz*(float)(free_camera_velocity*frametime);
 		pos.y -= R.xx*R.yz*(float)(free_camera_velocity*frametime);
 		pos.z -= R.zz*(float)(free_camera_velocity*frametime);
 	}
-	void input_A(const double frametime) {
+	void input_A(const double frametime=1.0/60.0) {
 		pos.x -= R.xx*(float)(free_camera_velocity*frametime);
 		pos.y -= R.xy*(float)(free_camera_velocity*frametime);
 	}
-	void input_S(const double frametime) {
+	void input_S(const double frametime=1.0/60.0) {
 		pos.x -= R.xy*R.yz*(float)(free_camera_velocity*frametime);
 		pos.y += R.xx*R.yz*(float)(free_camera_velocity*frametime);
 		pos.z += R.zz*(float)(free_camera_velocity*frametime);
 	}
-	void input_D(const double frametime) {
+	void input_D(const double frametime=1.0/60.0) {
 		pos.x += R.xx*(float)(free_camera_velocity*frametime);
 		pos.y += R.xy*(float)(free_camera_velocity*frametime);
 	}
-	void input_Space(const double frametime) {
+	void input_Space(const double frametime=1.0/60.0) {
 		pos.x -= R.xy*R.zz*(float)(free_camera_velocity*frametime);
 		pos.y += R.xx*R.zz*(float)(free_camera_velocity*frametime);
 		pos.z -= R.yz*(float)(free_camera_velocity*frametime);
 	}
-	void input_C(const double frametime) {
+	void input_C(const double frametime=1.0/60.0) {
 		pos.x += R.xy*R.zz*(float)(free_camera_velocity*frametime);
 		pos.y -= R.xx*R.zz*(float)(free_camera_velocity*frametime);
 		pos.z += R.yz*(float)(free_camera_velocity*frametime);
