@@ -758,16 +758,16 @@ string opencl_c_container() { return R( // ########################## begin of O
 				const uxx zq = (uxx) (((uint)xyz.z   +2u)%Nz)*(uxx)(Ny*Nx);
 				const uxx zm = (uxx) (((uint)xyz.z+Nz-1u)%Nz)*(uxx)(Ny*Nx);
 				float3 n[8];
-				n[0] = normalize((float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3])); // central difference stencil on each cube corner point
-				n[1] = normalize((float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2])); // compute normal vectors from gradient
-				n[2] = normalize((float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq])); // normalize later during trilinear interpolation more efficiently
-				n[3] = normalize((float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]));
-				n[4] = normalize((float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]));
-				n[5] = normalize((float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]));
-				n[6] = normalize((float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]));
-				n[7] = normalize((float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]));
+				n[0] = (float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3]); // central difference stencil on each cube corner point
+				n[1] = (float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2]); // compute normal vectors from gradient
+				n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later after trilinear interpolation
+				n[3] = (float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]);
+				n[4] = (float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]);
+				n[5] = (float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]);
+				n[6] = (float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]);
+				n[7] = (float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]);
 				const float3 p = r.origin+intersect*r.direction-offset; // intersection point minus offset
-				*normal = trilinear3(p-floor(p), n); // perform normalization and trilinear interpolation
+				*normal = normalize(trilinear3(p-floor(p), n)); // perform trilinear interpolation and normalization
 				return intersect; // intersection found, exit loop
 			}
 		}
