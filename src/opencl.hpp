@@ -25,7 +25,7 @@ struct Device_Info {
 	uint clock_frequency=0u; // in MHz
 	bool is_cpu=false, is_gpu=false;
 	bool intel_gpu_above_4gb_patch = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
-	bool arm_fma_patch = false;  // ARM GPUs have terrible fma performance, so replace with a*b+c
+	bool legacy_gpu_fma_patch = false; // some old GPUs have terrible fma performance, so replace with a*b+c
 	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u;
 	uint cores=0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 	float tflops=0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
@@ -77,8 +77,8 @@ struct Device_Info {
 				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // fix wrong (98% on Windows) memory reporting on Intel Arc
 			}
 		}
-		intel_gpu_above_4gb_patch = (intel==8.0f)&&(memory>4096); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
-		arm_fma_patch = contains(to_lower(vendor), "arm"); // enable for all ARM GPUs
+		intel_gpu_above_4gb_patch = intel_gpu_above_4gb_patch||((intel==8.0f)&&(memory>4096)); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
+		legacy_gpu_fma_patch = legacy_gpu_fma_patch||contains(to_lower(vendor), "arm"); // enable for all ARM GPUs
 	}
 	inline Device_Info() {}; // default constructor
 };
@@ -176,7 +176,7 @@ private:
 		"\n	#ifdef cl_khr_int64_base_atomics"
 		"\n	#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable" // make sure cl_khr_int64_base_atomics extension is enabled
 		"\n	#endif"
-		+(info.arm_fma_patch ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "") // ARM GPUs have terrible fma performance, so replace with a*b+c
+		+(info.legacy_gpu_fma_patch ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "") // some old GPUs have terrible fma performance, so replace with a*b+c
 	;}
 public:
 	Device_Info info;
