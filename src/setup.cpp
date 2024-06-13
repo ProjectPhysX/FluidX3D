@@ -1109,7 +1109,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	print_info("Fr = "+to_string(units.si_Fr(si_D, si_u, si_g), 6u));
 	print_info("Ca = "+to_string(units.si_Ca(si_u, si_rho, si_nu, si_sigma), 6u));
 	print_info("Bo = "+to_string(units.si_Bo(si_D, si_rho, si_g, si_sigma), 6u));
-	print_info(to_string(to_uint(1000.0f*si_T))+" ms = "+to_string(units.t(0.01f))+" LBM time steps");
+	print_info(to_string(to_uint(1000.0f*si_T))+" ms = "+to_string(units.t(si_T))+" LBM time steps");
 	const float lbm_H = 0.4f*(float)lbm_N.x;
 	const float lbm_R = 0.5f*lbm_D; // drop radius
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu), 0.0f, 0.0f, -units.f(si_rho, si_g), units.sigma(si_sigma)); // calculate values for remaining parameters in simulation units
@@ -1134,7 +1134,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 			lbm.flags[n] = TYPE_I;
 			lbm.phi[n] = 0.5f; // not strictly necessary, but should be clearer (phi is automatically initialized to 0.5f for TYPE_I if not initialized)
 		} else if((float)z<lbm_H) lbm.flags[n] = TYPE_F;
-		else if((x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u)&&(float)z>lbm_H+lbm_R) { // make drops that hit the simulation box ceiling disappear
+		else if((x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u)&&(float)z>lbm_H+0.5f*lbm_R) { // make drops that hit the simulation box ceiling disappear
 			lbm.rho[n] = 0.5f;
 			lbm.flags[n] = TYPE_E;
 		}
