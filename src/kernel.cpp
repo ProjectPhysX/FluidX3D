@@ -812,9 +812,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float d_internal = d;
 	d = ray_grid_traverse(ray_internal, phi, flags, &normal, Nx, Ny, Nz); // 2nd ray-grid traversal call: refraction (camera outside) or total internal reflection (camera inside)
 	ray_transmit->origin = d!=-1.0f ? ray_internal.origin+(d+0.005f)*ray_internal.direction : ray_internal.origin; // start intersection points a bit behind triangle to avoid self-transmission
-	ray_transmit->direction = d!=-1.0f ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
+	ray_transmit->direction = d!=-1.0f||is_inside ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
 	*reflectivity = is_inside ? 0.0f : wr; // is_inside means camera is inside fluid, so this is a total internal reflection down here
-	*transmissivity = d!=-1.0f ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
+	*transmissivity = d!=-1.0f||is_inside ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
 	return true;
 }
 )+R(bool is_above_plane(const float3 point, const float3 plane_p, const float3 plane_n) {
