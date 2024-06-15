@@ -907,8 +907,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return (b&0x80000000)>>16 | (e>112)*((((e-112)<<11)&0x7800)|m>>12) | ((e<113)&(e>100))*((((0x007FF800+m)>>(124-e))+1)>>1); // sign : normalized : denormalized (assume [-2,2])
 }
 
-)+R(ulong index_f(const uxx n, const uint i) { // 64-bit indexing (maximum 2^32 lattice points (1624^3 lattice resolution, 225GB)
-	return (ulong)i*def_N+(ulong)n; // SoA (229% faster on GPU)
+)+R(ulong index_f(const uxx n, const uint i) { // 64-bit indexing for DDFs
+	return (ulong)i*def_N+(ulong)n; // SoA (>2x faster on GPUs)
 }
 )+R(float c(const uint i) { // avoid constant keyword by encapsulating data in function which gets inlined by compiler
 	const float c[3u*def_velocity_set] = {
@@ -2547,10 +2547,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
 				if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
 				else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
-				if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
-				else if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx-1 || xyz.y>=(int)Ny-1 || xyz.z>=(int)Nz-1) continue;
+				if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
 				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
-				if(!(flags[n]&(TYPE_S|TYPE_G))) {
+				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
 					const float un = length(load3(n, u));
 					const float weight = sq(un)+sq(un-0.5f/def_scale_u);
 					sum = fma(weight, un, sum);
@@ -2565,10 +2564,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
 				if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
 				else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
-				if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
-				else if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx-1 || xyz.y>=(int)Ny-1 || xyz.z>=(int)Nz-1) continue;
+				if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
 				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
-				if(!(flags[n]&(TYPE_S|TYPE_G))) {
+				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
 					const float rhon = rho[n];
 					const float weight = sq(rhon-1.0f);
 					sum = fma(weight, rhon, sum);
@@ -2584,10 +2582,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
 				if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
 				else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
-				if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
-				else if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx-1 || xyz.y>=(int)Ny-1 || xyz.z>=(int)Nz-1) continue;
+				if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
 				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
-				if(!(flags[n]&(TYPE_S|TYPE_G))) {
+				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
 					const float Tn = T[n];
 					const float weight = sq(Tn-def_T_avg);
 					sum = fma(weight, Tn, sum);
