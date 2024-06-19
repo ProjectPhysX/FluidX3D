@@ -102,7 +102,7 @@
     ```bash
     apt update
     apt upgrade -y
-    apt install -y libllvm git make
+    apt install -y clang git make
     ```
 
   </details>
