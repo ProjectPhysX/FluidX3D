@@ -22,12 +22,11 @@
 
   - Download and install [AMD GPU Drivers](https://www.amd.com/en/support/linux-drivers), which contain the OpenCL Runtime, with:
     ```bash
-    sudo apt update
-    sudo apt upgrade -y
+    sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
-    mkdir -p ~/amdgpu && cd $_
-    wget https://repo.radeon.com/amdgpu-install/6.1.3/ubuntu/jammy/amdgpu-install_6.1.60103-1_all.deb
-    sudo apt install -y ./amdgpu-install*.deb
+    mkdir -p ~/amdgpu
+    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.1.3/ubuntu/jammy/amdgpu-install_6.1.60103-1_all.deb
+    sudo apt install -y ~/amdgpu/amdgpu-install*.deb
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
     sudo usermod -a -G render,video $(whoami)
     rm -r ~/amdgpu
@@ -40,8 +39,7 @@
   - Intel GPU Drivers come already installed since Linux Kernel 6.2, but they don't contain the OpenCL Runtime.
   - The the [OpenCL Runtime](https://github.com/intel/compute-runtime/releases) has to be installed separately with:
     ```bash
-    sudo apt update
-    sudo apt upgrade -y
+    sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev intel-opencl-icd
     sudo usermod -a -G render $(whoami)
     sudo shutdown -r now
@@ -52,8 +50,7 @@
 
   - Download and install [Nvidia GPU Drivers](https://www.nvidia.com/Download/index.aspx), which contain the OpenCL Runtime, with:
     ```bash
-    sudo apt update
-    sudo apt upgrade -y
+    sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-550
     sudo shutdown -r now
     ```
@@ -63,34 +60,28 @@
 
   - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler) and [oneTBB](https://github.com/oneapi-src/oneTBB/releases) with:
     ```bash
-    sudo apt update
-    sudo apt upgrade -y
+    export OCLCPUEXP_VERSION="2024.18.6.0.02_rel"
+    export ONEAPI_TBB_VERSION="2021.13.0"
+    sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
-    mkdir -p ~/cpuruntime && cd $_
-    wget https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-2024.18.6.0.02_rel.tar.gz
-    wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.12.0/oneapi-tbb-2021.12.0-lin.tgz
-    sudo mkdir -p /opt/intel/oclcpuexp_2024.18.6.0.02_rel && cd $_
-    sudo tar -zxvf ~/cpuruntime/oclcpuexp-*.tar.gz
-    sudo mkdir -p /etc/OpenCL/vendors
-    echo "/opt/intel/oclcpuexp_2024.18.6.0.02_rel/x64/libintelocl.so" | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
-    cd /opt/intel
-    sudo tar -zxvf ~/cpuruntime/oneapi-tbb-*-lin.tgz
-    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_2024.18.6.0.02_rel/x64
-    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_2024.18.6.0.02_rel/x64
-    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_2024.18.6.0.02_rel/x64
-    sudo ln -s /opt/intel/oneapi-tbb-2021.12.0/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_2024.18.6.0.02_rel/x64
-    sudo mkdir -p /etc/ld.so.conf.d
-    echo "/opt/intel/oclcpuexp_2024.18.6.0.02_rel/x64" | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
+    sudo mkdir -p ~/cpuruntime /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION} /etc/OpenCL/vendors /etc/ld.so.conf.d
+    sudo wget -P ~/cpuruntime https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-${OCLCPUEXP_VERSION}.tar.gz
+    sudo wget -P ~/cpuruntime https://github.com/oneapi-src/oneTBB/releases/download/v${ONEAPI_TBB_VERSION}/oneapi-tbb-${ONEAPI_TBB_VERSION}-lin.tgz
+    sudo tar -zxvf ~/cpuruntime/oclcpuexp-${OCLCPUEXP_VERSION}.tar.gz -C /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}
+    sudo tar -zxvf ~/cpuruntime/oneapi-tbb-${ONEAPI_TBB_VERSION}-lin.tgz -C /opt/intel
+    echo /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
+    echo /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
+    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
+    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
+    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
+    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
     sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
-    rm -r ~/cpuruntime
-    sudo shutdown -r now
+    sudo rm -r ~/cpuruntime
     ```
   - Option 2: Download and install [PoCL](https://portablecl.org/) with:
     ```bash
-    sudo apt update
-    sudo apt upgrade -y
+    sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev pocl-opencl-icd
-    sudo shutdown -r now
     ```
   </details>
 
@@ -112,10 +103,18 @@
 <br>
 
 ## 1. Download FluidX3D
-[Download](https://github.com/ProjectPhysX/FluidX3D/archive/refs/heads/master.zip) and unzip the source code, or clone with:
-```bash
-git clone https://github.com/ProjectPhysX/FluidX3D.git
-```
+- [Download](https://github.com/ProjectPhysX/FluidX3D/archive/refs/heads/master.zip) and unzip the source code, or clone with:
+  ```bash
+  git clone https://github.com/ProjectPhysX/FluidX3D.git && cd FluidX3D
+  ```
+- To update FluidX3D:
+  - Make a backup of your changes.
+  - Run:
+    ```bash
+    git stash
+    git pull origin master
+    git stash pop
+    ```
 
 <br>
 
