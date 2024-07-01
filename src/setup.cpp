@@ -298,7 +298,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint L = 128u;
 	const float Re = 100000.0f;
-	const float u = 0.1f;
+	const float u = 0.075f;
 	LBM lbm(L, 4u*L, L, units.nu_from_Re(Re, (float)L, u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float3 offset = float3(lbm.center().x, 0.0f, lbm.center().z);
@@ -320,7 +320,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 1.5f, 1.0f/3.0f), 2000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float Re = 10000000.0f;
-	const float u = 0.1f;
+	const float u = 0.075f;
 	LBM lbm(lbm_N, units.nu_from_Re(Re, (float)lbm_N.x, u));
 	// ###################################################################################### define geometry ######################################################################################
 	// model: https://commonresearchmodel.larc.nasa.gov/high-lift-crm/high-lift-crm-geometry/assembled-geometry/, .stp file converted to .stl with https://imagetostl.com/convert/file/stp/to/stl
@@ -363,7 +363,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float si_T = 1.0f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	const float lbm_length = 0.56f*(float)lbm_N.y;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
@@ -406,7 +406,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 880u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 1000000.0f;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const uint lbm_T = 10000u;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
@@ -437,7 +437,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 880u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 100000.0f;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const uint lbm_T = 50000u;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
@@ -476,7 +476,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 1.0f), 1760u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 100000.0f;
-	const float lbm_u = 0.125f;
+	const float lbm_u = 0.075f;
 	const uint lbm_T = 50000u;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
@@ -519,7 +519,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(3.0f, 3.0f, 1.0f), 181u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 100000.0f;
-	const float lbm_u = 0.12f;
+	const float lbm_u = 0.1f;
 	const uint lbm_T = 48000u;
 	const uint lbm_dt = 10u;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
@@ -599,7 +599,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float si_T = 10.0f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	const float lbm_length = 0.65f*(float)lbm_N.y;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_length, si_u, si_nu))));
 	LBM lbm(lbm_N, units.nu(si_nu));
@@ -632,7 +632,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 4.0f, 0.8f), 1000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 10000000.0f;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const uint lbm_T = 108000u;
 	LBM lbm(lbm_N, 2u, 4u, 1u, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u)); // run on 2x4x1 = 8 GPUs
 	// ###################################################################################### define geometry ######################################################################################
@@ -768,7 +768,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 /*void main_setup() { // Cessna 172 propeller aircraft; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 0.8f, 0.25f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const float lbm_width = 0.95f*(float)lbm_N.x;
 	const uint lbm_dt = 4u; // revoxelize rotor every dt time steps
 	const float si_T = 1.0f;
@@ -884,7 +884,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 /*void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 4000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const float lbm_length = 0.8f*(float)lbm_N.y;
 	const float si_T = 0.25f;
 	const float si_u = 100.0f/3.6f;
@@ -1234,7 +1234,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 /*void main_setup() { // periodic faucet mass conservation test; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	LBM lbm(96u, 192u, 128u, 0.02f, 0.0f, 0.0f, -0.001f);
+	LBM lbm(96u, 192u, 128u, 0.02f, 0.0f, 0.0f, -0.00025f);
 	// ###################################################################################### define geometry ######################################################################################
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(y>Ny*5u/6u) lbm.flags[n] = TYPE_F;

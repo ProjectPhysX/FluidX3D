@@ -449,7 +449,7 @@ By now you're already familiar with the [additional boundary types](#initial-and
 - Sometimes in the velocity field or streamlines visualization, you will see fuzzyness, or something that looks like a rapidly growing white crystal, blowing up from a certain point and filling the entire simulation box. This is instability, i.e. when velocities turn `NaN` or `Inf`.
 - Often times, the cause of instability is an unfortunate choice of unsuitable parameters:
   - too high/low density `rho` (ideally should be very close to `1` at all times)
-  - too high velocity `u` (must never exceed `0.57` anywhere in the box, ideally should be somewhere around `0.1`, but can be as small as `0.001`)
+  - too high velocity `u` (must never exceed `0.57` anywhere in the box, ideally should be somewhere around `0.075`, but can be as small as `0.001`)
   - too low kinematic shear viscosity `nu` (ideally close to `1/6`, becomes unstable when it's very very close to `0` (then enable the [`SUBGRID`](src/defines.hpp) extension), and should not exceed `3`)
   - too high force per volume (`fx`|`fy`|`fz`) (should not exceed `0.001` in magnitude)
   - too high surface tension coefficient `sigma` (should not exceed `0.1`)
