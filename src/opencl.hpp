@@ -12,7 +12,7 @@
 using cl::Event;
 
 static const string driver_installation_instructions =
-#if defined(_WIN32)
+#ifdef _WIN32
 R"(|----------------.------------------------------------------------------------'
 |       AMD GPUs | https://www.amd.com/en/support/download/drivers.html
 |     Intel GPUs | https://www.intel.com/content/www/us/en/download/785597/intel-arc-iris-xe-graphics-windows.html
