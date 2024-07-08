@@ -407,7 +407,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 ## Solving the Compatibility Problem
 
 - FluidX3D is written in OpenCL 1.2, so it runs on any hardware from any vendor (Nvidia, AMD, Intel, ...):
-  - world's fastest datacenter GPUs, like H100, A100, MI250(X), MI210, MI100, V100(S), P100, ...
+  - world's fastest datacenter GPUs, like MI300X, H100 (NVL), A100, MI200, MI100, V100(S), GPU Max 1100, ...
   - gaming GPUs (desktop or laptop), like Nvidia GeForce, AMD Radeon, Intel Arc
   - professional/workstation GPUs, like Nvidia Quadro, AMD Radeon Pro / FirePro
   - integrated GPUs
@@ -449,7 +449,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Instinct&nbsp;MI60                       |              14.75 |          32 |         1024 |             3570 (53%) |              5047 (38%) |              5111 (38%) |
 | 🔴&nbsp;Radeon&nbsp;VII                          |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
 | 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
-| 🟢&nbsp;H100&nbsp;PCIe&nbsp;80GB                 |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
+| 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20018&nbsp;(78%) |        32613&nbsp;(64%) |        17605&nbsp;(34%) |
+| 🟢&nbsp;H100&nbsp;PCIe                           |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                 |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |        18448&nbsp;(70%) |        11197&nbsp;(42%) |
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;80GB                 |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
 | 🟢&nbsp;PG506-243&nbsp;/&nbsp;PG506-242          |              22.14 |          64 |         1638 |             8195 (77%) |        15654&nbsp;(74%) |        12271&nbsp;(58%) |
@@ -586,6 +587,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Threadripper&nbsp;3970X                  |               3.79 |         128 |          102 |              376 (56%) |               103 ( 8%) |               463 (35%) |
 | 🔴&nbsp;Threadripper&nbsp;1950X                  |               0.87 |         128 |           85 |              273 (49%) |                43 ( 4%) |               151 (14%) |
 | 🔴&nbsp;FX-6100                                  |               0.16 |          16 |           26 |               11 ( 7%) |                11 ( 3%) |                22 ( 7%) |
+| 🔴&nbsp;Athlon&nbsp;X2&nbsp;QL-65                |               0.03 |           4 |           11 |                3 ( 4%) |                 2 ( 2%) |                 3 ( 2%) |
 | 🔵&nbsp;Core&nbsp;i7-13700K                      |               2.51 |          64 |           90 |              504 (86%) |               398 (34%) |               424 (36%) |
 | 🔵&nbsp;Core&nbsp;i7-1265U                       |               1.23 |          32 |           77 |              128 (26%) |                62 ( 6%) |                58 ( 6%) |
 | 🔵&nbsp;Core&nbsp;i9-11900KB                     |               0.84 |          32 |           51 |              109 (33%) |               195 (29%) |               208 (31%) |
