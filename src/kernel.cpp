@@ -209,7 +209,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 }
 )+R(void draw(const int x, const int y, const float z, const int color, global int* bitmap, volatile global int* zbuffer, const int stereo) {
-	const int index=x+y*def_screen_width, iz=(int)(z*(2147483647.0f/10000.0f)); // use int z-buffer and atomic_max to minimize noise in image
+	const int index=x+y*def_screen_width, iz=(int)(z*1E3f); // use fixed-point int z-buffer and atomic_max to minimize noise in image, maximum render distance is 2.147E6f
 )+"#ifndef GRAPHICS_TRANSPARENCY"+R(
 	if(!is_off_screen(x, y, stereo)&&iz>atomic_max(&zbuffer[index], iz)) bitmap[index] = color; // only draw if point is on screen and first in zbuffer
 )+"#else"+R( // GRAPHICS_TRANSPARENCY
