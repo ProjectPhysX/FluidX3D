@@ -468,6 +468,9 @@ public:
 	ulong index(const uint x, const uint y, const uint z) const { // turn 3D coordinates into 1D linear index
 		return (ulong)x+((ulong)y+(ulong)z*(ulong)Ny)*(ulong)Nx;
 	}
+	ulong index(const uint3 xyz) const { // turn 3D coordinates into 1D linear index
+		return index(xyz.x, xyz.y, xyz.z);
+	}
 	ulong index(const float3& p) const { // turn 3D position into closest 1D linear index
 		uint x=0u, y=0u, z=0u;
 		coordinates(p, x, y, z);
