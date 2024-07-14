@@ -519,12 +519,12 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 	RegisterClass(&wndClass);
 	MONITORINFO mi = { sizeof(mi) };
 	if(!GetMonitorInfo(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &mi)) return 1;
+	DEVMODE lpDevMode = { 0 }; // get monitor fps
 	const uint width  = (uint)(mi.rcMonitor.right-mi.rcMonitor.left); // get screen size, initialize variables
 	const uint height = (uint)(mi.rcMonitor.bottom-mi.rcMonitor.top);
+	const uint fps_limit = (uint)EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &lpDevMode)!=0 ? (uint)lpDevMode.dmDisplayFrequency : 60u; // find out screen refresh rate
 	ShowCursor(false); // hide cursor
 	SetCursorPos(width/2, height/2);
-	DEVMODE lpDevMode = { 0 }; // get monitor fps
-	const uint fps_limit = (uint)EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &lpDevMode)!=0 ? (uint)lpDevMode.dmDisplayFrequency : 60u; // find out screen refresh rate
 	window = CreateWindow("WindowClass", WINDOW_NAME, WS_POPUP|WS_VISIBLE, mi.rcMonitor.left, mi.rcMonitor.top, width, height, 0, 0, hInstance, 0); // create fullscreen window
 	displayDC = GetDC(window);
 	memDC = CreateCompatibleDC(displayDC);
@@ -570,6 +570,7 @@ Display* x11_display;
 Window x11_window;
 GC x11_gc;
 XImage* x11_image;
+std::atomic_bool x11_cursor_movement_captured = true;
 
 int key_linux(const int keycode) {
 	const int keysym = (int)XkbKeycodeToKeysym(x11_display, keycode, 0, 0);
@@ -615,9 +616,12 @@ void update_frame(const double frametime) {
 	x11_image->data = (char*)camera.bitmap; // camera.bitmap pointer might have been changed, so update x11_image->data pointer here
 	XLockDisplay(x11_display);
 	XPutImage(x11_display, x11_window, x11_gc, x11_image, 0, 0, 0, 0, camera.width, camera.height);
+	if(x11_cursor_movement_captured&&!camera.lockmouse) { // to avoid cursor being centered before its movement has been captured as input
+		XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // center cursor
+		x11_cursor_movement_captured = false;
+	}
 	XUnlockDisplay(x11_display);
 	//camera.clear_frame(); // clear frame
-	if(!camera.lockmouse) XWarpPointer(x11_display, x11_window, x11_window, 0, 0, camera.width, camera.height, camera.width/2, camera.height/2); // center cursor
 }
 void hide_cursor() {
 	const char zeroes[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -638,8 +642,9 @@ void input_detection() {
 	XEvent x11_event;
 	while(running) {
 		XNextEvent(x11_display, &x11_event);
-		if(x11_event.type==MotionNotify) {
+		if(!x11_cursor_movement_captured&&x11_event.type==MotionNotify) { // to avoid cursor movement being captured before cursor has been centered
 			camera.input_mouse_moved((int)x11_event.xmotion.x, (int)x11_event.xmotion.y);
+			x11_cursor_movement_captured = true;
 		} else if(x11_event.type==ButtonPress) { // counterpart: ButtonRelease
 			const int x11_button = x11_event.xbutton.button;
 			if(x11_button==Button4) { // scroll up
@@ -684,15 +689,18 @@ int main(int argc, char* argv[]) {
 	XRRScreenResources* x11_screen_resources = XRRGetScreenResources(x11_display, x11_root_window);
 	XRROutputInfo* x11_output_info = XRRGetOutputInfo(x11_display, x11_screen_resources, XRRGetOutputPrimary(x11_display, x11_root_window));
 	XRRCrtcInfo* x11_crtc_info = XRRGetCrtcInfo(x11_display, x11_screen_resources, x11_output_info->crtc);
+	XRRScreenConfiguration* x11_screen_configuration = XRRGetScreenInfo(x11_display, x11_root_window);
 	const uint width  = (uint)x11_crtc_info->width; // width and height of primary monitor
 	const uint height = (uint)x11_crtc_info->height;
 	const int window_offset_x = (int)x11_crtc_info->x; // offset of primary monitor in multi-monitor coordinates
 	const int window_offset_y = (int)x11_crtc_info->y;
+	const uint fps_limit = (uint)XRRConfigCurrentRate(x11_screen_configuration);
+	XRRFreeScreenConfigInfo(x11_screen_configuration);
 	XRRFreeCrtcInfo(x11_crtc_info);
 	XRRFreeOutputInfo(x11_output_info);
 	XRRFreeScreenResources(x11_screen_resources);
 
-	camera = Camera(width, height, 60u);
+	camera = Camera(width, height, fps_limit);
 
 	x11_window = XCreateWindow(x11_display, x11_root_window, window_offset_x, window_offset_y, width, height, 0, CopyFromParent, CopyFromParent, CopyFromParent, 0, 0);
 	XSizeHints x11_size_hints = { PPosition|PSize, window_offset_x, window_offset_y, (int)width, (int)height };
