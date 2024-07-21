@@ -439,7 +439,7 @@ public:
 	uint get_D() const { return Dx*Dy*Dz; } // get number of lattice domains
 	float get_nu() const { return lbm_domain[0]->get_nu(); } // get kinematic shear viscosity
 	float get_tau() const { return 3.0f*get_nu()+0.5f; } // get LBM relaxation time
-	float get_Re_max() const { return 0.57735027f*(float)min(min(Nx, Ny), Nz)/get_nu(); } // Re < c*L/nu
+	float get_Re_max() const { return 0.57735027f*sqrt((float)(sq(Nx)+sq(Ny)+sq(Nz)))/get_nu(); } // Re < Re_max = c*L_max/nu
 	float get_fx() const { return lbm_domain[0]->get_fx(); } // get global froce per volume
 	float get_fy() const { return lbm_domain[0]->get_fy(); } // get global froce per volume
 	float get_fz() const { return lbm_domain[0]->get_fz(); } // get global froce per volume
