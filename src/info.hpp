@@ -14,7 +14,7 @@ struct Info { // contains redundant information for console printing
 	uint cpu_mem_required=0u, gpu_mem_required=0u; // all in MB
 	string collision = "";
 	void initialize(LBM* lbm);
-	void append(const ulong steps, const ulong t);
+	void append(const ulong steps, const ulong total_steps, const ulong t);
 	void update(const double dt);
 	double time() const; // returns either elapsed time or remaining time
 	void print_logo() const;

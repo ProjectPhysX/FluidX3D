@@ -413,7 +413,7 @@ public:
 	LBM(const uint3 N, const float nu, const float fx, const float fy, const float fz, const uint particles_N, const float particles_rho=1.0f); // compiles OpenCL C code and allocates memory
 	~LBM();
 
-	void run(const ulong steps=max_ulong); // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
+	void run(const ulong steps=max_ulong, const ulong total_steps=max_ulong); // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
 	void update_fields(); // update fields (rho, u, T) manually
 	void reset(); // reset simulation (takes effect in following run() call)
 #ifdef FORCE_FIELD

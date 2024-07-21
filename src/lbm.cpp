@@ -868,8 +868,8 @@ void LBM::do_time_step() { // call kernel_stream_collide to perform one LBM time
 	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->increment_time_step();
 }
 
-void LBM::run(const ulong steps) { // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
-	info.append(steps, get_t());
+void LBM::run(const ulong steps, const ulong total_steps) { // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
+	info.append(steps, total_steps, get_t()); // total_steps parameter is just for runtime estimation
 	if(!initialized) {
 		initialize();
 		info.print_initialize(); // only print setup info if the setup is new (run() was not called before)

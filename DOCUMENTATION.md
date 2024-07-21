@@ -302,7 +302,7 @@
   ```c
   lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_Q_CRITERION; // set visualization modes, see all available visualization mode macros (VIZ_...) in defines.hpp
   const uint lbm_T = 10000u; // number of LBM time steps to simulate
-  lbm.run(0u); // initialize simulation
+  lbm.run(0u, lbm_T); // initialize simulation
   while(lbm.get_t()<lbm_T) { // main simulation loop
   	if(lbm.graphics.next_frame(lbm_T, 25.0f)) { // render enough frames for 25 seconds of 60fps video
   		lbm.graphics.set_camera_free(float3(2.5f*(float)Nx, 0.0f*(float)Ny, 0.0f*(float)Nz), 0.0f, 0.0f, 50.0f); // set camera to position 1
@@ -310,7 +310,7 @@
   		lbm.graphics.set_camera_centered(-40.0f, 20.0f, 78.0f, 1.25f); // set camera to position 2
   		lbm.graphics.write_frame(get_exe_path()+"export/camera_2/"); // export image from camera position 2
   	}
-  	lbm.run(1u); // run 1 LBM time step
+  	lbm.run(1u, lbm_T); // run 1 LBM time step
   }
   ```
 - To find suitable camera placement, run the simulation at low resolution in [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode, rotate/move the camera to the desired position, click the <kbd>Mouse</kbd> to disable mouse rotation, and press <kbd>G</kbd> to print the current camera settings as a copy-paste command in the console. <kbd>Alt</kbd>+<kbd>Tab</kbd> to the console and copy the camera placement command by selecting it with the mouse and right-clicking, then paste it into the [`main_setup()`](src/setup.cpp) function.
@@ -431,10 +431,11 @@ By now you're already familiar with the [additional boundary types](#initial-and
   ```
 - Then, in [initialization](#initial-and-boundary-conditions), make a loop over all particles (outside of the initialization loop that iterates over all grid cells):
   ```c
+  uint seed = 42u;
   for(ulong n=0ull; n<lbm.particles->length(); n++) {
-  	lbm.particles->x[n] = random_symmetric(0.5f*lbm.size().x); // this will palce the particles randomly anywhere in the simulation box
-  	lbm.particles->y[n] = random_symmetric(0.5f*lbm.size().y);
-  	lbm.particles->z[n] = random_symmetric(0.5f*lbm.size().z);
+  	lbm.particles->x[n] = random_symmetric(seed, 0.5f*lbm.size().x); // this will palce the particles randomly anywhere in the simulation box
+  	lbm.particles->y[n] = random_symmetric(seed, 0.5f*lbm.size().y);
+  	lbm.particles->z[n] = random_symmetric(seed, 0.5f*lbm.size().z);
   }
   ```
 - Note that the position (`0`|`0`|`0`) for particles corresponds to the simulation box center.

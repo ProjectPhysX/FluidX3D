@@ -21,11 +21,15 @@ void Info::initialize(LBM* lbm) {
 	gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
 	print_info("Allocating memory. This may take a few seconds.");
 }
-void Info::append(const ulong steps, const ulong t) {
-	this->steps = steps; // has to be executed before info.print_initialize()
-	this->steps_last = t; // reset last step count if multiple run() commands are executed consecutively
-	this->runtime_lbm_last = runtime_lbm; // reset last runtime if multiple run() commands are executed consecutively
-	this->runtime_total = clock.stop();
+void Info::append(const ulong steps, const ulong total_steps, const ulong t) {
+	if(total_steps==max_ulong) { // total_steps is not provided/used
+		this->steps = steps; // has to be executed before info.print_initialize()
+		this->steps_last = t; // reset last step count if multiple run() commands are executed consecutively
+		this->runtime_lbm_last = runtime_lbm; // reset last runtime if multiple run() commands are executed consecutively
+		this->runtime_total = clock.stop();
+	} else { // total_steps has been specified
+		this->steps = total_steps; // has to be executed before info.print_initialize()
+	}
 }
 void Info::update(const double dt) {
 	this->runtime_lbm_timestep_last = dt; // exact dt
@@ -55,7 +59,7 @@ void Info::print_logo() const {
 	print("|                                  ");                 print("\\  \\ /  /", c);                print("                                  |\n");
 	print("|                                   ");                 print("\\  '  /", c);                 print("                                   |\n");
 	print("|                                    ");                 print("\\   /", c);                 print("                                    |\n");
-	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.17 |\n");
+	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.18 |\n");
 	print("|                                      ");                 print( "'", c);                 print("     Copyright (c) Dr. Moritz Lehmann |\n");
 	print("|-----------------------------------------------------------------------------|\n");
 }
