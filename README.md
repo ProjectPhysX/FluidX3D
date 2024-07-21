@@ -168,6 +168,20 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed memory leak in destructors of `floatN`, `floatNxN`, `doubleN`, `doubleNxN` (all unused)
   - made camera movement/rotation/zoom behavior independent of framerate
   - fixed that `smart_device_selection()` would print a wrong warning if device reports 0 MHz clock speed
+- [v2.18](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.18) (21.07.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.17...v2.18) (more bug fixes)
+  - added support for high refresh rate monitors on Linux
+  - more compact OpenCL Runtime installation scripts in Documentation
+  - driver/runtime installation instructions will now be printed to console if no OpenCL devices are available
+  - added domain information to `LBM::write_status()`
+  - added `LBM::index` function for `uint3` input parameter
+  - fixed that very large simulations sometimes wouldn't render properly by increasing maximum render distance from 10k to 2.1M
+  - fixed mouse input stuttering at high screen refresh rate on Linux
+  - fixed graphical artifacts in free surface raytracing on Intel CPU Runtime for OpenCL
+  - fixed runtime estimation printed in console for setups with multiple `lbm.run(...)` calls
+  - fixed density oscillations in sample setups (too large `lbm_u`)
+  - fixed minor graphical artifacts in `raytrace_phi()`
+  - fixed minor graphical artifacts in `ray_grid_traverse_sum()`
+  - fixed wrong printed time step count on raindrop sample setup
 
 </details>
 
