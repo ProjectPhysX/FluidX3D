@@ -19,7 +19,6 @@ void Info::initialize(LBM* lbm) {
 #endif // FP32
 	cpu_mem_required = (uint)(lbm->get_N()*(ulong)bytes_per_cell_host()/1048576ull); // reset to get valid values for consecutive simulations
 	gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
-	print_info("Allocating memory. This may take a few seconds.");
 }
 void Info::append(const ulong steps, const ulong total_steps, const ulong t) {
 	if(total_steps==max_ulong) { // total_steps is not provided/used
