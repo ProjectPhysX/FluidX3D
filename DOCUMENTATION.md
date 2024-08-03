@@ -60,21 +60,21 @@
 
   - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler) and [oneTBB](https://github.com/oneapi-src/oneTBB/releases) with:
     ```bash
-    export OCLCPUEXP_VERSION="2024.18.6.0.02_rel"
-    export ONEAPI_TBB_VERSION="2021.13.0"
+    export OCLV="2024.18.6.0.02_rel"
+    export TBBV="2021.13.0"
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
-    sudo mkdir -p ~/cpuruntime /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION} /etc/OpenCL/vendors /etc/ld.so.conf.d
-    sudo wget -P ~/cpuruntime https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-${OCLCPUEXP_VERSION}.tar.gz
-    sudo wget -P ~/cpuruntime https://github.com/oneapi-src/oneTBB/releases/download/v${ONEAPI_TBB_VERSION}/oneapi-tbb-${ONEAPI_TBB_VERSION}-lin.tgz
-    sudo tar -zxvf ~/cpuruntime/oclcpuexp-${OCLCPUEXP_VERSION}.tar.gz -C /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}
-    sudo tar -zxvf ~/cpuruntime/oneapi-tbb-${ONEAPI_TBB_VERSION}-lin.tgz -C /opt/intel
-    echo /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
-    echo /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
-    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
-    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
-    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
-    sudo ln -sf /opt/intel/oneapi-tbb-${ONEAPI_TBB_VERSION}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_${OCLCPUEXP_VERSION}/x64
+    sudo mkdir -p ~/cpuruntime /opt/intel/oclcpuexp_${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
+    sudo wget -P ~/cpuruntime https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-${OCLV}.tar.gz
+    sudo wget -P ~/cpuruntime https://github.com/oneapi-src/oneTBB/releases/download/v${TBBV}/oneapi-tbb-${TBBV}-lin.tgz
+    sudo tar -zxvf ~/cpuruntime/oclcpuexp-${OCLV}.tar.gz -C /opt/intel/oclcpuexp_${OCLV}
+    sudo tar -zxvf ~/cpuruntime/oneapi-tbb-${TBBV}-lin.tgz -C /opt/intel
+    echo /opt/intel/oclcpuexp_${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
+    echo /opt/intel/oclcpuexp_${OCLV}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
+    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_${OCLV}/x64
+    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_${OCLV}/x64
+    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_${OCLV}/x64
+    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_${OCLV}/x64
     sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
     sudo rm -r ~/cpuruntime
     ```
