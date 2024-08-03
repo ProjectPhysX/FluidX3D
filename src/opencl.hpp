@@ -178,8 +178,10 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 inline vector<Device_Info> get_devices(const bool print_info=true) { // returns a vector of all available OpenCL devices
 #if defined(_WIN32)
 	(void)_putenv((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
+	(void)_putenv((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
 #elif defined(__linux__)
 	(void) putenv((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
+	(void) putenv((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
 #endif // Linux
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
