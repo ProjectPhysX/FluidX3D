@@ -1,6 +1,6 @@
 # FluidX3D Documentation - How to get started?
 
-## 0. Intstall GPU Drivers and OpenCL Runtime
+## 0. Install GPU Drivers and OpenCL Runtime
 
 <details><summary>(click to expand section)</summary>
 
