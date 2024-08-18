@@ -463,6 +463,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Instinct&nbsp;MI60                       |              14.75 |          32 |         1024 |             3570 (53%) |              5047 (38%) |              5111 (38%) |
 | 🔴&nbsp;Radeon&nbsp;VII                          |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
 | 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
+| 🟢&nbsp;GH200&nbsp;94GB&nbsp;GPU                 |              66.91 |          94 |         4000 |       20595&nbsp;(79%) |        34689&nbsp;(67%) |        19407&nbsp;(37%) |
 | 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20018&nbsp;(78%) |        32613&nbsp;(64%) |        17605&nbsp;(34%) |
 | 🟢&nbsp;H100&nbsp;PCIe                           |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                 |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |        18448&nbsp;(70%) |        11197&nbsp;(42%) |
@@ -602,6 +603,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2630&nbsp;v4        |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2623&nbsp;v4        |               0.67 |          64 |          137 |              125 (14%) |                66 ( 4%) |                59 ( 3%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2680&nbsp;v3        |               1.92 |         128 |          137 |              304 (34%) |               234 (13%) |               291 (16%) |
+| 🟢&nbsp;GH200&nbsp;Neoverse-V2&nbsp;CPU          |               7.88 |         480 |          384 |             1323 (53%) |               853 (17%) |               683 (14%) |
 | 🔴&nbsp;Threadripper&nbsp;PRO&nbsp;7995WX        |              15.36 |         256 |          333 |             1134 (52%) |              1697 (39%) |              1715 (40%) |
 | 🔴&nbsp;Threadripper&nbsp;3970X                  |               3.79 |         128 |          102 |              376 (56%) |               103 ( 8%) |               463 (35%) |
 | 🔴&nbsp;Threadripper&nbsp;1950X                  |               0.87 |         128 |           85 |              273 (49%) |                43 ( 4%) |               151 (14%) |
