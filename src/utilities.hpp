@@ -4029,6 +4029,14 @@ inline void print_info(const string& s) { // print info message
 }
 #endif // UTILITIES_REGEX
 
+inline void set_environment_variable(char* s) { // usage: set_environment_variable((char*)"VARIABLE=VALUE");
+#if defined(_WIN32)
+	(void)_putenv(s);
+#elif defined(__linux__)
+	(void) putenv(s);
+#endif // Linux
+}
+
 #ifdef UTILITIES_FILE
 #include <fstream> // read/write files
 #ifndef UTILITIES_NO_CPP17
