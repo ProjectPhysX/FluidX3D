@@ -451,6 +451,381 @@ In consequence, the arithmetic intensity of this implementation is 2.37 (FP32/FP
 
 If your GPU/CPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
 
+```mermaid
+gantt
+
+title FluidX3D Performance [MLUPs/s] - FP32 arithmetic, (fastest of FP32/FP16S/FP16C) memory storage
+dateFormat X
+axisFormat %s
+%%{
+	init: {
+		'theme': 'forest',
+		'themeVariables': {
+			'sectionBkgColor': '#99999999',
+			'sectionBkgColor2': '#99999999',
+			'altSectionBkgColor': '#00000000',
+			'titleColor': '#7F7F7F',
+			'textColor': '#7F7F7F',
+			'taskTextColor': 'lightgray',
+			'taskBorderColor': '#487E3A'
+		}
+	}
+}%%
+
+section MI300X
+	38207 :crit, 0, 38207
+section MI250 (1 GCD)
+	9030 :crit, 0, 9030
+section MI210
+	9547 :crit, 0, 9547
+section MI100
+	8542 :crit, 0, 8542
+section MI60
+	5111 :crit, 0, 5111
+section Radeon VII
+	7778 :crit, 0, 7778
+section GPU Max 1100
+	6209 :done, 0, 6209
+section GH200 94GB GPU
+	34689 : 0, 34689
+section H100 NVL
+	32613 : 0, 32613
+section H100 PCIe
+	20624 : 0, 20624
+section A100 SXM4 80GB
+	18448 : 0, 18448
+section PG506-242/243
+	15654 : 0, 15654
+section A100 PCIe 80GB
+	17896 : 0, 17896
+section A100 SXM4 40GB
+	16013 : 0, 16013
+section A100 PCIe 40GB
+	16035 : 0, 16035
+section CMP 170HX
+	12392 : 0, 12392
+section A30
+	9721 : 0, 9721
+section V100 SXM2 32GB
+	8947 : 0, 8947
+section V100 PCIe 16GB
+	10325 : 0, 10325
+section GV100
+	6641 : 0, 6641
+section Titan V
+	7253 : 0, 7253
+section P100 PCIe 16GB
+	5950 : 0, 5950
+section P100 PCIe 12GB
+	4141 : 0, 4141
+section GTX TITAN
+	2500 : 0, 2500
+section K40m
+	1868 : 0, 1868
+section K80 (1 GPU)
+	1642 : 0, 1642
+section K20c
+	1507 : 0, 1507
+section RX 7900 XTX
+	7716 :crit, 0, 7716
+section PRO W7900
+	5939 :crit, 0, 5939
+section RX 7900 XT
+	5986 :crit, 0, 5986
+section PRO W7800
+	4426 :crit, 0, 4426
+section PRO W7700
+	2943 :crit, 0, 2943
+section RX 7600
+	2561 :crit, 0, 2561
+section PRO W7600
+	2287 :crit, 0, 2287
+section RX 6900 XT
+	4227 :crit, 0, 4227
+section RX 6800 XT
+	4241 :crit, 0, 4241
+section PRO W6800
+	3361 :crit, 0, 3361
+section RX 6700 XT
+	2908 :crit, 0, 2908
+section RX 6800M
+	3213 :crit, 0, 3213
+section RX 6700M
+	2429 :crit, 0, 2429
+section RX 6600
+	1839 :crit, 0, 1839
+section RX 6500 XT
+	1030 :crit, 0, 1030
+section RX 5700 XT
+	3253 :crit, 0, 3253
+section RX 5700
+	3167 :crit, 0, 3167
+section RX 5600 XT
+	2214 :crit, 0, 2214
+section RX Vega 64
+	3227 :crit, 0, 3227
+section RX 590
+	1688 :crit, 0, 1688
+section RX 580 4GB
+	1848 :crit, 0, 1848
+section R9 390X
+	2217 :crit, 0, 2217
+section HD 7850
+	635 :crit, 0, 635
+section Arc A770 LE
+	4568 :done, 0, 4568
+section Arc A750 LE
+	4314 :done, 0, 4314
+section Arc A580
+	3889 :done, 0, 3889
+section Arc A380
+	1115 :done, 0, 1115
+section RTX 4090
+	11496 : 0, 11496
+section RTX 6000 Ada
+	10293 : 0, 10293
+section L40S
+	7637 : 0, 7637
+section RTX 4080 Super
+	8218 : 0, 8218
+section RTX 4080
+	7933 : 0, 7933
+section RTX 4070 Ti Super
+	7295 : 0, 7295
+section RTX 4070
+	5016 : 0, 5016
+section RTX 4080M
+	5114 : 0, 5114
+section RTX 4000 Ada
+	4221 : 0, 4221
+section RTX 4060
+	3124 : 0, 3124
+section RTX 4070M
+	3092 : 0, 3092
+section RTX 2000 Ada
+	2526 : 0, 2526
+section RTX 3090 Ti
+	10956 : 0, 10956
+section RTX 3090
+	10732 : 0, 10732
+section RTX 3080 Ti
+	9832 : 0, 9832
+section RTX 3080 12GB
+	9657 : 0, 9657
+section RTX A6000
+	8814 : 0, 8814
+section RTX 3080 10GB
+	8118 : 0, 8118
+section RTX 3080M Ti
+	5908 : 0, 5908
+section RTX 3070
+	5096 : 0, 5096
+section RTX 3060 Ti
+	5129 : 0, 5129
+section RTX A4000
+	4945 : 0, 4945
+section RTX A5000M
+	4461 : 0, 4461
+section RTX 3060
+	4070 : 0, 4070
+section RTX 3060M
+	4012 : 0, 4012
+section RTX 3050M Ti
+	2341 : 0, 2341
+section RTX 3050M
+	2339 : 0, 2339
+section Titan RTX
+	7554 : 0, 7554
+section RTX 6000
+	6879 : 0, 6879
+section RTX 8000 Passive
+	5607 : 0, 5607
+section RTX 2080 Ti
+	6853 : 0, 6853
+section RTX 2080 Super
+	5284 : 0, 5284
+section RTX 5000
+	4773 : 0, 4773
+section RTX 2070 Super
+	4893 : 0, 4893
+section RTX 2060 Super
+	5035 : 0, 5035
+section RTX 4000
+	4584 : 0, 4584
+section RTX 2060 KO
+	3376 : 0, 3376
+section RTX 2060
+	3604 : 0, 3604
+section GTX 1660 Super
+	3551 : 0, 3551
+section T4
+	2887 : 0, 2887
+section GTX 1660 Ti
+	3041 : 0, 3041
+section GTX 1660
+	1992 : 0, 1992
+section GTX 1650M 896C
+	1858 : 0, 1858
+section GTX 1650M 1024C
+	1400 : 0, 1400
+section T500
+	665 : 0, 665
+section Titan Xp
+	5495 : 0, 5495
+section GTX 1080 Ti
+	4877 : 0, 4877
+section GTX 1080
+	3182 : 0, 3182
+section GTX 1060 6GB
+	1925 : 0, 1925
+section GTX 1060M
+	1882 : 0, 1882
+section GTX 1050M Ti
+	1224 : 0, 1224
+section P1000
+	839 : 0, 839
+section GTX 970
+	1721 : 0, 1721
+section M4000
+	1519 : 0, 1519
+section M60 (1 GPU)
+	1571 : 0, 1571
+section GTX 960M
+	872 : 0, 872
+section GTX 770
+	1215 : 0, 1215
+section GTX 680 4GB
+	1274 : 0, 1274
+section K2000
+	444 : 0, 444
+section GT 630 (OEM)
+	185 : 0, 185
+section NVS 290
+	9 : 0, 9
+section Arise 1020
+	6 :active, 0, 6
+section M2 Max (38-CU, 32GB)
+	4641 :done, 0, 4641
+section M1 Ultra (64-CU, 128GB)
+	8418 :done, 0, 8418
+section M1 Max (24-CU, 32GB)
+	4496 :done, 0, 4496
+section M1 Pro (16-CU, 16GB)
+	2329 :done, 0, 2329
+section M1 (8-CU, 16GB)
+	759 :done, 0, 759
+section Radeon Graphics (7800X3D)
+	498 :crit, 0, 498
+section 780M (Z1 Extreme)
+	860 :crit, 0, 860
+section Vega 8 (4750G)
+	511 :crit, 0, 511
+section Vega 8 (3500U)
+	288 :crit, 0, 288
+section Arc Graphics (Ultra 9 185H)
+	724 :done, 0, 724
+section Iris Xe Graphics (i7-1265U)
+	621 :done, 0, 621
+section UHD Xe 32EUs
+	245 :done, 0, 245
+section UHD 770
+	475 :done, 0, 475
+section UHD 630
+	301 :done, 0, 301
+section UHD P630
+	288 :done, 0, 288
+section HD 5500
+	192 :done, 0, 192
+section HD 4600
+	115 :done, 0, 115
+section Orange Pi 5 Mali-G610 MP4
+	232 :active, 0, 232
+section Samsung Mali-G72 MP18 (S9+)
+	230 :active, 0, 230
+section 2x EPYC 9654
+	1814 :crit, 0, 1814
+section 2x EPYC 7352
+	739 :crit, 0, 739
+section 2x EPYC 7313
+	498 :crit, 0, 498
+section 2x EPYC 7302
+	784 :crit, 0, 784
+section 2x CPU Max 9480
+	2037 :done, 0, 2037
+section 2x Platinum 8480+
+	2162 :done, 0, 2162
+section 2x Platinum 8380
+	1410 :done, 0, 1410
+section 2x Platinum 8358
+	1285 :done, 0, 1285
+section 2x Platinum 8256
+	396 :done, 0, 396
+section 2x Platinum 8153
+	691 :done, 0, 691
+section 2x Gold 6248R
+	755 :done, 0, 755
+section 2x Gold 6128
+	254 :done, 0, 254
+section Phi 7210
+	415 :done, 0, 415
+section 4x E5-4620 v4
+	460 :done, 0, 460
+section 2x E5-2630 v4
+	264 :done, 0, 264
+section 2x E5-2623 v4
+	125 :done, 0, 125
+section 2x E5-2680 v3
+	304 :done, 0, 304
+section GH200 Neoverse-V2
+	1323 : 0, 1323
+section TR PRO 7995WX
+	1715 :crit, 0, 1715
+section TR 3970X
+	463 :crit, 0, 463
+section TR 1950X
+	273 :crit, 0, 273
+section Ryzen 7800X3D
+	363 :crit, 0, 363
+section FX-6100
+	22 :crit, 0, 22
+section Athlon X2 QL-65
+	3 :crit, 0, 3
+section Ultra 9 185H
+	317 :done, 0, 317
+section i7-13700K
+	504 :done, 0, 504
+section i7-1265U
+	128 :done, 0, 128
+section i9-11900KB
+	208 :done, 0, 208
+section i9-10980XE
+	286 :done, 0, 286
+section E-2288G
+	198 :done, 0, 198
+section i7-9700
+	103 :done, 0, 103
+section i5-9600
+	147 :done, 0, 147
+section i7-8700K
+	152 :done, 0, 152
+section E-2176G
+	201 :done, 0, 201
+section i7-7700HQ
+	108 :done, 0, 108
+section E3-1240 v5
+	141 :done, 0, 141
+section i5-5300U
+	37 :done, 0, 37
+section i7-4770
+	104 :done, 0, 104
+section i7-4720HQ
+	80 :done, 0, 80
+section N2807
+	7 :done, 0, 7
+```
+
+<details><summary>Single-GPU/CPU Benchmark Table</summary>
+
 Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 
 | Device                                           | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
@@ -488,14 +863,19 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7900               |              61.30 |          48 |          864 |             3107 (55%) |              5939 (53%) |              5780 (52%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XT         |              51.61 |          20 |          800 |             3013 (58%) |              5856 (56%) |              5986 (58%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7800               |              45.20 |          32 |          576 |             1872 (50%) |              4426 (59%) |              4145 (55%) |
+| 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7700               |              28.30 |          16 |          576 |             1547 (41%) |              2943 (39%) |              2899 (39%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7600                 |              21.75 |           8 |          288 |             1250 (66%) |              2561 (68%) |              2512 (67%) |
+| 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7600               |              20.00 |           8 |          288 |             1179 (63%) |              2263 (61%) |              2287 (61%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6900&nbsp;XT         |              23.04 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6800&nbsp;XT         |              20.74 |          16 |          512 |             2008 (60%) |              4241 (64%) |              4224 (64%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W6800               |              17.83 |          32 |          512 |             1620 (48%) |              3361 (51%) |              3180 (48%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6700&nbsp;XT         |              13.21 |          12 |          384 |             1408 (56%) |              2883 (58%) |              2908 (58%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6800M                |              11.78 |          12 |          384 |             1439 (57%) |              3190 (64%) |              3213 (64%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6700M                |              10.60 |          10 |          320 |             1194 (57%) |              2388 (57%) |              2429 (58%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;6600                 |               8.93 |           8 |          224 |              963 (66%) |              1817 (62%) |              1839 (63%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;6500&nbsp;XT         |               5.77 |           4 |          144 |              459 (49%) |              1011 (54%) |              1030 (55%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;5700&nbsp;XT         |               9.75 |           8 |          448 |             1368 (47%) |              3253 (56%) |              3049 (52%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;5700                 |               7.72 |           8 |          448 |             1521 (52%) |              3167 (54%) |              2758 (47%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;5600&nbsp;XT         |               6.73 |           6 |          288 |             1136 (60%) |              2214 (59%) |              2148 (57%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;Vega&nbsp;64         |              13.35 |           8 |          484 |             1875 (59%) |              2878 (46%) |              3227 (51%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;590                  |               5.53 |           8 |          256 |             1257 (75%) |              1573 (47%) |              1688 (51%) |
@@ -509,12 +889,15 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090               |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
 | 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                   |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
 | 🟢&nbsp;L40S                                     |              91.61 |          48 |          864 |             3788 (67%) |              7637 (68%) |              7617 (68%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080&nbsp;Super    |              52.22 |          16 |          736 |             4089 (85%) |              7660 (80%) |              8218 (86%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Ti&nbsp;Super |         44.10 |          16 |          672 |             3694 (84%) |              6435 (74%) |              7295 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070               |              29.15 |          12 |          504 |             2646 (80%) |              4548 (69%) |              5016 (77%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080M              |              33.85 |          12 |          432 |             2577 (91%) |              5086 (91%) |              5114 (91%) |
+| 🟢&nbsp;RTX&nbsp;4000&nbsp;Ada                   |              26.73 |          20 |          360 |             2130 (91%) |              3964 (85%) |              4221 (90%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4060               |              15.11 |           8 |          272 |             1614 (91%) |              3052 (86%) |              3124 (88%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070M              |              18.25 |           8 |          256 |             1553 (93%) |              2945 (89%) |              3092 (93%) |
+| 🟢&nbsp;RTX&nbsp;2000&nbsp;Ada                   |              12.00 |          16 |          224 |             1351 (92%) |              2452 (84%) |              2526 (87%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090&nbsp;Ti       |              40.00 |          24 |         1008 |             5717 (87%) |             10956 (84%) |             10400 (79%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3090               |              39.05 |          24 |          936 |             5418 (89%) |             10732 (88%) |             10215 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;Ti       |              37.17 |          12 |          912 |             5202 (87%) |              9832 (87%) |              9347 (79%) |
@@ -626,11 +1009,15 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;Core&nbsp;i7-4720HQ                      |               0.33 |          16 |           26 |               80 (48%) |                23 ( 7%) |                60 (18%) |
 | 🔵&nbsp;Celeron&nbsp;N2807                       |               0.01 |           4 |           11 |                7 (10%) |                 3 ( 2%) |                 3 ( 2%) |
 
+</details>
+
 
 
 ## Multi-GPU Benchmarks
 
 Multi-GPU benchmarks are done at the largest possible grid resolution with cubic domains, and either 2x1x1, 2x2x1 or 2x2x2 of these domains together. The (percentages in round brackets) are single-GPU [roofline model](https://en.wikipedia.org/wiki/Roofline_model) efficiency, and the (multiplicators in round brackets) are scaling factors relative to benchmarked single-GPU performance.
+
+<details><summary>Multi-GPU Benchmark Table</summary>
 
 Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 
@@ -701,6 +1088,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;7x&nbsp;2080&nbsp;Ti&nbsp;+&nbsp;1x&nbsp;A100&nbsp;40GB |             107.60 |          88 |         4928 |      16146&nbsp;(5.1x) |            33732 (5.0x) |            33857 (4.9x) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔵&nbsp;1x&nbsp;A770&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;Titan&nbsp;Xp  |              24.30 |          24 |         1095 |            4717 (1.7x) |             8380 (1.7x) |             8026 (1.6x) |
+
+</details>
 
 
 
