@@ -24,6 +24,48 @@ bool cylinder(const uint x, const uint y, const uint z, const float3& p, const f
 	const float dist = sq(t.x)+sq(t.y)+sq(t.z)-sqnt;
 	return dist<=sq(r) && sqnt<=sq(0.5f*length(n));
 }
+// Xianguang Luo 2023.05.09 2D airfoil(NACA00XX) active moving
+bool airfoil2D(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float t, const float f) {
+	const float3 c = float3(x, y, z)-p;
+	const float nx = c.x/s.x+0.5;
+	const float h  = s.y*(0.200-0.800*(nx)+1.600*sq(nx))*cos(2*pif*(nx-float(t)*f));
+	const float my = s.y*(2.969*sqrt(nx)-1.260*nx-3.516*sq(nx)+2.843*cb(nx)-1.036*qu(nx));
+	const float y1 = h-my;
+	const float y2 = h+my;
+	return c.y<=y2 && c.y>=y1 && abs(c.z)<=0.5f*s.z && my>0.50;
+}
+// Xianguang Luo 2023.06.05 3D airfoil(NACA00XX) active moving
+bool airfoil3D_1(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float e, const float t, const float f) {
+	const float3 c = float3(x, y, z)-p;
+	const float nx = c.x/s.x+0.5;
+	const float h  = s.y*(0.200-0.800*(nx)+1.600*sq(nx))*cos(2*pif*(nx-float(t)*f));
+	const float my = s.y*(2.969*sqrt(nx)-1.260*nx-3.516*sq(nx)+2.843*cb(nx)-1.036*qu(nx));
+	const float y1 = h-my;
+	const float y2 = h+my;
+	const float flag = (sq(c.y-h)+sq(c.z)/sq(e));
+	return flag <= sq(my) && my>0.50;
+}
+// Xianguang Luo 2023.06.06 3D airfoil(NACA00XX) active moving
+bool airfoil3D_2(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float e, const float t, const float f) {
+	const float3 c = float3(x, y, z)-p;
+	const float nx = c.x/s.x+0.5;
+	const float h  = s.y*(0.200-0.825*(nx)+1.625*sq(nx))*cos(2*pif*(nx-float(t)*f));
+	const float my = s.y*(2.969*sqrt(nx)-1.260*nx-3.516*sq(nx)+2.843*cb(nx)-1.036*qu(nx));
+	const float y1 = h-my;
+	const float y2 = h+my;
+	float ne = 0.00;
+	if(nx<=0.60)  ne = e - 1.0*sq(nx/0.60);
+	else  ne = e - 1.0 + 3.0 * sq((nx-0.60)/0.20);
+	const float flag = (sq(c.y-h)+sq(c.z)/sq(ne));
+	return flag <= sq(my) && nx<=0.80;
+}
+float airfoilVelocity(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float t, const float f){
+	const float3 c = float3(x, y, z)-p;
+	const float nx = c.x/s.x+0.5;
+	const float dh = s.y*(0.200-0.825*(nx)+1.625*sq(nx))*sin(2*pif*(nx-t*f))*(2*pif*f);
+	return dh;
+}
+// 2023.05.09 end
 bool cone(const uint x, const uint y, const uint z, const float3& p, const float3& n, const float r1, const float r2) {
 	const float3 t = float3(x, y, z)-p;
 	const float nt = dot(normalize(n), t);

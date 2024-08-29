@@ -11,6 +11,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float cb(const float x) {
 	return x*x*x;
 }
+)+R(float qu(const float x) {
+	return x*x*x*x;
+}
 )+R(float angle(const float3 v1, const float3 v2) {
 	return acos(dot(v1, v2)/(length(v1)*length(v2)));
 }
@@ -1936,10 +1939,27 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef FORCE_FIELD"+R(
 )+R(kernel void calculate_force_on_boundaries(const global fpxx* fi, const global uchar* flags, const ulong t, global float* F) { // calculate force from the fluid on solid boundaries from fi directly
 	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+    /*// Xianguang Luo 2023.06.12 for active moving
+	F[                 n] = 0.0f; // initial force
+	F[    def_N+(ulong)n] = 0.0f;
+	F[2ul*def_N+(ulong)n] = 0.0f; 
+	// Xianguang Luo 2023.06.12 end*/
 	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute calculate_force_on_boundaries() on halo
 	if((flags[n]&TYPE_BO)!=TYPE_S) return; // only continue for solid boundary cells
 	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
+	/*// Xianguang Luo 2023.06.12 for active moving
+	bool is_inside = true;
+	for(uint c=1u; c<def_velocity_set; c++){
+		if((flags[j[c]]&TYPE_BO)!=TYPE_S) is_inside = false;
+	}
+	if(is_inside){ 
+		F[                 n] = 0.0f; // initial force
+		F[    def_N+(ulong)n] = 0.0f;
+		F[2ul*def_N+(ulong)n] = 0.0f; 
+		return; // Ignore lattices inside solids
+	};
+	// Xianguang Luo 2023.06.12 end*/
 	float fhn[def_velocity_set]; // local DDFs
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
 	float Fb=1.0f, fx=0.0f, fy=0.0f, fz=0.0f;

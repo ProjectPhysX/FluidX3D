@@ -148,6 +148,9 @@ inline float sq(const float x) {
 inline float cb(const float x) {
 	return x*x*x;
 }
+inline float qu(const float x) {
+	return x*x*x*x;
+}
 inline float pow(const float x, const uint n) {
 	float r = 1.0f;
 	for(uint i=0u; i<n; i++) {
@@ -270,6 +273,9 @@ inline double sq(const double x) {
 inline double cb(const double x) {
 	return x*x*x;
 }
+inline double qu(const double x) {
+	return x*x*x*x;
+}
 inline double pow(const double x, const uint n) {
 	double r = 1.0;
 	for(uint i=0u; i<n; i++) {
@@ -368,6 +374,9 @@ inline int sq(const int x) {
 inline int cb(const int x) {
 	return x*x*x;
 }
+inline int qu(const int x) {
+	return x*x*x*x;
+}
 inline int pow(const int x, const uint n) {
 	int r = 1;
 	for(uint i=0u; i<n; i++) {
@@ -393,6 +402,9 @@ inline uint sq(const uint x) {
 }
 inline uint cb(const uint x) {
 	return x*x*x;
+}
+inline uint qu(const uint x) {
+	return x*x*x*x;
 }
 inline uint pow(const uint x, const uint n) {
 	uint r = 1u;
@@ -433,6 +445,9 @@ inline slong sq(const slong x) {
 inline slong cb(const slong x) {
 	return x*x*x;
 }
+inline slong qu(const ulong x) {
+	return x*x*x*x;
+}
 inline slong pow(const slong x, const uint n) {
 	slong r = 1ll;
 	for(uint i=0u; i<n; i++) {
@@ -458,6 +473,9 @@ inline ulong sq(const ulong x) {
 }
 inline ulong cb(const ulong x) {
 	return x*x*x;
+}
+inline ulong qu(const slong x) {
+	return x*x*x*x;
 }
 inline ulong pow(const ulong x, const uint n) {
 	ulong r = 1ull;

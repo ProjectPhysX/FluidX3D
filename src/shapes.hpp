@@ -1,5 +1,6 @@
 #pragma once
 
+#include "defines.hpp"
 #include "utilities.hpp"
 
 bool sphere(const uint x, const uint y, const uint z, const float3& p, const float r);
@@ -7,6 +8,10 @@ bool ellipsoid(const uint x, const uint y, const uint z, const float3& p, const 
 bool cube(const uint x, const uint y, const uint z, const float3& p, const float l);
 bool cuboid(const uint x, const uint y, const uint z, const float3& p, const float3& l);
 bool cylinder(const uint x, const uint y, const uint z, const float3& p, const float3& n, const float r);
+bool airfoil2D(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float t, const float f);
+bool airfoil3D_1(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float e, const float t, const float f);
+bool airfoil3D_2(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float e, const float t, const float f);
+float airfoilVelocity(const uint x, const uint y, const uint z, const float3& p, const float3& s, const float t, const float f);
 bool cone(const uint x, const uint y, const uint z, const float3& p, const float3& n, const float r1, const float r2);
 bool pipe(const uint x, const uint y, const uint z, const float3& p, const float3& n, const float r);
 bool conepipe(const uint x, const uint y, const uint z, const float3& p, const float3& n, const float r1, const float r2);
