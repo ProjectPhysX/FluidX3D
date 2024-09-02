@@ -52,6 +52,9 @@ uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per c
 	uint bandwidth_bytes_per_cell = velocity_set*2u*sizeof(fpxx)+1u; // lattice.set()*2*fi, flags
 #ifdef UPDATE_FIELDS
 	bandwidth_bytes_per_cell += 16u; // rho, u
+#ifdef TEMPERATURE
+	bandwidth_bytes_per_cell += 4u; // T
+#endif // TEMPERATURE
 #endif // UPDATE_FIELDS
 #ifdef FORCE_FIELD
 	bandwidth_bytes_per_cell += 12u; // F
@@ -63,7 +66,7 @@ uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per c
 	bandwidth_bytes_per_cell += (1u+(2u*velocity_set-1u)*sizeof(fpxx)+8u+(velocity_set-1u)*4u) + 1u + 1u + (4u+velocity_set+4u+4u+4u); // surface_0 (flags, fi, mass, massex), surface_1 (flags), surface_2 (flags), surface_3 (rho, flags, mass, massex, phi)
 #endif // SURFACE
 #ifdef TEMPERATURE
-	bandwidth_bytes_per_cell += 7u*2u*sizeof(fpxx)+4u; // 2*gi, T
+	bandwidth_bytes_per_cell += 7u*2u*sizeof(fpxx); // 2*gi
 #endif // TEMPERATURE
 	return bandwidth_bytes_per_cell;
 }
