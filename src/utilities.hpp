@@ -2363,6 +2363,37 @@ inline doubleN& doubleN::operator=(const doubleNxN& m) { // extract diagonal of 
 	return *this;
 }
 
+template<typename T> T lerp(const T& a, const T& b, const float t) {
+	return (1.0f-t)*a+t*b;
+}
+template<typename T> T hermite_spline(const T& a, const T& b, const T& va, const T& vb, const float t) {
+	const float cbt=cb(t), sqt=sq(t); // interpolates cubic spline between points a and b with velocities va and vb
+	return (2.0f*cbt-3.0f*sqt+1.0f)*a+(-2.0f*cbt+3.0f*sqt)*b+(cbt-2.0f*sqt+t)*va+(cbt-sqt)*vb;
+}
+template<typename T> T catmull_rom_spline(const T& a, const T& b, const T& c, const T& d, const float t) {
+	const float cbt=cb(t), sqt=sq(t); // interpolates cubic spline between points b and c
+	return (-0.5f*cbt+sqt-0.5f*t)*a+(1.5f*cbt-2.5f*sqt+1.0f)*b+(-1.5f*cbt+2.0f*sqt+0.5f*t)*c+(0.5f*cbt-0.5f*sqt)*d;
+}
+template<typename T> T catmull_rom(const vector<T>& points, const float t) {
+	const uint N = (uint)points.size(); // interpolates a smooth curve through all provided points, with t in [0, 1]
+	if(N==0u) {
+		return (T)0;
+	} else if(N==1u) {
+		return points[0];
+	} else if(N==2u) {
+		return lerp(points[0], points[1], t);
+	} else {
+		const float t_total = (float)(N-1u)*t;
+		const uint i = min((uint)t_total, N-2u); // spline segment
+		const float t = clamp(t_total-(float)i, 0.0f, 1.0f); // t within spline segment
+		const T a = i>0u ? points[i-1u] : 2.0f*points[0]-points[1];
+		const T b = points[i];
+		const T c = points[i+1u];
+		const T d = i+2u<N ? points[i+2u] : 2.0f*points[N-1u]-points[N-2u];
+		return catmull_rom_spline(a, b, c, d, t); // same as hermite_spline(b, c, 0.5f*(c-a), 0.5f*(d-b), t);
+	}
+}
+
 inline float plic_cube_reduced(const float V, const float n1, const float n2, const float n3) { // optimized solution from SZ and Kawano
 	const float n12=n1+n2, n3V=n3*V;
 	if(n12<=2.0f*n3V) return n3V+0.5f*n12; // case (5)

@@ -313,6 +313,39 @@
   }
   ```
 - To find suitable camera placement, run the simulation at low resolution in [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode, rotate/move the camera to the desired position, click the <kbd>Mouse</kbd> to disable mouse rotation, and press <kbd>G</kbd> to print the current camera settings as a copy-paste command in the console. <kbd>Alt</kbd>+<kbd>Tab</kbd> to the console and copy the camera placement command by selecting it with the mouse and right-clicking, then paste it into the [`main_setup()`](src/setup.cpp) function.
+- To fly the camera along a smooth path through a list of provided keyframe camera placements, use `catmull_rom` splines:
+  ```c
+  while(lbm.get_t()<=lbm_T) { // main simulation loop
+  	if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
+  		const float t = (float)lbm.get_t()/(float)lbm_T;
+  		vector<float3> camera_positions = {
+  			float3(-0.282220f*(float)Nx,  0.529221f*(float)Ny,  0.304399f*(float)Nz),
+  			float3( 0.806921f*(float)Nx,  0.239912f*(float)Ny,  0.436880f*(float)Nz),
+  			float3( 1.129724f*(float)Nx, -0.130721f*(float)Ny,  0.352759f*(float)Nz),
+  			float3( 0.595601f*(float)Nx, -0.504690f*(float)Ny,  0.203096f*(float)Nz),
+  			float3(-0.056776f*(float)Nx, -0.591919f*(float)Ny, -0.416467f*(float)Nz)
+  		};
+  		vector<float> camera_rx = {
+  			 116.0f,
+  			  25.4f,
+  			 -10.6f,
+  			 -45.6f,
+  			 -94.6f
+  		};
+  		vector<float> camera_ry = {
+  			  26.0f,
+  			  33.3f,
+  			  20.3f,
+  			  25.3f,
+  			 -16.7f
+  		};
+  		const float camera_fov = 90.0f;
+  		lbm.graphics.set_camera_free(catmull_rom(camera_positions, t), catmull_rom(camera_rx, t), catmull_rom(camera_ry, t), camera_fov);
+  		lbm.graphics.write_frame(get_exe_path()+"export/");
+  	}
+  	lbm.run(1u, lbm_T);
+  }
+  ```
 - The visualization mode(s) can be specified as `lbm.graphics.visualization_modes` with the [`VIS_...`](src/defines.hpp) macros. You can also set the `lbm.graphics.slice_mode` (`0`=no slice, `1`=x, `2`=y, `3`=z, `4`=xz, `5`=xyz, `6`=yz, `7`=xy) and reposition the slices with `lbm.graphics.slice_x`/`lbm.graphics.slice_y`/`lbm.graphics.slice_z`.
 - Exported frames will automatically be assigned the current simulation time step in their name, in the format `bin/export/image-123456789.png`.
 - To convert the rendered `.png` images to video, use [FFmpeg](https://ffmpeg.org/):

@@ -10,8 +10,8 @@
 #define SRT // choose single-relaxation-time LBM collision operator; (default)
 //#define TRT // choose two-relaxation-time LBM collision operator
 
-//#define FP16S // compress LBM DDFs to range-shifted IEEE-754 FP16; number conversion is done in hardware; all arithmetic is still done in FP32
-//#define FP16C // compress LBM DDFs to more accurate custom FP16C format; number conversion is emulated in software; all arithmetic is still done in FP32
+#define FP16S // optional for 2x speedup and 2x VRAM footprint reduction: compress LBM DDFs to range-shifted IEEE-754 FP16; number conversion is done in hardware; all arithmetic is still done in FP32
+//#define FP16C // optional for 2x speedup and 2x VRAM footprint reduction: compress LBM DDFs to more accurate custom FP16C format; number conversion is emulated in software; all arithmetic is still done in FP32
 
 #define BENCHMARK // disable all extensions and setups and run benchmark setup instead
 

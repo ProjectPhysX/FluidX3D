@@ -3,28 +3,11 @@
 
 Info info;
 
-void Info::initialize(LBM* lbm) {
-	this->lbm = lbm;
-#if defined(SRT)
-	collision = "SRT";
-#elif defined(TRT)
-	collision = "TRT";
-#endif // TRT
-#if defined(FP16S)
-	collision += " (FP32/FP16S)";
-#elif defined(FP16C)
-	collision += " (FP32/FP16C)";
-#else // FP32
-	collision += " (FP32/FP32)";
-#endif // FP32
-	cpu_mem_required = (uint)(lbm->get_N()*(ulong)bytes_per_cell_host()/1048576ull); // reset to get valid values for consecutive simulations
-	gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
-}
 void Info::append(const ulong steps, const ulong total_steps, const ulong t) {
 	if(total_steps==max_ulong) { // total_steps is not provided/used
 		this->steps = steps; // has to be executed before info.print_initialize()
 		this->steps_last = t; // reset last step count if multiple run() commands are executed consecutively
-		this->runtime_lbm_last = runtime_lbm; // reset last runtime if multiple run() commands are executed consecutively
+		this->runtime_total_last = this->runtime_total; // reset last runtime if multiple run() commands are executed consecutively
 		this->runtime_total = clock.stop();
 	} else { // total_steps has been specified
 		this->steps = total_steps; // has to be executed before info.print_initialize()
@@ -37,7 +20,8 @@ void Info::update(const double dt) {
 	this->runtime_total = clock.stop();
 }
 double Info::time() const { // returns either elapsed time or remaining time
-	return steps==max_ulong ? runtime_lbm : ((double)steps/(double)(lbm->get_t()-steps_last)-1.0)*(runtime_lbm-runtime_lbm_last); // time estimation on average so far
+	if(lbm==nullptr) return 0.0;
+	return steps==max_ulong ? runtime_total : ((double)steps/(double)(lbm->get_t()-steps_last)-1.0)*(runtime_total-runtime_total_last); // time estimation on average so far
 	//return steps==max_ulong ? runtime_lbm : ((double)steps-(double)(lbm->get_t()-steps_last))*runtime_lbm_timestep_smooth; // instantaneous time estimation
 }
 void Info::print_logo() const {
@@ -58,11 +42,27 @@ void Info::print_logo() const {
 	print("|                                  ");                 print("\\  \\ /  /", c);                print("                                  |\n");
 	print("|                                   ");                 print("\\  '  /", c);                 print("                                   |\n");
 	print("|                                    ");                 print("\\   /", c);                 print("                                    |\n");
-	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.18 |\n");
+	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.19 |\n");
 	print("|                                      ");                 print( "'", c);                 print("     Copyright (c) Dr. Moritz Lehmann |\n");
 	print("|-----------------------------------------------------------------------------|\n");
 }
-void Info::print_initialize() {
+void Info::print_initialize(LBM* lbm) {
+	info.allow_printing.lock(); // disable print_update() until print_initialize() has finished
+	this->lbm = lbm;
+#if defined(SRT)
+	collision = "SRT";
+#elif defined(TRT)
+	collision = "TRT";
+#endif // TRT
+#if defined(FP16S)
+	collision += " (FP32/FP16S)";
+#elif defined(FP16C)
+	collision += " (FP32/FP16C)";
+#else // FP32
+	collision += " (FP32/FP32)";
+#endif // FP32
+	cpu_mem_required = (uint)(lbm->get_N()*(ulong)bytes_per_cell_host()/1048576ull); // reset to get valid values for consecutive simulations
+	gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
 	const float Re = lbm->get_Re_max();
 	println("|-----------------.-----------------------------------------------------------|");
 	println("| Grid Resolution | "+alignr(57u, to_string(lbm->get_Nx())+" x "+to_string(lbm->get_Ny())+" x "+to_string(lbm->get_Nz())+" = "+to_string(lbm->get_N()))+" |");
@@ -91,10 +91,12 @@ void Info::print_initialize() {
 	println("'-----------------'-----------------------------------------------------------'");
 #endif // INTERACTIVE_GRAPHICS_ASCII
 	clock.start();
-	allow_rendering = true;
+	info.allow_printing.unlock();
 }
 void Info::print_update() const {
-	if(allow_rendering) reprint(
+	if(lbm==nullptr) return;
+	info.allow_printing.lock();
+	reprint(
 		"|"+alignr(8, to_uint((double)lbm->get_N()*1E-6/runtime_lbm_timestep_smooth))+" |"+ // MLUPs
 		alignr(7, to_uint((double)lbm->get_N()*(double)bandwidth_bytes_per_cell_device()*1E-9/runtime_lbm_timestep_smooth))+" GB/s |"+ // memory bandwidth
 		alignr(10, to_uint(1.0/runtime_lbm_timestep_smooth))+" | "+ // steps/s
@@ -103,16 +105,17 @@ void Info::print_update() const {
 	);
 #ifdef GRAPHICS
 	if(key_G) { // print camera settings
-		const string camera_position = "float3("+to_string(camera.pos.x/(float)lbm->get_Nx(), 6u)+"f*(float)Nx, "+to_string(camera.pos.y/(float)lbm->get_Ny(), 6u)+"f*(float)Ny, "+to_string(camera.pos.z/(float)lbm->get_Nz(), 6u)+"f*(float)Nz)";
-		const string camera_rx_ry_fov = to_string(degrees(camera.rx)-90.0, 1u)+"f, "+to_string(180.0-degrees(camera.ry), 1u)+"f, "+to_string(camera.fov, 1u)+"f";
-		const string camera_zoom = to_string(camera.zoom*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/(float)min(camera.width, camera.height), 6u)+"f";
-		if(camera.free) print_info("lbm.graphics.set_camera_free("+camera_position+", "+camera_rx_ry_fov+");");
-		else print_info("lbm.graphics.set_camera_centered("+camera_rx_ry_fov+", "+camera_zoom+");");
+		const string camera_position = "float3("+alignr(9u, to_string(camera.pos.x/(float)lbm->get_Nx(), 6u))+"f*(float)Nx, "+alignr(9u, to_string(camera.pos.y/(float)lbm->get_Ny(), 6u))+"f*(float)Ny, "+alignr(9u, to_string(camera.pos.z/(float)lbm->get_Nz(), 6u))+"f*(float)Nz)";
+		const string camera_rx_ry_fov = alignr(6u, to_string(degrees(camera.rx)-90.0, 1u))+"f, "+alignr(5u, to_string(180.0-degrees(camera.ry), 1u))+"f, "+alignr(5u, to_string(camera.fov, 1u))+"f";
+		const string camera_zoom = alignr(8u, to_string(camera.zoom*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/(float)min(camera.width, camera.height), 6u))+"f";
+		if(camera.free) println("\rlbm.graphics.set_camera_free("+camera_position+", "+camera_rx_ry_fov+");");
+		else println("\rlbm.graphics.set_camera_centered("+camera_rx_ry_fov+", "+camera_zoom+");          ");
 		key_G = false;
 	}
 #endif // GRAPHICS
+	info.allow_printing.unlock();
 }
 void Info::print_finalize() {
-	allow_rendering = false;
+	lbm = nullptr;
 	println("\n|---------'-------------'-----------'-------------------'---------------------|");
 }

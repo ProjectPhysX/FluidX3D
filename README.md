@@ -182,6 +182,17 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed minor graphical artifacts in `raytrace_phi()`
   - fixed minor graphical artifacts in `ray_grid_traverse_sum()`
   - fixed wrong printed time step count on raindrop sample setup
+- [v2.19](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.19) (07.09.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.18...v2.19) (camera splines)
+  - the camera can now fly along a smooth path through a list of provided keyframe camera placements, [using Catmull-Rom splines](https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md#video-rendering)
+  - more accurate remaining runtime estimation that includes time spent on rendering
+  - enabled FP16S memory compression by default
+  - printed camera placement using key <kbd>G</kbd> is now formatted for easier copy/paste
+  - added benchmark chart in Readme using mermaid gantt chart
+  - placed memory allocation info during simulation startup at better location
+  - fixed threading conflict between `INTERACTIVE_GRAPHICS` and `lbm.graphics.write_frame();`
+  - fixed maximum buffer allocation size limit for AMD GPUs and in Intel CPU Runtime for OpenCL
+  - fixed wrong `Re<Re_max` info printout for 2D simulations
+  - minor fix in `bandwidth_bytes_per_cell_device()`
 
 </details>
 

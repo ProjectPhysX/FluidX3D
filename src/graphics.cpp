@@ -544,9 +544,11 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 			DispatchMessage(&msg);
 		}
 		// main loop ################################################################
+		camera.rendring_frame.lock(); // block rendering for other threads until finished
 		camera.update_state(fmax(1.0/(double)camera.fps_limit, frametime));
 		main_graphics();
 		update_frame(frametime);
+		camera.rendring_frame.unlock();
 		frametime = clock.stop();
 		sleep(1.0/(double)camera.fps_limit-frametime);
 		clock.start();
@@ -723,9 +725,11 @@ int main(int argc, char* argv[]) {
 	double frametime = 1.0;
 	while(running) {
 		// main loop ################################################################
+		camera.rendring_frame.lock(); // block rendering for other threads until finished
 		camera.update_state(fmax(1.0/(double)camera.fps_limit, frametime));
 		main_graphics();
 		update_frame(frametime);
+		camera.rendring_frame.unlock();
 		frametime = clock.stop();
 		sleep(1.0/(double)camera.fps_limit-frametime);
 		clock.start();
@@ -780,9 +784,11 @@ int main(int argc, char* argv[]) {
 	get_console_font_size(fontwidth, fontheight);
 	while(running) {
 		// main loop ################################################################
+		camera.rendring_frame.lock(); // block rendering for other threads until finished
 		camera.update_state(fmax(1.0/(double)camera.fps_limit, frametime));
 		main_graphics();
 		update_frame(frametime);
+		camera.rendring_frame.unlock();
 		frametime = clock.stop();
 		sleep(1.0/(double)camera.fps_limit-frametime);
 		clock.start();

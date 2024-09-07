@@ -312,9 +312,9 @@ public:
 			file.write((char*)data, capacity()); // write binary data
 			file.close();
 			delete[] data;
-			info.allow_rendering = false; // temporarily disable interactive rendering
+			info.allow_printing.lock();
 			print_info("File \""+filename+"\" saved.");
-			info.allow_rendering = true;
+			info.allow_printing.unlock();
 		}
 
 	public:

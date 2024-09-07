@@ -694,9 +694,11 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint 
 #ifdef GRAPHICS
 	graphics = Graphics(this);
 #endif // GRAPHICS
-	info.initialize(this);
 }
 LBM::~LBM() {
+#ifdef GRAPHICS
+	camera.allow_rendering = false;
+#endif // GRAPHICS
 	info.print_finalize();
 	for(uint d=0u; d<get_D(); d++) delete lbm_domain[d];
 	delete[] lbm_domain;
@@ -876,7 +878,10 @@ void LBM::run(const ulong steps, const ulong total_steps) { // initializes the L
 	info.append(steps, total_steps, get_t()); // total_steps parameter is just for runtime estimation
 	if(!initialized) {
 		initialize();
-		info.print_initialize(); // only print setup info if the setup is new (run() was not called before)
+		info.print_initialize(this); // only print setup info if the setup is new (run() was not called before)
+#ifdef GRAPHICS
+		camera.allow_rendering = true;
+#endif // GRAPHICS
 	}
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i++) {
@@ -996,6 +1001,7 @@ void LBM::write_status(const string& path) { // write LBM status report to a .tx
 	status += "Maximum Allocation Size = "+to_string((uint)(get_N()/(ulong)get_D()*(ulong)(get_velocity_set()*sizeof(fpxx))/1048576ull))+" MB\n";
 	status += "Time Steps = "+to_string(get_t())+" / "+(info.steps==max_ulong ? "infinite" : to_string(info.steps))+"\n";
 	status += "Runtime = "+print_time(info.runtime_total)+" (total) = "+print_time(info.runtime_lbm)+" (LBM) + "+print_time(info.runtime_total-info.runtime_lbm)+" (rendering and data evaluation)\n";
+	status += "Average MLUPs/s = "+to_string(to_uint(1E-6*(double)get_N()*(double)get_t()/info.runtime_lbm))+"\n";
 	status += "Kinematic Viscosity = "+to_string(get_nu())+"\n";
 	status += "Relaxation Time = "+to_string(get_tau())+"\n";
 	status += "Maximum Reynolds Number = "+to_string(get_Re_max())+"\n";
@@ -1065,9 +1071,9 @@ void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path, const bool con
 	file.close();
 	delete[] points;
 	delete[] triangles;
-	info.allow_rendering = false; // temporarily disable interactive rendering
+	info.allow_printing.lock();
 	print_info("File \""+filename+"\" saved.");
-	info.allow_rendering = true;
+	info.allow_printing.unlock();
 }
 void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
 	const Mesh* mesh = read_stl(path, this->size(), center, rotation, size);
@@ -1150,7 +1156,7 @@ int* LBM::Graphics::draw_frame() {
 #endif // GRAPHICS_TRANSPARENCY
 		}
 	}
-	info.allow_labeling = new_frame;
+	camera.allow_labeling = new_frame; // only print new label on frame if a new frame has been rendered
 	return bitmap;
 }
 
@@ -1180,13 +1186,16 @@ bool LBM::Graphics::next_frame(const ulong total_time_steps, const float video_l
 }
 void LBM::Graphics::print_frame() { // preview current frame in console
 #ifndef INTERACTIVE_GRAPHICS_ASCII
-	info.allow_rendering = false; // temporarily disable interactive rendering
+	camera.rendring_frame.lock(); // block rendering for other threads until finished
+	camera.key_update = true; // force rendering new frame
 	int* image_data = draw_frame(); // make sure the frame is fully rendered
 	Image* image = new Image(camera.width, camera.height, image_data);
+	info.allow_printing.lock();
 	println();
 	print_image(image);
+	info.allow_printing.unlock();
 	delete image;
-	info.allow_rendering = true;
+	camera.rendring_frame.unlock();
 #endif // INTERACTIVE_GRAPHICS_ASCII
 }
 void encode_image(Image* image, const string& filename, const string& extension, std::atomic_int* running_encoders) {
@@ -1200,7 +1209,8 @@ void LBM::Graphics::write_frame(const string& path, const string& name, const st
 	write_frame(0u, 0u, camera.width, camera.height, path, name, extension, print_preview);
 }
 void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, const uint y2, const string& path, const string& name, const string& extension, bool print_preview) { // save a cropped current frame with two corner points (x1,y1) and (x2,y2)
-	info.allow_rendering = false; // temporarily disable interactive rendering
+	camera.rendring_frame.lock(); // block rendering for other threads until finished
+	camera.key_update = true; // force rendering new frame
 	int* image_data = draw_frame(); // make sure the frame is fully rendered
 	const string filename = default_filename(path, name, extension, lbm->get_t());
 	const uint xa=max(min(x1, x2), 0u), xb=min(max(x1, x2), camera.width ); // sort coordinates if necessary
@@ -1209,15 +1219,17 @@ void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, con
 	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, image_data[camera.width*(ya+y)+(xa+x)]);
 #ifndef INTERACTIVE_GRAPHICS_ASCII
 	if(print_preview) {
+		info.allow_printing.lock();
 		println();
 		print_image(image);
 		print_info("Image \""+filename+"\" saved.");
+		info.allow_printing.unlock();
 	}
 #endif // INTERACTIVE_GRAPHICS_ASCII
 	running_encoders++;
 	thread encoder(encode_image, image, filename, extension, &running_encoders); // the main bottleneck in rendering images to the hard disk is .png encoding, so encode image in new thread
 	encoder.detach(); // detatch thread so it can run concurrently
-	info.allow_rendering = true;
+	camera.rendring_frame.unlock();
 }
 void LBM::Graphics::write_frame_png(const string& path, bool print_preview) { // save current frame as .png file (smallest file size, but slow)
 	write_frame(path, "image", ".png", print_preview);
