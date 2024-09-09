@@ -69,9 +69,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 //	return (bool)workgroup_condition;
 //}
 void atomic_add_f(volatile global float* addr, const float val) {
-)+"#ifdef cl_nv_pragma_unroll"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
+)+"#if defined(cl_nv_pragma_unroll)"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
 	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
-)+"#elif __opencl_c_ext_fp32_global_atomic_add"+R( // use hardware-supported atomic addition on some Intel GPUs
+)+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
 	atomic_fetch_add((volatile global atomic_float*)addr, val);
 )+"#else"+R( // fallback emulation: https://forums.developer.nvidia.com/t/atomicadd-float-float-atomicmul-float-float/14639/5
 	float old = val; while((old=atomic_xchg(addr, atomic_xchg(addr, 0.0f)+old))!=0.0f);
