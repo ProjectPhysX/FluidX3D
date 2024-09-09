@@ -975,8 +975,8 @@ void LBM::update_moving_boundaries() { // mark/unmark cells next to TYPE_S cells
 #endif // MOVING_BOUNDARIES
 
 #if defined(PARTICLES)&&!defined(FORCE_FIELD)
-void LBM::integrate_particles(const ulong steps, const uint time_step_multiplicator) { // intgegrate passive tracer particles forward in time in stationary flow field
-	info.append(steps, get_t());
+void LBM::integrate_particles(const ulong steps, const ulong total_steps, const uint time_step_multiplicator) { // intgegrate passive tracer particles forward in time in stationary flow field
+	info.append(steps, total_steps, get_t());
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i+=(ulong)time_step_multiplicator) {
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)

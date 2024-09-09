@@ -1192,7 +1192,6 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float si_d = 4E-3f; // bubble diameter [m]
 	const float si_g = 9.81f; // gravitational acceleration [m/s^2]
 	const float si_f = units.si_f_from_si_g(si_g, si_rho);
-	const float si_rho_particles = si_rho;
 	const float lbm_rho = 1.0f;
 	const float m = si_d/lbm_d; // length si_x = x*[m]
 	const float kg = si_rho/lbm_rho*cb(m); // density si_rho = rho*[kg/m^3]

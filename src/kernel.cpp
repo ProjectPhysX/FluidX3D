@@ -68,30 +68,15 @@ string opencl_c_container() { return R( // ########################## begin of O
 //	barrier(CLK_LOCAL_MEM_FENCE);
 //	return (bool)workgroup_condition;
 //}
-)+R(void atomic_add_f(volatile global float* addr, const float val) { // not deterministic because the order of addition can vary: (a+b)+c is rounded differently than a+(b+c)
-	union { // https://streamhpc.com/blog/2016-02-09/atomic-operations-for-floats-in-opencl-improved/
-		uint  u32;
-		float f32;
-	} next, expected, current;
-	current.f32 = *addr;
-	do {
-		next.f32 = (expected.f32=current.f32)+val; // ...*val for atomic_mul_f()
-		current.u32 = atomic_cmpxchg((volatile global uint*)addr, expected.u32, next.u32);
-	} while(current.u32!=expected.u32);
+void atomic_add_f(volatile global float* addr, const float val) {
+)+"#ifdef cl_nv_pragma_unroll"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
+	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
+)+"#elif __opencl_c_ext_fp32_global_atomic_add"+R( // use hardware-supported atomic addition on some Intel GPUs
+	atomic_fetch_add((volatile global atomic_float*)addr, val);
+)+"#else"+R( // fallback emulation: https://forums.developer.nvidia.com/t/atomicadd-float-float-atomicmul-float-float/14639/5
+	float old = val; while((old=atomic_xchg(addr, atomic_xchg(addr, 0.0f)+old))!=0.0f);
+)+"#endif"+R(
 }
-//)+"#ifdef cl_khr_int64_base_atomics"+R( // OpenCL C defines don't work in R() stringification macro
-//)+R(void atomic_add_d(volatile global double* addr, const double val) { // not deterministic because the order of addition can vary: (a+b)+c is rounded differently than a+(b+c)
-//	union { // https://streamhpc.com/blog/2016-02-09/atomic-operations-for-floats-in-opencl-improved/
-//		ulong  u64;
-//		double f64;
-//	} next, expected, current;
-//	current.f64 = *addr;
-//	do {
-//		next.f64 = (expected.f64=current.f64)+val; // ...*val for atomic_mul_d()
-//		current.u64 = atom_cmpxchg((volatile global ulong*)addr, expected.u64, next.u64); // does not work on some older GPUs
-//	} while(current.u64!=expected.u64);
-//}
-//)+"#endif"+R( // cl_khr_int64_base_atomics
 
 
 
