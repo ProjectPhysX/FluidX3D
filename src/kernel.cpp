@@ -68,15 +68,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 //	barrier(CLK_LOCAL_MEM_FENCE);
 //	return (bool)workgroup_condition;
 //}
-void atomic_add_f(volatile global float* addr, const float val) {
-)+"#if defined(cl_nv_pragma_unroll)"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
-	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
-)+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
-	atomic_fetch_add((volatile global atomic_float*)addr, val);
-)+"#else"+R( // fallback emulation: https://forums.developer.nvidia.com/t/atomicadd-float-float-atomicmul-float-float/14639/5
-	float old = val; while((old=atomic_xchg(addr, atomic_xchg(addr, 0.0f)+old))!=0.0f);
-)+"#endif"+R(
-}
 
 
 
@@ -1940,6 +1931,21 @@ void atomic_add_f(volatile global float* addr, const float val) {
 	F[    def_N+(ulong)n] = 0.0f;
 	F[2ul*def_N+(ulong)n] = 0.0f;
 } // reset_force_field()
+)+"#endif"+R( // FORCE_FIELD
+
+)+"#ifdef PARTICLES"+R(
+)+"#ifdef FORCE_FIELD"+R(
+void atomic_add_f(volatile global float* addr, const float val) {
+)+"#if defined(cl_nv_pragma_unroll)"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
+	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
+)+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
+	atomic_fetch_add((volatile global atomic_float*)addr, val);
+)+"#elif __has_builtin(__builtin_amdgcn_global_atomic_fadd_f32)"+R( // use hardware-supported atomic addition on some AMD GPUs
+	__builtin_amdgcn_global_atomic_fadd_f32(addr, val);
+)+"#else"+R( // fallback emulation: https://forums.developer.nvidia.com/t/atomicadd-float-float-atomicmul-float-float/14639/5
+	float old = val; while((old=atomic_xchg(addr, atomic_xchg(addr, 0.0f)+old))!=0.0f);
+)+"#endif"+R(
+}
 )+R(void spread_force(volatile global float* F, const float3 p, const float3 Fn) {
 	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
@@ -1956,7 +1962,6 @@ void atomic_add_f(volatile global float* addr, const float val) {
 } // spread_force()
 )+"#endif"+R( // FORCE_FIELD
 
-)+"#ifdef PARTICLES"+R(
 )+R(float3 particle_boundary_force(const float3 p, const global uchar* flags) { // normalized pseudo-force to prevent particles from entering solid boundaries or exiting fluid phase
 	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
