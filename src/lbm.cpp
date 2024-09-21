@@ -276,7 +276,7 @@ void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, con
 		}
 	}
 	const ulong A[3] = { (ulong)Ny*(ulong)Nz, (ulong)Nz*(ulong)Nx, (ulong)Nx*(ulong)Ny };
-	Kernel kernel_voxelize_mesh(device, A[direction], "voxelize_mesh", direction, fi, rho, u, flags, t+1ull, flag, p0, p1, p2, bounding_box_and_velocity);
+	Kernel kernel_voxelize_mesh(device, A[direction], "voxelize_mesh", direction, fi, u, flags, t+1ull, flag, p0, p1, p2, bounding_box_and_velocity);
 #ifdef SURFACE
 	kernel_voxelize_mesh.add_parameters(mass, massex);
 #endif // SURFACE

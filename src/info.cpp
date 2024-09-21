@@ -21,7 +21,7 @@ void Info::update(const double dt) {
 }
 double Info::time() const { // returns either elapsed time or remaining time
 	if(lbm==nullptr) return 0.0;
-	return steps==max_ulong ? runtime_total : ((double)steps/(double)(lbm->get_t()-steps_last)-1.0)*(runtime_total-runtime_total_last); // time estimation on average so far
+	return steps==max_ulong ? runtime_total : ((double)steps/(double)max(lbm->get_t()-steps_last, 1ull)-1.0)*(runtime_total-runtime_total_last); // time estimation on average so far
 	//return steps==max_ulong ? runtime_lbm : ((double)steps-(double)(lbm->get_t()-steps_last))*runtime_lbm_timestep_smooth; // instantaneous time estimation
 }
 void Info::print_logo() const {

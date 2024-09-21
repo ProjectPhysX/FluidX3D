@@ -2201,7 +2201,7 @@ void atomic_add_f(volatile global float* addr, const float val) {
 
 
 
-)+R(kernel void voxelize_mesh)+"("+R(const uint direction, global fpxx* fi, const global float* rho, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu // ) { // voxelize triangle mesh
+)+R(kernel void voxelize_mesh)+"("+R(const uint direction, global fpxx* fi, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu // ) { // voxelize triangle mesh
 )+"#ifdef SURFACE"+R(
 	, global float* mass, global float* massex // argument order is important
 )+"#endif"+R( // SURFACE
@@ -2260,30 +2260,28 @@ void atomic_add_f(volatile global float* addr, const float val) {
 		inside = inside&&(intersection<intersections&&h<hmesh); // point must be outside if there are no more ray-mesh intersections ahead (error correction)
 		const uxx n = index((uint3)(direction==0u?h:xyz.x, direction==1u?h:xyz.y, direction==2u?h:xyz.z));
 		uchar flagsn = flags[n];
-		if(inside) {
-			flagsn = (flagsn&~TYPE_BO)|flag;
-			if(set_u) {
-				const float3 p = position(coordinates(n))+offset;
-				const float3 un = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-p, (float3)(rx, ry, rz));
-				u[                 n] = un.x;
-				u[    def_N+(ulong)n] = un.y;
-				u[2ul*def_N+(ulong)n] = un.z;
+		const float3 p = position(coordinates(n))+offset;
+		const float3 u_set = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-p, (float3)(rx, ry, rz));
+		if(inside) { // cell is inside of mesh geometry
+			flagsn = (flagsn&~TYPE_BO)|flag; // set flag
+			if(set_u) { // set solid velocity
+				u[                 n] = u_set.x;
+				u[    def_N+(ulong)n] = u_set.y;
+				u[2ul*def_N+(ulong)n] = u_set.z;
 			}
-		} else {
-			if(set_u) {
-				const float3 un = (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]); // for velocity voxelization, only clear moving boundaries
-				if((flagsn&TYPE_BO)==TYPE_S) { // reconstruct DDFs when boundary point is converted to fluid
-					uxx j[def_velocity_set]; // neighbor indices
-					neighbors(n, j); // calculate neighbor indices
-					float feq[def_velocity_set]; // f_equilibrium
-					calculate_f_eq(rho[n], un.x, un.y, un.z, feq);
-					store_f(n, feq, fi, j, t); // write to fi
-				}
-				if(sq(un.x)+sq(un.y)+sq(un.z)>0.0f) {
-					flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag;
-				}
-			} else {
-				flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag;
+		} else { // cell is outside of mesh geometry
+			if((flagsn&TYPE_BO)==TYPE_S) { // cell was previously solid
+				const float3 un = (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]); // load previous velocity
+				if(un.x==u_set.x&&un.y==u_set.y&&un.z==u_set.z) { // velocity matched: cell belonged to the currently voxelized geometry
+					if(set_u) { // reconstruct DDFs when solid cell is converted to fluid
+						uxx j[def_velocity_set]; // neighbor indices
+						neighbors(n, j); // calculate neighbor indices
+						float feq[def_velocity_set]; // f_equilibrium
+						calculate_f_eq(1.0f, un.x, un.y, un.z, feq); // use rhon=1 to prevent mass drift
+						store_f(n, feq, fi, j, t); // write to fi
+					}
+					flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag; // clear flag
+				} // else: don't change cell state
 			}
 		}
 		flags[n] = flagsn;
