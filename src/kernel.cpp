@@ -1023,10 +1023,15 @@ string opencl_c_container() { return R( // ########################## begin of O
 } // calculate_Q()
 
 )+R(void calculate_f_eq(const float rho, float ux, float uy, float uz, float* feq) { // calculate f_equilibrium from density and velocity field (perturbation method / DDF-shifting)
-	const float c3=-3.0f*(sq(ux)+sq(uy)+sq(uz)), rhom1=rho-1.0f; // c3 = -2*sq(u)/(2*sq(c)), rhom1 is arithmetic optimization to minimize digit extinction
+	const float rhom1 = rho-1.0f; // rhom1 is arithmetic optimization to minimize digit extinction
+)+"#ifndef D2Q9"+R( // 3D
+	const float c3 = -3.0f*(sq(ux)+sq(uy)+sq(uz)); // c3 = -2*sq(u)/(2*sq(c))
+	uz *= 3.0f; // only needed for 3D
+)+"#else"+R( // D2Q9
+	const float c3 = -3.0f*(sq(ux)+sq(uy)); // c3 = -2*sq(u)/(2*sq(c))
+)+"#endif"+R( // D2Q9
 	ux *= 3.0f;
 	uy *= 3.0f;
-	uz *= 3.0f;
 	feq[ 0] = def_w0*fma(rho, 0.5f*c3, rhom1); // 000 (identical for all velocity sets)
 )+"#if defined(D2Q9)"+R(
 	const float u0=ux+uy, u1=ux-uy; // these pre-calculations make manual unrolling require less FLOPs
