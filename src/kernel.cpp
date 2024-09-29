@@ -1944,7 +1944,7 @@ void atomic_add_f(volatile global float* addr, const float val) {
 )+"#if defined(cl_nv_pragma_unroll)"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
 	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
 )+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
-	atomic_fetch_add((volatile global atomic_float*)addr, val);
+	atomic_fetch_add_explicit((volatile global atomic_float*)addr, val, memory_order_relaxed);
 )+"#elif __has_builtin(__builtin_amdgcn_global_atomic_fadd_f32)"+R( // use hardware-supported atomic addition on some AMD GPUs
 	__builtin_amdgcn_global_atomic_fadd_f32(addr, val);
 )+"#else"+R( // fallback emulation: https://forums.developer.nvidia.com/t/atomicadd-float-float-atomicmul-float-float/14639/5
