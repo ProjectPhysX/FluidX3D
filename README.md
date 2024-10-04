@@ -163,7 +163,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
 - [v2.17](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.17) (05.06.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.16...v2.17) (unlimited domain resolution)
   - domains are no longer limited to 4.29 billion (2³², 1624³) grid cells or 225 GB memory; if more are used, the OpenCL code will automatically compile with 64-bit indexing
   - new, faster raytracing-based field visualization for single-GPU simulations
-  - added [GPU Driver and OpenCL Runtime installation instructions](DOCUMENTATION.md#0-intstall-gpu-drivers-and-opencl-runtime) to documentation
+  - added [GPU Driver and OpenCL Runtime installation instructions](DOCUMENTATION.md#0-install-gpu-drivers-and-opencl-runtime) to documentation
   - refactored `INTERACTIVE_GRAPHICS_ASCII`
   - fixed memory leak in destructors of `floatN`, `floatNxN`, `doubleN`, `doubleNxN` (all unused)
   - made camera movement/rotation/zoom behavior independent of framerate
@@ -431,14 +431,14 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 
 ## Solving the Compatibility Problem
 
-- FluidX3D is written in OpenCL 1.2, so it runs on any hardware from any vendor (Nvidia, AMD, Intel, ...):
-  - world's fastest datacenter GPUs, like MI300X, H100 (NVL), A100, MI200, MI100, V100(S), GPU Max 1100, ...
-  - gaming GPUs (desktop or laptop), like Nvidia GeForce, AMD Radeon, Intel Arc
-  - professional/workstation GPUs, like Nvidia Quadro, AMD Radeon Pro / FirePro
+- FluidX3D is written in OpenCL 1.2, so it runs on all hardware from all vendors (Nvidia, AMD, Intel, ...):
+  - world's fastest datacenter GPUs: MI300X, H100 (NVL), A100, MI200, MI100, V100(S), GPU Max 1100, ...
+  - gaming GPUs (desktop/laptop): Nvidia GeForce, AMD Radeon, Intel Arc
+  - professional/workstation GPUs: Nvidia Quadro, AMD Radeon Pro / FirePro, Intel Arc Pro
   - integrated GPUs
-  - CPUs (requires [installation of Intel CPU Runtime for OpenCL](DOCUMENTATION.md#0-intstall-gpu-drivers-and-opencl-runtime))
-  - Intel Xeon Phi (requires [installation of Intel CPU Runtime for OpenCL](DOCUMENTATION.md#0-intstall-gpu-drivers-and-opencl-runtime))
-  - even smartphone ARM GPUs
+  - CPUs (requires [installation of Intel CPU Runtime for OpenCL](DOCUMENTATION.md#0-install-gpu-drivers-and-opencl-runtime))
+  - Intel Xeon Phi (requires [installation of Intel CPU Runtime for OpenCL](DOCUMENTATION.md#0-install-gpu-drivers-and-opencl-runtime))
+  - smartphone ARM GPUs
 - native cross-vendor multi-GPU implementation
   - uses PCIe communication, so no SLI/Crossfire/NVLink/InfinityFabric required
   - single-node parallelization, so no MPI installation required
