@@ -79,7 +79,7 @@ uint3 resolution(const float3 box_aspect_ratio, const uint memory) { // input: s
 string default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
 	string time = "00000000"+to_string(t);
 	time = substring(time, length(time)-9u, 9u);
-	return create_file_extension((path=="" ? get_exe_path()+"export/" : path)+(name=="" ? "file" : name)+"-"+time, extension);
+	return (path=="" ? get_exe_path()+"export/" : path)+create_file_extension((name=="" ? "file" : name)+"-"+time, extension);
 }
 string default_filename(const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp at exe_path/export/
 	return default_filename("", name, extension, t);
