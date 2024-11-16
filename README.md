@@ -1,9 +1,9 @@
 # FluidX3D
 
-The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper"). Free for non-commercial use.
+The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs and CPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper"). Free for non-commercial use.
 
 <a href="https://youtu.be/-MkRBeQkLk8"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
-<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/clAqgNtySow"><img src="https://img.youtube.com/vi/clAqgNtySow/maxresdefault.jpg" width="50%"></img></a>
+<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/K5eKxzklXDA"><img src="https://img.youtube.com/vi/K5eKxzklXDA/maxresdefault.jpg" width="50%"></img></a>
 (click on images to show videos on YouTube)
 
 <details><summary>Update History</summary>
@@ -193,6 +193,13 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed maximum buffer allocation size limit for AMD GPUs and in Intel CPU Runtime for OpenCL
   - fixed wrong `Re<Re_max` info printout for 2D simulations
   - minor fix in `bandwidth_bytes_per_cell_device()`
+- [v3.0](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.0) (16.11.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.19...v3.0) (larger CPU/iGPU simulations)
+  - reduced memory footprint on CPUs and iGPU from 72 to 55 Bytes/cell (fused OpenCL host+device buffers for `rho`/`u`/`flags`), allowing 31% higher resolution in the same RAM capacity
+  - faster hardware-supported and faster fallback emulation atomic floating-point addition for `PARTICLES` extension
+  - hardened `calculate_f_eq()` against bad user input for `D2Q9`
+  - fixed velocity voxelization for overlapping geometry with different velocity
+  - fixed Remaining Time printout during paused simulation
+  - fixed CPU/GPU memory printout for CPU/iGPU simulations
 
 </details>
 
@@ -759,6 +766,8 @@ section Orange Pi 5 Mali-G610 MP4
 	232 :active, 0, 232
 section Samsung Mali-G72 MP18 (S9+)
 	230 :active, 0, 230
+section 2x EPYC 9754
+	5179 :crit, 0, 5179
 section 2x EPYC 9654
 	1814 :crit, 0, 1814
 section 2x EPYC 7352
@@ -767,6 +776,12 @@ section 2x EPYC 7313
 	498 :crit, 0, 498
 section 2x EPYC 7302
 	784 :crit, 0, 784
+section 2x 6980P
+	7875 :done, 0, 7875
+section 2x 6979P
+	8135 :done, 0, 8135
+section 2x Platinum 8592+
+	3135 :done, 0, 3135
 section 2x CPU Max 9480
 	2037 :done, 0, 2037
 section 2x Platinum 8480+
@@ -993,10 +1008,14 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟡&nbsp;Mali-G610&nbsp;MP4 (Orange&nbsp;Pi&nbsp;5) |             0.06 |          16 |           34 |              130 (58%) |               232 (52%) |                93 (21%) |
 | 🟡&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |              110 (59%) |               230 (62%) |                21 ( 6%) |
 |                                                  |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754                   |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7352                   |               3.53 |         512 |          410 |              739 (28%) |               106 ( 2%) |               412 ( 8%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7313                   |               3.07 |         128 |          410 |              498 (19%) |               367 ( 7%) |               418 ( 8%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7302                   |               3.07 |         128 |          410 |              784 (29%) |               336 ( 6%) |               411 ( 8%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6980P                  |              98.30 |        6144 |         1690 |             7875 (71%) |              5112 (23%) |              5610 (26%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6979P                  |              92.16 |        3072 |         1690 |             8135 (74%) |              4175 (19%) |              4622 (21%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8592+    |              31.13 |        1024 |          717 |             3135 (67%) |              2359 (25%) |              2466 (26%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480 |              27.24 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+    |              28.67 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380     |              23.55 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |

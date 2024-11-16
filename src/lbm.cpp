@@ -1259,8 +1259,8 @@ void LBM_Domain::allocate_transfer(Device& device) { // allocate all memory for 
 	if(Dy>1u) Amax = max(Amax, (ulong)Nz*(ulong)Nx); // Ay
 	if(Dz>1u) Amax = max(Amax, (ulong)Nx*(ulong)Ny); // Az
 
-	transfer_buffer_p = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
-	transfer_buffer_m = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u));
+	transfer_buffer_p = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u), true, true, 0, false); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
+	transfer_buffer_m = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u), true, true, 0, false); // these transfer buffers must not be zero-copy!
 
 	kernel_transfer[enum_transfer_field::fi              ][0] = Kernel(device, 0u, "transfer_extract_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
 	kernel_transfer[enum_transfer_field::fi              ][1] = Kernel(device, 0u, "transfer__insert_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);

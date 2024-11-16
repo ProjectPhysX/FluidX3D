@@ -29,7 +29,7 @@ string("'-----------------------------------------------------------------------
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 mkdir -p ~/amdgpu
-wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.1.3/ubuntu/jammy/amdgpu-install_6.1.60103-1_all.deb
+wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.2.3/ubuntu/noble/amdgpu-install_6.2.60203-1_all.deb
 sudo apt install -y ~/amdgpu/amdgpu-install*.deb
 sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
 sudo usermod -a -G render,video $(whoami)
@@ -54,12 +54,12 @@ sudo shutdown -r now
 )"+string("\033[96m")+R"(.-----------------------------------------------------------------------------.
 | CPU Option 1: Intel CPU Runtime for OpenCL (works for both AMD/Intel CPUs)  |
 '-----------------------------------------------------------------------------'
-export OCLV="2024.18.6.0.02_rel"
-export TBBV="2021.13.0"
+export OCLV="2024.18.10.0.08_rel"
+export TBBV="2022.0.0"
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 sudo mkdir -p ~/cpurt /opt/intel/oclcpuexp_${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
-sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW25/oclcpuexp-${OCLV}.tar.gz
+sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW43/oclcpuexp-${OCLV}.tar.gz
 sudo wget -P ~/cpurt https://github.com/oneapi-src/oneTBB/releases/download/v${TBBV}/oneapi-tbb-${TBBV}-lin.tgz
 sudo tar -zxvf ~/cpurt/oclcpuexp-${OCLV}.tar.gz -C /opt/intel/oclcpuexp_${OCLV}
 sudo tar -zxvf ~/cpurt/oneapi-tbb-${TBBV}-lin.tgz -C /opt/intel
@@ -93,7 +93,7 @@ struct Device_Info {
 	uint max_global_buffer=0u, max_constant_buffer=0u; // maximum global buffer size in MB, maximum constant buffer size in KB
 	uint compute_units = 0u; // compute units (CUs) can contain multiple cores depending on the microarchitecture
 	uint clock_frequency = 0u; // in MHz
-	bool is_cpu=false, is_gpu=false;
+	bool is_cpu=false, is_gpu=false, uses_ram=false;
 	bool patch_nvidia_fp16 = false; // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
 	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
 	bool patch_legacy_gpu_fma = false; // some old GPUs have terrible fma performance, so replace with a*b+c
@@ -107,7 +107,7 @@ struct Device_Info {
 		name = trim(cl_device.getInfo<CL_DEVICE_NAME>()); // device name
 		vendor = trim(cl_device.getInfo<CL_DEVICE_VENDOR>()); // device vendor
 		driver_version = trim(cl_device.getInfo<CL_DRIVER_VERSION>()); // device driver version
-		opencl_c_version = trim(cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>()); // device OpenCL C version
+		opencl_c_version = trim(cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>()).substr(0, 12); // device OpenCL C version
 		memory = (uint)(cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()/1048576ull); // global memory in MB
 		global_cache = (uint)(cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>()/1024ull); // global cache in KB
 		local_cache = (uint)(cl_device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()/1024ull); // local cache in KB
@@ -124,12 +124,13 @@ struct Device_Info {
 		is_int8_capable = (uint)cl_device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR>();
 		is_cpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_CPU;
 		is_gpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_GPU;
+		uses_ram = is_cpu||cl_device.getInfo<CL_DEVICE_HOST_UNIFIED_MEMORY>(); // CPUs or iGPUs
 		const uint ipc = is_gpu?2u:32u; // IPC (instructions per cycle) is 2 for GPUs and 32 for most modern CPUs
 		const bool nvidia_192_cores_per_cu = contains_any(to_lower(name), {"gt 6", "gt 7", "gtx 6", "gtx 7", "quadro k", "tesla k"}) || (clock_frequency<1000u&&contains(to_lower(name), "titan")); // identify Kepler GPUs
 		const bool nvidia_64_cores_per_cu = contains_any(to_lower(name), {"p100", "v100", "a100", "a30", " 16", " 20", "titan v", "titan rtx", "quadro t", "tesla t", "quadro rtx"}) && !contains(to_lower(name), "rtx a"); // identify P100, Volta, Turing, A100, A30
 		const bool amd_128_cores_per_dualcu = contains(to_lower(name), "gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
 		const bool amd_256_cores_per_dualcu = contains(to_lower(name), "gfx11"); // identify RDNA3 GPUs where dual CUs are reported
-		const bool intel_16_cores_per_cu = contains(to_lower(name), "gpu max"); // identify PVC GPUs
+		const bool intel_16_cores_per_cu = contains_any(to_lower(name), {"gpu max", "140v", "130v"}); // identify PVC/Xe2 GPUs
 		const float nvidia = (float)(contains(to_lower(vendor), "nvidia"))*(nvidia_64_cores_per_cu?64.0f:nvidia_192_cores_per_cu?192.0f:128.0f); // Nvidia GPUs have 192 cores/CU (Kepler), 128 cores/CU (Maxwell, Pascal, Ampere, Hopper, Ada) or 64 cores/CU (P100, Volta, Turing, A100, A30)
 		const float amd = (float)(contains_any(to_lower(vendor), {"amd", "advanced"}))*(is_gpu?(amd_256_cores_per_dualcu?256.0f:amd_128_cores_per_dualcu?128.0f:64.0f):0.5f); // AMD GPUs have 64 cores/CU (GCN, CDNA), 128 cores/dualCU (RDNA, RDNA2) or 256 cores/dualCU (RDNA3), AMD CPUs (with SMT) have 1/2 core/CU
 		const float intel = (float)(contains(to_lower(vendor), "intel"))*(is_gpu?(intel_16_cores_per_cu?16.0f:8.0f):0.5f); // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc), Intel CPUs (with HT) have 1/2 core/CU
@@ -149,7 +150,7 @@ struct Device_Info {
 			}
 		}
 		patch_nvidia_fp16 = patch_nvidia_fp16||(nvidia>0.0f&&atof(driver_version.substr(0, 6).c_str())>=520.00&&!nvidia_192_cores_per_cu&&!contains_any(to_lower(name), {"gtx 8", "gtx 9", "quadro m", "tesla m", "gtx titan"})); // enable for all Nvidia GPUs with driver>=520.00 except Kepler and Maxwell
-		patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||((intel==8.0f)&&(memory>4096)); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
+		patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||((intel>=8.0f)&&(memory>4096u)); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
 		patch_legacy_gpu_fma = patch_legacy_gpu_fma||arm>0.0f; // enable for all ARM GPUs
 		if(patch_nvidia_fp16) is_fp16_capable = 2u;
 	}
@@ -174,7 +175,7 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 	println("| Device Driver  | "+alignl(58, d.driver_version+" ("+os+")")+" |");
 	println("| OpenCL Version | "+alignl(58, d.opencl_c_version          )+" |");
 	println("| Compute Units  | "+alignl(58, to_string(d.compute_units)+" at "+to_string(d.clock_frequency)+" MHz ("+to_string(d.cores)+" cores, "+to_string(d.tflops, 3)+" TFLOPs/s)")+" |");
-	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
+	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB "+(d.uses_ram ? "" : "V")+"RAM, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
 	println("| Buffer Limits  | "+alignl(58, to_string(d.max_global_buffer)+" MB global, "+to_string(d.max_constant_buffer)+" KB constant")+" |");
 	println("|----------------'------------------------------------------------------------|");
 }
@@ -301,8 +302,10 @@ private:
 	uint d = 1u; // buffer dimensions
 	bool host_buffer_exists = false;
 	bool device_buffer_exists = false;
-	bool external_host_buffer = false;
+	bool external_host_buffer = false; // Memory object has been created with an externally supplied host buffer/pointer
+	bool is_zero_copy = false; // if possible (device is CPU or iGPU), and if allowed by user, use zero-copy buffer: host+device buffers are fused into one
 	T* host_buffer = nullptr; // host buffer
+	T* host_buffer_unaligned = nullptr; // unaligned host buffer (only required for zero-copy to align host_buffer)
 	cl::Buffer device_buffer; // device buffer
 	Device* device = nullptr; // pointer to linked Device
 	cl::CommandQueue cl_queue; // command queue
@@ -312,14 +315,33 @@ private:
 		if(d>0x2u) z = s2 = host_buffer+N*0x2ull; if(d>0x6u) s6 = host_buffer+N*0x6ull; if(d>0xAu) sA = host_buffer+N*0xAull; if(d>0xEu) sE = host_buffer+N*0xEull;
 		if(d>0x3u) w = s3 = host_buffer+N*0x3ull; if(d>0x7u) s7 = host_buffer+N*0x7ull; if(d>0xBu) sB = host_buffer+N*0xBull; if(d>0xFu) sF = host_buffer+N*0xFull;
 	}
-	inline void allocate_device_buffer(Device& device, const bool allocate_device) {
+	inline void allocate_host_buffer(Device& device, const bool allocate_host, const bool allow_zero_copy) {
+		if(allocate_host) {
+			if(allow_zero_copy&&device.info.uses_ram) {
+				host_buffer_unaligned = new T[N*(ulong)d+4160ull/sizeof(T)]; // over-allocate by (4096+64) Bytes
+				host_buffer = (T*)((((ulong)host_buffer_unaligned+4095ull)/4096ull)*4096ull); // host_buffer must be aligned to 4096 Bytes for CL_MEM_USE_HOST_PTR
+			} else {
+				host_buffer = new T[N*(ulong)d];
+			}
+			initialize_auxiliary_pointers();
+			host_buffer_exists = true;
+		}
+	}
+	inline void allocate_device_buffer(Device& device, const bool allocate_device, const bool allow_zero_copy) {
 		this->device = &device;
 		this->cl_queue = device.get_cl_queue();
 		if(allocate_device) {
 			device.info.memory_used += (uint)(capacity()/1048576ull); // track device memory usage
 			if(device.info.memory_used>device.info.memory) print_error("Device \""+device.info.name+"\" does not have enough memory. Allocating another "+to_string((uint)(capacity()/1048576ull))+" MB would use a total of "+to_string(device.info.memory_used)+" MB / "+to_string(device.info.memory)+" MB.");
 			int error = 0;
-			device_buffer = cl::Buffer(device.get_cl_context(), CL_MEM_READ_WRITE|((int)device.info.patch_intel_gpu_above_4gb<<23), capacity(), nullptr, &error); // for Intel GPUs, set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
+			is_zero_copy = allow_zero_copy&&host_buffer_exists&&device.info.uses_ram&&(!external_host_buffer||((ulong)host_buffer%4096ull==0ull&&capacity()%64ull==0ull));
+			device_buffer = cl::Buffer( // if(is_zero_copy) { don't allocate extra memory on CPUs/iGPUs } else { allocate VRAM on GPUs }
+				device.get_cl_context(),
+				CL_MEM_READ_WRITE|((int)is_zero_copy*CL_MEM_USE_HOST_PTR)|((int)device.info.patch_intel_gpu_above_4gb<<23), // for Intel GPUs set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
+				is_zero_copy ? ((capacity()+63ull)/64ull)*64ull : capacity(), // buffer capacity must be a multiple of 64 Bytes for CL_MEM_USE_HOST_PTR
+				is_zero_copy ? (void*)host_buffer : nullptr,
+				&error
+			);
 			if(error==-61) print_error("Memory size is too large at "+to_string((uint)(capacity()/1048576ull))+" MB. Device \""+device.info.name+"\" accepts a maximum buffer size of "+to_string(device.info.max_global_buffer)+" MB.");
 			else if(error) print_error("Device buffer allocation failed with error code "+to_string(error)+".");
 			device_buffer_exists = true;
@@ -328,29 +350,25 @@ private:
 public:
 	T *x=nullptr, *y=nullptr, *z=nullptr, *w=nullptr; // host buffer auxiliary pointers for multi-dimensional array access (array of structures)
 	T *s0=nullptr, *s1=nullptr, *s2=nullptr, *s3=nullptr, *s4=nullptr, *s5=nullptr, *s6=nullptr, *s7=nullptr, *s8=nullptr, *s9=nullptr, *sA=nullptr, *sB=nullptr, *sC=nullptr, *sD=nullptr, *sE=nullptr, *sF=nullptr;
-	inline Memory(Device& device, const ulong N, const uint dimensions=1u, const bool allocate_host=true, const bool allocate_device=true, const T value=(T)0) {
+	inline Memory(Device& device, const ulong N, const uint dimensions=1u, const bool allocate_host=true, const bool allocate_device=true, const T value=(T)0, const bool allow_zero_copy=true) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
 		if(N*(ulong)dimensions==0ull) print_error("Memory size must be larger than 0.");
 		this->N = N;
 		this->d = dimensions;
-		allocate_device_buffer(device, allocate_device);
-		if(allocate_host) {
-			host_buffer = new T[N*(ulong)d];
-			initialize_auxiliary_pointers();
-			host_buffer_exists = true;
-		}
+		allocate_host_buffer(device, allocate_host, allow_zero_copy); // allocate host_buffer first
+		allocate_device_buffer(device, allocate_device, allow_zero_copy); // allocate device_buffer second
 		reset(value);
 	}
-	inline Memory(Device& device, const ulong N, const uint dimensions, T* const host_buffer, const bool allocate_device=true) {
+	inline Memory(Device& device, const ulong N, const uint dimensions, T* const host_buffer, const bool allocate_device=true, const bool allow_zero_copy=true) {
 		if(!device.is_initialized()) print_error("No Device selected. Call Device constructor.");
 		if(N*(ulong)dimensions==0ull) print_error("Memory size must be larger than 0.");
 		this->N = N;
 		this->d = dimensions;
-		allocate_device_buffer(device, allocate_device);
 		this->host_buffer = host_buffer;
 		initialize_auxiliary_pointers();
 		host_buffer_exists = true;
 		external_host_buffer = true;
+		allocate_device_buffer(device, allocate_device, allow_zero_copy);
 		write_to_device();
 	}
 	inline Memory() {} // default constructor
@@ -363,21 +381,29 @@ public:
 		d = memory.dimensions();
 		device = memory.device;
 		cl_queue = memory.device->get_cl_queue();
+		if(memory.host_buffer_exists) {
+			host_buffer = memory.exchange_host_buffer(nullptr); // transfer host_buffer pointer
+			host_buffer_unaligned = memory.exchange_host_buffer_unaligned(nullptr); // transfer host_buffer_unaligned pointer
+			initialize_auxiliary_pointers();
+			external_host_buffer = memory.external_host_buffer;
+			host_buffer_exists = true;
+		}
 		if(memory.device_buffer_exists) {
 			device_buffer = memory.get_cl_buffer(); // transfer device_buffer pointer
 			device->info.memory_used += (uint)(capacity()/1048576ull); // track device memory usage
+			is_zero_copy = memory.is_zero_copy;
 			device_buffer_exists = true;
-		}
-		if(memory.host_buffer_exists) {
-			host_buffer = memory.exchange_host_buffer(nullptr); // transfer host_buffer pointer
-			initialize_auxiliary_pointers();
-			host_buffer_exists = true;
 		}
 		return *this; // destructor of memory will be called automatically
 	}
 	inline T* const exchange_host_buffer(T* const host_buffer) { // sets host_buffer to new pointer and returns old pointer
 		T* const swap = this->host_buffer;
 		this->host_buffer = host_buffer;
+		return swap;
+	}
+	inline T* const exchange_host_buffer_unaligned(T* const host_buffer_unaligned) { // sets host_buffer_unaligned to new pointer and returns old pointer
+		T* const swap = this->host_buffer_unaligned;
+		this->host_buffer_unaligned = host_buffer_unaligned;
 		return swap;
 	}
 	inline void add_host_buffer() { // makes only sense if there is no host buffer yet but an existing device buffer
@@ -390,9 +416,9 @@ public:
 			print_error("There is no existing device buffer, so can't add host buffer.");
 		}
 	}
-	inline void add_device_buffer() { // makes only sense if there is no device buffer yet but an existing host buffer
+	inline void add_device_buffer(const bool allow_zero_copy=true) { // makes only sense if there is no device buffer yet but an existing host buffer
 		if(!device_buffer_exists&&host_buffer_exists) {
-			allocate_device_buffer(*device, true);
+			allocate_device_buffer(*device, true, allow_zero_copy);
 			write_to_device();
 		} else if(!host_buffer_exists) {
 			print_error("There is no existing host buffer, so can't add device buffer.");
@@ -400,7 +426,14 @@ public:
 	}
 	inline void delete_host_buffer() {
 		host_buffer_exists = false;
-		if(!external_host_buffer) delete[] host_buffer;
+		if(!external_host_buffer) {
+			if(host_buffer_unaligned!=nullptr) {
+				host_buffer = nullptr;
+				delete[] host_buffer_unaligned;
+			} else {
+				delete[] host_buffer;
+			}
+		}
 		if(!device_buffer_exists) {
 			N = 0ull;
 			d = 1u;
@@ -428,7 +461,7 @@ public:
 	inline const ulong length() const { return N; }
 	inline const uint dimensions() const { return d; }
 	inline const ulong range() const { return N*(ulong)d; }
-	inline const ulong capacity() const { return N*(ulong)d*sizeof(T); } // returns capacity of the buffer in Byte
+	inline const ulong capacity() const { return N*(ulong)d*sizeof(T); } // returns capacity of the buffer in Bytes
 	inline T* const data() { return host_buffer; }
 	inline const T* const data() const { return host_buffer; }
 	inline T* const operator()() { return host_buffer; }
@@ -438,25 +471,29 @@ public:
 	inline const T operator()(const ulong i) const { return host_buffer[i]; }
 	inline const T operator()(const ulong i, const uint dimension) const { return host_buffer[i+(ulong)dimension*N]; } // array of structures
 	inline void read_from_device(const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueReadBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
+			cl_queue.enqueueReadBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		}
 	}
 	inline void write_to_device(const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) cl_queue.enqueueWriteBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
+			cl_queue.enqueueWriteBuffer(device_buffer, blocking, 0ull, capacity(), (void*)host_buffer, event_waitlist, event_returned);
+		}
 	}
 	inline void read_from_device(const ulong offset, const ulong length, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const ulong safe_offset=min(offset, range()), safe_length=min(length, range()-safe_offset);
 			if(safe_length>0ull) cl_queue.enqueueReadBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 		}
 	}
 	inline void write_to_device(const ulong offset, const ulong length, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) {
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const ulong safe_offset=min(offset, range()), safe_length=min(length, range()-safe_offset);
 			if(safe_length>0ull) cl_queue.enqueueWriteBuffer(device_buffer, blocking, safe_offset*sizeof(T), safe_length*sizeof(T), (void*)(host_buffer+safe_offset), event_waitlist, event_returned);
 		}
 	}
 	inline void read_from_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 1D domain from device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 			for(uint i=i0; i<i1; i++) {
 				const ulong safe_offset=min((ulong)i*N+x0, range()), safe_length=min(x1-x0, range()-safe_offset);
@@ -466,7 +503,7 @@ public:
 		}
 	}
 	inline void write_to_device_1d(const ulong x0, const ulong x1, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 1D domain to device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
 			for(uint i=i0; i<i1; i++) {
 				const ulong safe_offset=min((ulong)i*N+x0, range()), safe_length=min(x1-x0, range()-safe_offset);
@@ -476,7 +513,7 @@ public:
 		}
 	}
 	inline void read_from_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 2D domain from device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint y=y0; y<y1; y++) {
 				const ulong n = x0+y*Nx;
 				const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
@@ -489,7 +526,7 @@ public:
 		}
 	}
 	inline void write_to_device_2d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong Nx, const ulong Ny, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 2D domain to device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint y=y0; y<y1; y++) {
 				const ulong n = x0+y*Nx;
 				const uint i0=(uint)max(0, dimension), i1=dimension<0 ? d : i0+1u;
@@ -502,7 +539,7 @@ public:
 		}
 	}
 	inline void read_from_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // read 3D domain from device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint z=z0; z<z1; z++) {
 				for(uint y=y0; y<y1; y++) {
 					const ulong n = x0+(y+z*Ny)*Nx;
@@ -517,7 +554,7 @@ public:
 		}
 	}
 	inline void write_to_device_3d(const ulong x0, const ulong x1, const ulong y0, const ulong y1, const ulong z0, const ulong z1, const ulong Nx, const ulong Ny, const ulong Nz, const int dimension=-1, const bool blocking=true, const vector<Event>* event_waitlist=nullptr, Event* event_returned=nullptr) { // write 3D domain to device, either for all vector dimensions (-1) or for a specified dimension
-		if(host_buffer_exists&&device_buffer_exists) {
+		if(host_buffer_exists&&device_buffer_exists&&!is_zero_copy) {
 			for(uint z=z0; z<z1; z++) {
 				for(uint y=y0; y<y1; y++) {
 					const ulong n = x0+(y+z*Ny)*Nx;

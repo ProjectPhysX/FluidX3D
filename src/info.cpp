@@ -42,7 +42,7 @@ void Info::print_logo() const {
 	print("|                                  ");                 print("\\  \\ /  /", c);                print("                                  |\n");
 	print("|                                   ");                 print("\\  '  /", c);                 print("                                   |\n");
 	print("|                                    ");                 print("\\   /", c);                 print("                                    |\n");
-	print("|                                     ");                 print("\\ /", c);                 print("               FluidX3D Version 2.19 |\n");
+	print("|                                     ");                 print("\\ /", c);                 print("                FluidX3D Version 3.0 |\n");
 	print("|                                      ");                 print( "'", c);                 print("     Copyright (c) Dr. Moritz Lehmann |\n");
 	print("|-----------------------------------------------------------------------------|\n");
 }
@@ -61,8 +61,17 @@ void Info::print_initialize(LBM* lbm) {
 #else // FP32
 	collision += " (FP32/FP32)";
 #endif // FP32
-	cpu_mem_required = (uint)(lbm->get_N()*(ulong)bytes_per_cell_host()/1048576ull); // reset to get valid values for consecutive simulations
-	gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
+	bool all_domains_use_ram = true; // reset cpu/gpu_mem_required to get valid values for consecutive simulations
+	for(uint d=0u; d<lbm->get_D(); d++) {
+		all_domains_use_ram = all_domains_use_ram&&lbm->lbm_domain[d]->get_device().info.uses_ram;
+	}
+	if(all_domains_use_ram) {
+		cpu_mem_required = lbm->get_D()*lbm->lbm_domain[0]->get_device().info.memory_used;
+		gpu_mem_required = 0u;
+	} else {
+		cpu_mem_required = (uint)(lbm->get_N()*(ulong)bytes_per_cell_host()/1048576ull);
+		gpu_mem_required = lbm->lbm_domain[0]->get_device().info.memory_used;
+	}
 	const float Re = lbm->get_Re_max();
 	println("|-----------------.-----------------------------------------------------------|");
 	println("| Grid Resolution | "+alignr(57u, to_string(lbm->get_Nx())+" x "+to_string(lbm->get_Ny())+" x "+to_string(lbm->get_Nz())+" = "+to_string(lbm->get_N()))+" |");
