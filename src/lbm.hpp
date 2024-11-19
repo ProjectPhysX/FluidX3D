@@ -212,8 +212,8 @@ private:
 
 	void communicate_fi();
 	void communicate_rho_u_flags();
-#ifdef SURFACE
 	void communicate_flags();
+#ifdef SURFACE
 	void communicate_phi_massex_flags();
 #endif // SURFACE
 #ifdef TEMPERATURE
@@ -272,7 +272,7 @@ public:
 				return buffers[domain]->data()[local_i+local_dimension*local_N]; // array of structures
 			}
 		}
-		inline static string vtk_type() {
+		inline string vtk_type() const {
 			/**/ if constexpr(std::is_same<T, char >::value) return "char" ; else if constexpr(std::is_same<T, uchar >::value) return "unsigned_char" ;
 			else if constexpr(std::is_same<T, short>::value) return "short"; else if constexpr(std::is_same<T, ushort>::value) return "unsigned_short";
 			else if constexpr(std::is_same<T, int  >::value) return "int"  ; else if constexpr(std::is_same<T, uint  >::value) return "unsigned_int"  ;
@@ -312,9 +312,9 @@ public:
 			file.write((char*)data, capacity()); // write binary data
 			file.close();
 			delete[] data;
-			info.allow_rendering = false; // temporarily disable interactive rendering
+			info.allow_printing.lock();
 			print_info("File \""+filename+"\" saved.");
-			info.allow_rendering = true;
+			info.allow_printing.unlock();
 		}
 
 	public:
@@ -413,7 +413,7 @@ public:
 	LBM(const uint3 N, const float nu, const float fx, const float fy, const float fz, const uint particles_N, const float particles_rho=1.0f); // compiles OpenCL C code and allocates memory
 	~LBM();
 
-	void run(const ulong steps=max_ulong); // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
+	void run(const ulong steps=max_ulong, const ulong total_steps=max_ulong); // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
 	void update_fields(); // update fields (rho, u, T) manually
 	void reset(); // reset simulation (takes effect in following run() call)
 #ifdef FORCE_FIELD
@@ -426,7 +426,7 @@ public:
 	void update_moving_boundaries(); // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
 #endif // MOVING_BOUNDARIES
 #if defined(PARTICLES)&&!defined(FORCE_FIELD)
-	void integrate_particles(const ulong steps=max_ulong, const uint time_step_multiplicator=1u); // intgegrate passive tracer particles forward in time in stationary flow field
+	void integrate_particles(const ulong steps=max_ulong, const ulong total_steps=max_ulong, const uint time_step_multiplicator=1u); // intgegrate passive tracer particles forward in time in stationary flow field
 #endif // PARTICLES&&!FORCE_FIELD
 
 	uint get_Nx() const { return Nx; } // get (global) lattice dimensions in x-direction
@@ -439,7 +439,7 @@ public:
 	uint get_D() const { return Dx*Dy*Dz; } // get number of lattice domains
 	float get_nu() const { return lbm_domain[0]->get_nu(); } // get kinematic shear viscosity
 	float get_tau() const { return 3.0f*get_nu()+0.5f; } // get LBM relaxation time
-	float get_Re_max() const { return 0.57735027f*(float)min(min(Nx, Ny), Nz)/get_nu(); } // Re < c*L/nu
+	float get_Re_max() const { return 0.57735027f*sqrt((float)(sq(Nx)+sq(Ny)+sq(Nz)))/get_nu(); } // Re < Re_max = c*L_max/nu
 	float get_fx() const { return lbm_domain[0]->get_fx(); } // get global froce per volume
 	float get_fy() const { return lbm_domain[0]->get_fy(); } // get global froce per volume
 	float get_fz() const { return lbm_domain[0]->get_fz(); } // get global froce per volume
@@ -467,6 +467,9 @@ public:
 	}
 	ulong index(const uint x, const uint y, const uint z) const { // turn 3D coordinates into 1D linear index
 		return (ulong)x+((ulong)y+(ulong)z*(ulong)Ny)*(ulong)Nx;
+	}
+	ulong index(const uint3 xyz) const { // turn 3D coordinates into 1D linear index
+		return index(xyz.x, xyz.y, xyz.z);
 	}
 	ulong index(const float3& p) const { // turn 3D position into closest 1D linear index
 		uint x=0u, y=0u, z=0u;

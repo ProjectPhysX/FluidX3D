@@ -23,7 +23,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 
 		// #########################################################################################################################################################################################
 		for(uint i=0u; i<1000u; i++) {
-			lbm.run(10u);
+			lbm.run(10u, 1000u*10u);
 			mlups = max(mlups, to_uint((double)lbm.get_N()*1E-6/info.runtime_lbm_timestep_smooth));
 		}
 	} // make lbm object go out of scope to free its memory
@@ -264,7 +264,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 
 /*void main_setup() { // Stokes drag validation; required extensions in defines.hpp: FORCE_FIELD, EQUILIBRIUM_BOUNDARIES
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	const uint T = 100u; // check error every T steps
+	const ulong dt = 100ull; // check error every dt time steps
 	const float R = 32.0f; // sphere radius
 	const float Re = 0.01f; // Reynolds number
 	const float nu = 1.0f; // kinematic shear viscosity
@@ -287,7 +287,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	double E1=1000.0, E2=1000.0;
 	while(true) { // main simulation loop
-		lbm.run(T);
+		lbm.run(dt);
 		lbm.calculate_force_on_boundaries();
 		lbm.F.read_from_device();
 		const float3 force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
@@ -437,7 +437,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.5f, 2.0f, 1.5f/3.5f), 11500u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float Re = 10000000.0f;
-	const float u = 0.1f;
+	const float u = 0.075f;
 	LBM lbm(lbm_N, units.nu_from_Re(Re, (float)lbm_N.x, u));
 	// ###################################################################################### define geometry ######################################################################################
 	// model: https://commonresearchmodel.larc.nasa.gov/high-lift-crm/high-lift-crm-geometry/assembled-geometry/, .stp file converted to .stl with https://imagetostl.com/convert/file/stp/to/stl
@@ -480,10 +480,12 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const float si_T = 1.0f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	const float lbm_length = 0.56f*(float)lbm_N.y;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
-	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
+	LBM lbm(lbm_N, 1u, 1u, 1u, lbm_nu);
 	// ###################################################################################### define geometry ######################################################################################
 	const float3 center = float3(lbm.center().x, 0.52f*lbm_length, lbm.center().z+0.03f*lbm_length);
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-10.0f))*float3x3(float3(0, 0, 1), radians(90.0f))*float3x3(float3(1, 0, 0), radians(90.0f));
@@ -493,11 +495,11 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	lbm.write_status();
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-		if(lbm.graphics.next_frame(units.t(si_T), 10.0f)) {
+		if(lbm.graphics.next_frame(lbm_T, 10.0f)) {
 			lbm.graphics.set_camera_free(float3(0.491343f*(float)Nx, -0.882147f*(float)Ny, 0.564339f*(float)Nz), -78.0f, 6.0f, 22.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/front/");
 			lbm.graphics.set_camera_free(float3(1.133361f*(float)Nx, 1.407077f*(float)Ny, 1.684411f*(float)Nz), 72.0f, 12.0f, 20.0f);
@@ -512,7 +514,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 			lbm.graphics.write_frame(get_exe_path()+"export/follow/");
 		}
 #endif // GRAPHICS && !INTERACTIVE_GRAPHICS
-		lbm.run(1u); // run dt time steps
+		lbm.run(1u, lbm_T); // run dt time steps
 	}
 	lbm.write_status();
 } /**/
@@ -523,8 +525,8 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 880u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 1000000.0f;
-	const float lbm_u = 0.1f;
-	const uint lbm_T = 10000u;
+	const float lbm_u = 0.075f;
+	const ulong lbm_T = 10000ull;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float size = 1.0f*lbm.size().x;
@@ -538,10 +540,10 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.graphics.set_camera_free(float3(1.0f*(float)Nx, -0.4f*(float)Ny, 2.0f*(float)Nz), -33.0f, 42.0f, 68.0f);
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
 		if(lbm.graphics.next_frame(lbm_T, 10.0f)) lbm.graphics.write_frame(); // render enough frames 10 seconds of 60fps video
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
 	lbm.run();
@@ -554,8 +556,8 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 880u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 100000.0f;
-	const float lbm_u = 0.1f;
-	const uint lbm_T = 50000u;
+	const float lbm_u = 0.075f;
+	const ulong lbm_T = 50000ull;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float size = 1.0f*lbm.size().x;
@@ -568,7 +570,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
 		if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
 			lbm.graphics.set_camera_free(float3(1.0f*(float)Nx, -0.4f*(float)Ny, 2.0f*(float)Nz), -33.0f, 42.0f, 68.0f);
@@ -580,7 +582,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 			lbm.graphics.set_camera_free(float3(0.7f*(float)Nx, -0.15f*(float)Ny, 0.06f*(float)Nz), 0.0f, 0.0f, 100.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/s/");
 		}
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
 	lbm.run();
@@ -593,8 +595,9 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 1.0f), 1760u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 100000.0f;
-	const float lbm_u = 0.125f;
-	const uint lbm_T = 50000u;
+	const float lbm_u = 0.075f;
+	const ulong lbm_T = 50000ull;
+	const ulong lbm_dt = 28ull;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float size = 0.65f*lbm.size().x;
@@ -608,7 +611,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 		if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
@@ -622,7 +625,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 			lbm.graphics.write_frame(get_exe_path()+"export/s/");
 		}
 #endif // GRAPHICS && !INTERACTIVE_GRAPHICS
-		lbm.run(28u);
+		lbm.run(lbm_dt, lbm_T);
 		const float3x3 rotation = float3x3(float3(0.2f, 1.0f, 0.1f), radians(0.4032f)); // create rotation matrix to rotate mesh
 		lbm.unvoxelize_mesh_on_device(mesh);
 		mesh->rotate(rotation); // rotate mesh
@@ -636,10 +639,10 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(3.0f, 3.0f, 1.0f), 181u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 100000.0f;
-	const float lbm_u = 0.12f;
-	const uint lbm_T = 48000u;
-	const uint lbm_dt = 10u;
-	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
+	const float lbm_u = 0.1f;
+	const ulong lbm_T = 48000ull;
+	const ulong lbm_dt = 10ull;
+	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float radius = 0.25f*(float)lbm_N.x;
 	const float3 center = float3(lbm.center().x, lbm.center().y, 0.36f*radius);
@@ -649,10 +652,10 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u) lbm.flags[n] = TYPE_S; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
 		lbm.voxelize_mesh_on_device(mesh, TYPE_S, center, float3(0.0f), float3(0.0f, 0.0f, lbm_omega));
-		lbm.run(lbm_dt);
+		lbm.run(lbm_dt, lbm_T);
 		mesh->rotate(float3x3(float3(0.0f, 0.0f, 1.0f), lbm_domega)); // rotate mesh
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 		if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
@@ -670,8 +673,8 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const uint3 lbm_N = resolution(float3(1.0f, 1.5f, 1.0f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 1000000.0f;
 	const float lbm_u = 0.1f;
-	const uint lbm_T = 180000u;
-	const uint lbm_dt = 4u;
+	const ulong lbm_T = 180000ull;
+	const ulong lbm_dt = 4ull;
 	LBM lbm(lbm_N, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float3 center = lbm.center();
@@ -691,11 +694,11 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(lbm.flags[n]==0u) lbm.u.y[n] = 0.3f*lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
-	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run(0u); // initialize simulation
+	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<lbm_T) { // main simulation loop
 		lbm.voxelize_mesh_on_device(rotor, TYPE_S, center, float3(0.0f), float3(0.0f, omega, 0.0f));
-		lbm.run(lbm_dt);
+		lbm.run(lbm_dt, lbm_T);
 		rotor->rotate(float3x3(float3(0.0f, 1.0f, 0.0f), domega)); // rotate mesh
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 		if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
@@ -716,10 +719,12 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const float si_T = 10.0f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	const float lbm_length = 0.65f*(float)lbm_N.y;
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_length, si_u, si_nu))));
-	LBM lbm(lbm_N, units.nu(si_nu));
+	LBM lbm(lbm_N, lbm_nu);
 	// ###################################################################################### define geometry ######################################################################################
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(180.0f))*float3x3(float3(0, 0, 1), radians(180.0f));
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/Cow_t.stl", lbm.size(), lbm.center(), rotation, lbm_length); // https://www.thingiverse.com/thing:182114/files
@@ -733,10 +738,10 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.graphics.set_camera_centered(-40.0f, 20.0f, 78.0f, 1.25f);
-	lbm.run(0u); // initialize simulation
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 10.0f)) lbm.graphics.write_frame();
-		lbm.run(1u);
+	lbm.run(0u, lbm_T); // initialize simulation
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
+		if(lbm.graphics.next_frame(lbm_T, 10.0f)) lbm.graphics.write_frame();
+		lbm.run(1u, lbm_T);
 	}
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
 	lbm.run();
@@ -749,8 +754,8 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 4.0f, 0.8f), 1000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 10000000.0f;
-	const float lbm_u = 0.1f;
-	const uint lbm_T = 108000u;
+	const float lbm_u = 0.075f;
+	const ulong lbm_T = 108000ull;
 	LBM lbm(lbm_N, 2u, 4u, 1u, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u)); // run on 2x4x1 = 8 GPUs
 	// ###################################################################################### define geometry ######################################################################################
 	const float size = 1.25f*lbm.size().x;
@@ -766,15 +771,15 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.write_status();
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<=lbm_T) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 30.0f)) {
+		if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
 			lbm.graphics.set_camera_free(float3(-1.435962f*(float)Nx, 0.364331f*(float)Ny, 1.344426f*(float)Nz), -205.0f, 36.0f, 74.0f); // top
 			lbm.graphics.write_frame(get_exe_path()+"export/top/");
 			lbm.graphics.set_camera_free(float3(-1.021207f*(float)Nx, -0.518006f*(float)Ny, 0.0f*(float)Nz), -137.0f, 0.0f, 74.0f); // bottom
 			lbm.graphics.write_frame(get_exe_path()+"export/bottom/");
 		}
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
 	lbm.write_status();
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
@@ -789,7 +794,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 2.0f), 1000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	const float lbm_Re = 10000000.0f;
 	const float lbm_u = 0.05f;
-	const uint lbm_T = 108000u;
+	const ulong lbm_T = 108000ull;
 	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu_from_Re(lbm_Re, (float)lbm_N.x, lbm_u));
 	// ###################################################################################### define geometry ######################################################################################
 	const float size = 1.6f*lbm.size().x;
@@ -802,9 +807,9 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	lbm.graphics.visualization_modes = VIS_FLAG_LATTICE|VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
 	lbm.write_status();
-	lbm.run(0u); // initialize simulation
+	lbm.run(0u, lbm_T); // initialize simulation
 	while(lbm.get_t()<=lbm_T) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 20.0f)) {
+		if(lbm.graphics.next_frame(lbm_T, 20.0f)) {
 			lbm.graphics.set_camera_free(float3(2.116744f*(float)Nx, -0.775261f*(float)Ny, 1.026577f*(float)Nz), -38.0f, 37.0f, 60.0f); // top
 			lbm.graphics.write_frame(get_exe_path()+"export/top/");
 			lbm.graphics.set_camera_free(float3(0.718942f*(float)Nx, 0.311263f*(float)Ny, -0.498366f*(float)Nz), 32.0f, -40.0f, 104.0f); // bottom
@@ -812,7 +817,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 			lbm.graphics.set_camera_free(float3(1.748119f*(float)Nx, 0.442782f*(float)Ny, 0.087945f*(float)Nz), 24.0f, 2.0f, 92.0f); // side
 			lbm.graphics.write_frame(get_exe_path()+"export/side/");
 		}
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
 	lbm.write_status();
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
@@ -837,9 +842,10 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const float si_Lz = units.x(0.5f*(box_scale-1.0f)*si_width+si_height);
 	const uint3 lbm_N = resolution(float3(si_Lx, si_Ly, si_Lz), memory); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	units.set_m_kg_s((float)lbm_N.y, lbm_u, 1.0f, box_scale*si_length, si_u, si_rho);
-	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
 	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
 	const float lbm_length = units.x(si_length);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
 	LBM lbm(lbm_N, lbm_nu);
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* mesh = read_stl(get_exe_path()+"../stl/ahmed_25deg_m.stl", lbm.size(), lbm.center(), float3x3(float3(0, 0, 1), radians(90.0f)), lbm_length);
@@ -851,8 +857,8 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.graphics.set_camera_centered(20.0f, 30.0f, 0.0f, 1.648722f);
-	lbm.run(0u); // initialize simulation
+	lbm.graphics.set_camera_centered(20.0f, 30.0f, 10.0f, 1.648722f);
+	lbm.run(0u, lbm_T); // initialize simulation
 #if defined(FP16S)
 	const string path = get_exe_path()+"FP16S/"+to_string(memory)+"MB/";
 #elif defined(FP16C)
@@ -862,20 +868,20 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 #endif // FP32
 	//lbm.write_status(path);
 	//write_file(path+"Cd.dat", "# t\tCd\n");
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) {
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
+		if(lbm.graphics.next_frame(lbm_T, 5.0f)) {
 			Clock clock;
 			lbm.calculate_force_on_boundaries();
 			lbm.F.read_from_device();
 			const float3 lbm_force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
 			const float Cd = units.si_F(lbm_force.y)/(0.5f*si_rho*sq(si_u)*si_A); // expect Cd to be too large by a factor 1.3-2.0x; need wall model
 			println("\r"+to_string(Cd, 3u)+" "+to_string(clock.stop(), 3u)+"                                                                               ");
-	//		write_line(path+"Cd.dat", to_string(lbm.get_t())+"\t"+to_string(Cd, 3u)+"\n");
+			//write_line(path+"Cd.dat", to_string(lbm.get_t())+"\t"+to_string(Cd, 3u)+"\n");
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-	//		lbm.graphics.write_frame(path+"images/");
+			//lbm.graphics.write_frame(path+"images/");
 #endif // GRAPHICS && !INTERACTIVE_GRAPHICS
 		}
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
 	//lbm.write_status(path);
 } /**/
@@ -885,16 +891,18 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 /*void main_setup() { // Cessna 172 propeller aircraft; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 0.8f, 0.25f), 8000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const float lbm_width = 0.95f*(float)lbm_N.x;
-	const uint lbm_dt = 4u; // revoxelize rotor every dt time steps
+	const ulong lbm_dt = 4ull; // revoxelize rotor every dt time steps
 	const float si_T = 1.0f;
 	const float si_width = 11.0f;
 	const float si_u = 226.0f/3.6f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
-	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
 	units.set_m_kg_s(lbm_width, lbm_u, 1.0f, si_width, si_u, si_rho);
-	print_info(to_string(si_T, 3u)+" seconds = "+to_string(units.t(si_T))+" time steps");
+	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
+	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
+	print_info(to_string(si_T, 3u)+" seconds = "+to_string(lbm_T)+" time steps");
 	LBM lbm(lbm_N, units.nu(si_nu));
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* plane = read_stl(get_exe_path()+"../stl/Cessna-172-Skyhawk-body.stl"); // https://www.thingiverse.com/thing:814319/files
@@ -914,13 +922,13 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run(0u); // initialize simulation
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+	lbm.run(0u, lbm_T); // initialize simulation
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
 		lbm.voxelize_mesh_on_device(rotor, TYPE_S, rotor->get_center(), float3(0.0f), float3(0.0f, omega, 0.0f)); // revoxelize mesh on GPU
-		lbm.run(lbm_dt); // run dt time steps
+		lbm.run(lbm_dt, lbm_T); // run dt time steps
 		rotor->rotate(float3x3(float3(0.0f, 1.0f, 0.0f), domega)); // rotate mesh
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) {
+		if(lbm.graphics.next_frame(lbm_T, 5.0f)) {
 			lbm.graphics.set_camera_free(float3(0.192778f*(float)Nx, -0.669183f*(float)Ny, 0.657584f*(float)Nz), -77.0f, 27.0f, 100.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/a/");
 			lbm.graphics.set_camera_free(float3(0.224926f*(float)Nx, -0.594332f*(float)Ny, -0.277894f*(float)Nz), -65.0f, -14.0f, 100.0f);
@@ -940,12 +948,14 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const float lbm_u = 0.16f;
 	const float lbm_length = 0.8f*(float)lbm_N.x;
 	const float si_T = 0.34483f; // 2 revolutions of the main rotor
-	const uint lbm_dt = 4u; // revoxelize rotor every dt time steps
+	const ulong lbm_dt = 4ull; // revoxelize rotor every dt time steps
 	const float si_length=12.85f, si_d=12.12f, si_rpm=348.0f;
 	const float si_u = si_rpm/60.0f*si_d*pif;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
-	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
+	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
+	LBM lbm(lbm_N, 1u, 1u, 1u, lbm_nu);
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* body = read_stl(get_exe_path()+"../stl/Bell-222-body.stl"); // https://www.thingiverse.com/thing:1625155/files
 	Mesh* main = read_stl(get_exe_path()+"../stl/Bell-222-main.stl"); // body and rotors separated with Microsoft 3D Builder
@@ -970,15 +980,15 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) lbm.flags[n] = TYPE_E; // all non periodic
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.run(0u); // initialize simulation
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
+	lbm.run(0u, lbm_T); // initialize simulation
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
 		lbm.voxelize_mesh_on_device(main, TYPE_S, main->get_center(), float3(0.0f), float3(0.0f, 0.0f, main_omega)); // revoxelize mesh on GPU
 		lbm.voxelize_mesh_on_device(back, TYPE_S, back->get_center(), float3(0.0f), float3(back_omega, 0.0f, 0.0f)); // revoxelize mesh on GPU
-		lbm.run(lbm_dt); // run dt time steps
+		lbm.run(lbm_dt, lbm_T); // run dt time steps
 		main->rotate(float3x3(float3(0.0f, 0.0f, 1.0f), main_domega)); // rotate mesh
 		back->rotate(float3x3(float3(1.0f, 0.0f, 0.0f), back_domega)); // rotate mesh
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-		if(lbm.graphics.next_frame(units.t(si_T), 10.0f)) {
+		if(lbm.graphics.next_frame(lbm_T, 10.0f)) {
 			lbm.graphics.set_camera_free(float3(0.528513f*(float)Nx, 0.102095f*(float)Ny, 1.302283f*(float)Nz), 16.0f, 47.0f, 96.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/a/");
 			lbm.graphics.set_camera_free(float3(0.0f*(float)Nx, -0.114244f*(float)Ny, 0.543265f*(float)Nz), 90.0f+degrees((float)lbm.get_t()/(float)lbm_dt*main_domega), 36.0f, 120.0f);
@@ -1001,15 +1011,17 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 /*void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: FP16S, EQUILIBRIUM_BOUNDARIES, MOVING_BOUNDARIES, SUBGRID, INTERACTIVE_GRAPHICS or GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
 	const uint3 lbm_N = resolution(float3(1.0f, 2.0f, 0.5f), 4000u); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
-	const float lbm_u = 0.1f;
+	const float lbm_u = 0.075f;
 	const float lbm_length = 0.8f*(float)lbm_N.y;
 	const float si_T = 0.25f;
 	const float si_u = 100.0f/3.6f;
 	const float si_length=5.5f, si_width=2.0f;
 	const float si_nu=1.48E-5f, si_rho=1.225f;
 	units.set_m_kg_s(lbm_length, lbm_u, 1.0f, si_length, si_u, si_rho);
+	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
 	print_info("Re = "+to_string(to_uint(units.si_Re(si_width, si_u, si_nu))));
-	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu));
+	LBM lbm(lbm_N, 1u, 1u, 1u, lbm_nu);
 	// ###################################################################################### define geometry ######################################################################################
 	Mesh* body = read_stl(get_exe_path()+"../stl/mercedesf1-body.stl"); // https://downloadfree3d.com/3d-models/vehicles/sports-car/mercedes-f1-w14/
 	Mesh* front_wheels = read_stl(get_exe_path()+"../stl/mercedesf1-front-wheels.stl"); // wheels separated, decals removed and converted to .stl in Microsoft 3D Builder
@@ -1036,21 +1048,21 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-	lbm.run(0u); // initialize simulation
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 30.0f)) {
+	lbm.run(0u, lbm_T); // initialize simulation
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
+		if(lbm.graphics.next_frame(lbm_T, 30.0f)) {
 			lbm.graphics.set_camera_free(float3(0.779346f*(float)Nx, -0.315650f*(float)Ny, 0.329444f*(float)Nz), -27.0f, 19.0f, 100.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/a/");
 			lbm.graphics.set_camera_free(float3(0.556877f*(float)Nx, 0.228191f*(float)Ny, 1.159613f*(float)Nz), 19.0f, 53.0f, 100.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/b/");
 			lbm.graphics.set_camera_free(float3(0.220650f*(float)Nx, -0.589529f*(float)Ny, 0.085407f*(float)Nz), -72.0f, 16.0f, 86.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/c/");
-			const float progress = (float)lbm.get_t()/(float)units.t(si_T);
+			const float progress = (float)lbm.get_t()/(float)lbm_T;
 			const float A = 75.0f, B = -160.0f;
 			lbm.graphics.set_camera_centered(A+progress*(B-A), -5.0f, 100.0f, 1.648721f);
 			lbm.graphics.write_frame(get_exe_path()+"export/d/");
 		}
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
 	lbm.run();
@@ -1220,16 +1232,20 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const float si_D = si_Ds[select_drop_size]; // drop diameter [m] (1-7mm)
 	const float si_u = si_us[select_drop_size]; // impact velocity [m/s] (4.50-9.55m/s)
 	units.set_m_kg_s(lbm_D, lbm_u, 1.0f, si_D, si_u, si_rho); // calculate 3 independent conversion factors (m, kg, s)
+	const float lbm_nu = units.nu(si_nu);
+	const ulong lbm_T = units.t(si_T);
+	const float lbm_f = units.f(si_rho, si_g);
+	const float lbm_sigma = units.sigma(si_sigma);
 	print_info("D = "+to_string(si_D, 6u));
 	print_info("Re = "+to_string(units.si_Re(si_D, si_u, si_nu), 6u));
 	print_info("We = "+to_string(units.si_We(si_D, si_u, si_rho, si_sigma), 6u));
 	print_info("Fr = "+to_string(units.si_Fr(si_D, si_u, si_g), 6u));
 	print_info("Ca = "+to_string(units.si_Ca(si_u, si_rho, si_nu, si_sigma), 6u));
 	print_info("Bo = "+to_string(units.si_Bo(si_D, si_rho, si_g, si_sigma), 6u));
-	print_info("10ms = "+to_string(units.t(0.01f))+" LBM time steps");
+	print_info(to_string(to_uint(1000.0f*si_T))+" ms = "+to_string(units.t(si_T))+" LBM time steps");
 	const float lbm_H = 0.4f*(float)lbm_N.x;
 	const float lbm_R = 0.5f*lbm_D; // drop radius
-	LBM lbm(lbm_N, 1u, 1u, 1u, units.nu(si_nu), 0.0f, 0.0f, -units.f(si_rho, si_g), units.sigma(si_sigma)); // calculate values for remaining parameters in simulation units
+	LBM lbm(lbm_N, 1u, 1u, 1u, lbm_nu, 0.0f, 0.0f, -lbm_f, lbm_sigma); // calculate values for remaining parameters in simulation units
 	// ###################################################################################### define geometry ######################################################################################
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(sphere(x, y, z, float3(0.5f*(float)Nx, 0.5f*(float)Ny-2.0f*lbm_R*tan(inclination*pif/180.0f), lbm_H+lbm_R+2.5f)+0.5f, lbm_R+2.0f)) {
@@ -1251,18 +1267,18 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 			lbm.flags[n] = TYPE_I;
 			lbm.phi[n] = 0.5f; // not strictly necessary, but should be clearer (phi is automatically initialized to 0.5f for TYPE_I if not initialized)
 		} else if((float)z<lbm_H) lbm.flags[n] = TYPE_F;
-		else if((x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u)&&(float)z>lbm_H+lbm_R) { // make drops that hit the simulation box ceiling disappear
+		else if((x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u)&&(float)z>lbm_H+0.5f*lbm_R) { // make drops that hit the simulation box ceiling disappear
 			lbm.rho[n] = 0.5f;
 			lbm.flags[n] = TYPE_E;
 		}
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
 	lbm.graphics.visualization_modes = lbm.get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
 #if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-	lbm.run(0u); // initialize simulation
-	while(lbm.get_t()<=units.t(si_T)) { // main simulation loop
-		if(lbm.graphics.next_frame(units.t(si_T), 5.0f)) { // generate video
+	lbm.run(0u, lbm_T); // initialize simulation
+	while(lbm.get_t()<=lbm_T) { // main simulation loop
+		if(lbm.graphics.next_frame(lbm_T, 20.0f)) { // generate video
 			lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
-			lbm.graphics.write_frame(get_exe_path()+"export/new/");
+			lbm.graphics.write_frame(get_exe_path()+"export/n/");
 			lbm.graphics.set_camera_centered(10.0f, 40.0f, 100.0f, 1.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/p/");
 			lbm.graphics.set_camera_centered(0.0f, 0.0f, 45.0f, 1.0f);
@@ -1270,9 +1286,9 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 			lbm.graphics.set_camera_centered(0.0f, 90.0f, 45.0f, 1.0f);
 			lbm.graphics.write_frame(get_exe_path()+"export/t/");
 		}
-		lbm.run(1u);
+		lbm.run(1u, lbm_T);
 	}
-	//lbm.run(units.t(si_T)); // only generate one image
+	//lbm.run(lbm_T); // only generate one image
 	//lbm.graphics.set_camera_centered(-30.0f, 20.0f, 100.0f, 1.0f);
 	//lbm.graphics.write_frame();
 #else // GRAPHICS && !INTERACTIVE_GRAPHICS
@@ -1293,7 +1309,6 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 	const float si_d = 4E-3f; // bubble diameter [m]
 	const float si_g = 9.81f; // gravitational acceleration [m/s^2]
 	const float si_f = units.si_f_from_si_g(si_g, si_rho);
-	const float si_rho_particles = si_rho;
 	const float lbm_rho = 1.0f;
 	const float m = si_d/lbm_d; // length si_x = x*[m]
 	const float kg = si_rho/lbm_rho*cb(m); // density si_rho = rho*[kg/m^3]
@@ -1351,7 +1366,7 @@ void main_setup() { // Mercedes F1 W14 car; required extensions in defines.hpp: 
 
 /*void main_setup() { // periodic faucet mass conservation test; required extensions in defines.hpp: FP16S, VOLUME_FORCE, SURFACE, INTERACTIVE_GRAPHICS
 	// ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	LBM lbm(96u, 192u, 128u, 0.02f, 0.0f, 0.0f, -0.001f);
+	LBM lbm(96u, 192u, 128u, 0.02f, 0.0f, 0.0f, -0.00025f);
 	// ###################################################################################### define geometry ######################################################################################
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
 		if(y>Ny*5u/6u) lbm.flags[n] = TYPE_F;

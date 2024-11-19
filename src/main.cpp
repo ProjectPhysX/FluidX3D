@@ -35,7 +35,7 @@ void draw_scale(const int field_mode, const int color) {
 		int c = 0;
 		switch(field_mode) {
 			case 0: c = colorscale_rainbow(v); break; // coloring by velocity
-			case 1: c = colorscale_twocolor(v); break; // coloring by density
+			case 1: c = colorscale_twocolor(v, GRAPHICS_BACKGROUND_COLOR); break; // coloring by density
 			case 2: c = colorscale_iron(v); break; // coloring by temperature
 		}
 		draw_line_label(ox, oy+h-i, ox+w, oy+h-i, c);
@@ -56,7 +56,7 @@ void draw_scale(const int field_mode, const int color) {
 	draw_label(ox+min(0, w+7+label_length_max*(FONT_WIDTH)-(int)length(title)*(FONT_WIDTH)), oy-(FONT_HEIGHT)*3/2-6, title, color); // colorbar title
 }
 void main_label(const double frametime) {
-	if(info.allow_rendering) {
+	if(camera.allow_rendering&&camera.allow_labeling) {
 		info.print_update();
 		const int c = invert(GRAPHICS_BACKGROUND_COLOR);
 		{
@@ -77,7 +77,7 @@ void main_label(const double frametime) {
 			draw_label(ox, oy+i, "Steps "          +alignr(31u, /************************************/ alignr(10u, info.lbm->get_t())+" ("+alignr(5, to_uint(1.0/info.runtime_lbm_timestep_smooth))+" Steps/s)"), c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "FPS "            +alignr(33u, /************************************************************/ alignr(4u, to_uint(1.0/frametime))+" ("+alignr(5u, camera.fps_limit)+" fps max)"), c);
 		}
-		draw_label(2, camera.height-1*(FONT_HEIGHT)-1, "FluidX3D v2.14 Copyright (c) Dr. Moritz Lehmann", c);
+		draw_label(2, camera.height-1*(FONT_HEIGHT)-1, "FluidX3D v3.0 Copyright (c) Dr. Moritz Lehmann", c);
 		if(!key_H) {
 			draw_label(camera.width-16*(FONT_WIDTH)-1, 2, "Press H for Help", c);
 		} else {
@@ -123,7 +123,7 @@ void main_label(const double frametime) {
 			draw_label(ox, oy+i, "Z: ("+field+"): toggle field visualization mode", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Q/E: move slice in slice visualization mode", c); i+=2*FONT_HEIGHT;
 			draw_label(ox, oy+i, "Mouse or I/J/K/L (rx="+alignr(4u, to_int(fmod(degrees(camera.rx)+90.0+360.0, 360.0)-180.0))+", ry="+alignr(3u, to_int(180.0-degrees(camera.ry)))+"): rotate camera", c); i+=FONT_HEIGHT;
-			draw_label(ox, oy+i, "Scrollwheel or +/- ("+to_string(camera.free ? (float)camera.free_camera_velocity : camera.zoom*(float)fmax(fmax(info.lbm->get_Nx(), info.lbm->get_Ny()), info.lbm->get_Nz())/(float)min(camera.width, camera.height), 3u)+"): zoom (centered camera mode) or camera movement speed (free camera mode)", c); i+=FONT_HEIGHT;
+			draw_label(ox, oy+i, "Scrollwheel or +/- ("+to_string(camera.free ? (float)camera.free_camera_velocity : camera.zoom*(float)fmax(fmax(info.lbm->get_Nx(), info.lbm->get_Ny()), info.lbm->get_Nz())/(float)min(camera.width, camera.height), 3u)+"): zoom (centered camera mode) or camera movement speed in cells/s (free camera mode)", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Mouseclick or U: toggle rotation with Mouse and angle snap rotation with I/J/K/L", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "Y/X ("+alignr(3u, to_int(camera.fov))+"): adjust camera field of view", c); i+=FONT_HEIGHT;
 			draw_label(ox, oy+i, "F ("+string(camera.free?"  free  ":"centered")+"): toggle centered/free camera mode", c); i+=FONT_HEIGHT;
@@ -139,7 +139,7 @@ void main_label(const double frametime) {
 }
 
 void main_graphics() {
-	if(info.allow_rendering) draw_bitmap(info.lbm->graphics.draw_frame());
+	if(camera.allow_rendering) draw_bitmap(info.lbm->graphics.draw_frame());
 }
 #endif // GRAPHICS
 
@@ -152,8 +152,10 @@ void main_physics() {
 
 #ifndef GRAPHICS
 int main(int argc, char* argv[]) {
+	info.allow_printing.lock();
 	main_arguments = get_main_arguments(argc, argv);
 	thread compute_thread(main_physics);
+	info.allow_printing.unlock();
 	do { // main console loop
 		info.print_update();
 		sleep(0.050);

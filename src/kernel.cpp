@@ -44,6 +44,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 		x[i] /= M[N*i+i];
 	}
 }
+)+R(float trilinear(const float3 p, const float* v) { // trilinear interpolation, p: position in unit cube, v: corner values in unit cube
+	const float x1=p.x, y1=p.y, z1=p.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	return (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
+}
+)+R(float3 trilinear3(const float3 p, const float3* v) { // trilinear interpolation, p: position in unit cube, v: corner vectors in unit cube
+	const float x1=p.x, y1=p.y, z1=p.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	return (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
+}
 //bool workgroup_any(const bool condition) { // returns true if any thread within the workgroup enters true
 //	volatile local uint workgroup_condition; // does not work on AMD GPUs (error: non-kernel function variable cannot be declared in local address space)
 //	workgroup_condition = 0u;
@@ -60,30 +68,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 //	barrier(CLK_LOCAL_MEM_FENCE);
 //	return (bool)workgroup_condition;
 //}
-)+R(void atomic_add_f(volatile global float* addr, const float val) { // not deterministic because the order of addition can vary: (a+b)+c is rounded differently than a+(b+c)
-	union { // https://streamhpc.com/blog/2016-02-09/atomic-operations-for-floats-in-opencl-improved/
-		uint  u32;
-		float f32;
-	} next, expected, current;
-	current.f32 = *addr;
-	do {
-		next.f32 = (expected.f32=current.f32)+val; // ...*val for atomic_mul_f()
-		current.u32 = atomic_cmpxchg((volatile global uint*)addr, expected.u32, next.u32);
-	} while(current.u32!=expected.u32);
-}
-//)+"#ifdef cl_khr_int64_base_atomics"+R( // OpenCL C defines don't work in R() stringification macro
-//)+R(void atomic_add_d(volatile global double* addr, const double val) { // not deterministic because the order of addition can vary: (a+b)+c is rounded differently than a+(b+c)
-//	union { // https://streamhpc.com/blog/2016-02-09/atomic-operations-for-floats-in-opencl-improved/
-//		ulong  u64;
-//		double f64;
-//	} next, expected, current;
-//	current.f64 = *addr;
-//	do {
-//		next.f64 = (expected.f64=current.f64)+val; // ...*val for atomic_mul_d()
-//		current.u64 = atom_cmpxchg((volatile global ulong*)addr, expected.u64, next.u64); // does not work on some older GPUs
-//	} while(current.u64!=expected.u64);
-//}
-//)+"#endif"+R( // cl_khr_int64_base_atomics
 
 
 
@@ -177,7 +161,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return color_from_floats(r, g, b);
 }
 )+R(int colorscale_twocolor(float x) { // coloring scheme (float [0, 1] -> int color)
-	return x>0.5f ? color_mix(0xFFAA00, 0x181818, clamp(2.0f*x-1.0f, 0.0f, 1.0f)) : color_mix(0x181818, 0x0080FF, clamp(2.0f*x, 0.0f, 1.0f)); // red - gray - blue
+	return x>0.5f ? color_mix(0xFFAA00, def_background_color, clamp(2.0f*x-1.0f, 0.0f, 1.0f)) : color_mix(def_background_color, 0x0080FF, clamp(2.0f*x, 0.0f, 1.0f)); // red - gray - blue
 }
 )+R(int shading(const int c, const float3 p, const float3 normal, const float* camera_cache) { // calculate flat shading color of triangle
 )+"#ifndef GRAPHICS_TRANSPARENCY"+R(
@@ -186,7 +170,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float3 pos = (float3)(camera_cache[ 2], camera_cache[ 3], camera_cache[ 4])-(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
 	const float3 Rz  = (float3)(camera_cache[11], camera_cache[12], camera_cache[13]);
 	const float3 d = p-Rz*(dis/zoom)-pos; // distance vector between p and camera position
-	const float nl2 = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one native_sqrt instead of two
+	const float nl2 = sq(normal.x)+sq(normal.y)+sq(normal.z); // only one rsqrt instead of two
 	const float dl2 = sq(d.x)+sq(d.y)+sq(d.z);
 	return color_mul(c, max(1.5f*fabs(dot(normal, d))*rsqrt(nl2*dl2), 0.3f));
 )+"#else"+R( // GRAPHICS_TRANSPARENCY
@@ -201,7 +185,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 }
 )+R(void draw(const int x, const int y, const float z, const int color, global int* bitmap, volatile global int* zbuffer, const int stereo) {
-	const int index=x+y*def_screen_width, iz=(int)(z*(2147483647.0f/10000.0f)); // use int z-buffer and atomic_max to minimize noise in image
+	const int index=x+y*def_screen_width, iz=(int)(z*1E3f); // use fixed-point int z-buffer and atomic_max to minimize noise in image, maximum render distance is 2.147E6f
 )+"#ifndef GRAPHICS_TRANSPARENCY"+R(
 	if(!is_off_screen(x, y, stereo)&&iz>atomic_max(&zbuffer[index], iz)) bitmap[index] = color; // only draw if point is on screen and first in zbuffer
 )+"#else"+R( // GRAPHICS_TRANSPARENCY
@@ -397,16 +381,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	bitmap[n] = def_background_color; // black background = 0x000000, use 0xFFFFFF for white background
 	zbuffer[n] = -2147483648;
 }
-)+R(constant ushort edge_table_data[128] = { // source: Paul Bourke, http://paulbourke.net/geometry/polygonise/, mirror symmetry applied, makes marching-cubes 31% faster
-	0x000, 0x109, 0x203, 0x30A, 0x406, 0x50F, 0x605, 0x70C, 0x80C, 0x905, 0xA0F, 0xB06, 0xC0A, 0xD03, 0xE09, 0xF00,
-	0x190, 0x099, 0x393, 0x29A, 0x596, 0x49F, 0x795, 0x69C, 0x99C, 0x895, 0xB9F, 0xA96, 0xD9A, 0xC93, 0xF99, 0xE90,
-	0x230, 0x339, 0x033, 0x13A, 0x636, 0x73F, 0x435, 0x53C, 0xA3C, 0xB35, 0x83F, 0x936, 0xE3A, 0xF33, 0xC39, 0xD30,
-	0x3A0, 0x2A9, 0x1A3, 0x0AA, 0x7A6, 0x6AF, 0x5A5, 0x4AC, 0xBAC, 0xAA5, 0x9AF, 0x8A6, 0xFAA, 0xEA3, 0xDA9, 0xCA0,
-	0x460, 0x569, 0x663, 0x76A, 0x066, 0x16F, 0x265, 0x36C, 0xC6C, 0xD65, 0xE6F, 0xF66, 0x86A, 0x963, 0xA69, 0xB60,
-	0x5F0, 0x4F9, 0x7F3, 0x6FA, 0x1F6, 0x0FF, 0x3F5, 0x2FC, 0xDFC, 0xCF5, 0xFFF, 0xEF6, 0x9FA, 0x8F3, 0xBF9, 0xAF0,
-	0x650, 0x759, 0x453, 0x55A, 0x256, 0x35F, 0x055, 0x15C, 0xE5C, 0xF55, 0xC5F, 0xD56, 0xA5A, 0xB53, 0x859, 0x950,
-	0x7C0, 0x6C9, 0x5C3, 0x4CA, 0x3C6, 0x2CF, 0x1C5, 0x0CC, 0xFCC, 0xEC5, 0xDCF, 0xCC6, 0xBCA, 0xAC3, 0x9C9, 0x8C0
-};
 )+R(constant uchar triangle_table_data[1920] = { // source: Paul Bourke, http://paulbourke.net/geometry/polygonise/, termination value 15, bit packed
 	255,255,255,255,255,255,255, 15, 56,255,255,255,255,255,255, 16,249,255,255,255,255,255, 31, 56,137,241,255,255,255,255, 33,250,255,255,255,255,255, 15, 56, 33,250,255,255,255,255, 41, 10,146,
 	255,255,255,255, 47, 56,162,168,137,255,255,255,179,242,255,255,255,255,255, 15, 43,184,240,255,255,255,255,145, 32,179,255,255,255,255, 31, 43,145,155,184,255,255,255,163,177, 58,255,255,255,
@@ -449,43 +423,55 @@ string opencl_c_container() { return R( // ########################## begin of O
 	 59,250,255,255,255,255, 33, 27,155,185,248,255,255, 63,144,147, 27,146,178,249,255, 32,139,176,255,255,255,255, 63,178,255,255,255,255,255,255, 50, 40,168,138,249,255,255,159, 42,144,242,255,
 	255,255,255, 50, 40,168, 16, 24,138,255, 31, 42,255,255,255,255,255,255, 49,152,129,255,255,255,255, 15, 25,255,255,255,255,255,255, 48,248,255,255,255,255,255,255,255,255,255,255,255,255,255
 };
-)+R(ushort edge_table(const uint i) {
-	return edge_table_data[i<128u?i:255u-i];
-}
 )+R(uchar triangle_table(const uint i) {
 	return (triangle_table_data[i/2u]>>(4u*(i%2u)))&0xF;
 }
-)+R(float3 interpolate_vertex(const float3 p1, const float3 p2, const float v1, const float v2, const float iso) { // linearly interpolate position where isosurface cuts an edge between 2 vertices
-	const float w = (iso-v1)/(v2-v1);
-	return (1.0f-w)*p1+w*p2;
+)+R(float interpolate(const float v1, const float v2, const float iso) { // linearly interpolate position where isosurface cuts an edge between 2 vertices at 0 and 1
+	return (iso-v1)/(v2-v1);
 }
 )+R(uint marching_cubes(const float* v, const float iso, float3* triangles) { // input: 8 values v, isovalue; output: returns number of triangles, 15 triangle vertices t
 	uint cube = 0u; // determine index of which vertices are inside of the isosurface
 	for(uint i=0u; i<8u; i++) cube |= (v[i]<iso)<<i;
 	if(cube==0u||cube==255u) return 0u; // cube is entirely inside/outside of the isosurface
-	float3 p[8]; // definition of unit cube corners
-	p[0] = (float3)(0.0f, 0.0f, 0.0f);
-	p[1] = (float3)(1.0f, 0.0f, 0.0f);
-	p[2] = (float3)(1.0f, 0.0f, 1.0f);
-	p[3] = (float3)(0.0f, 0.0f, 1.0f);
-	p[4] = (float3)(0.0f, 1.0f, 0.0f);
-	p[5] = (float3)(1.0f, 1.0f, 0.0f);
-	p[6] = (float3)(1.0f, 1.0f, 1.0f);
-	p[7] = (float3)(0.0f, 1.0f, 1.0f);
-	const uint edges = edge_table(cube);
 	float3 vertex[12]; // find the vertices where the surface intersects the cube
-	if(edges&   1u) vertex[ 0] = interpolate_vertex(p[0], p[1], v[0], v[1], iso); // calculate vertices on all 12 edges
-	if(edges&   2u) vertex[ 1] = interpolate_vertex(p[1], p[2], v[1], v[2], iso);
-	if(edges&   4u) vertex[ 2] = interpolate_vertex(p[2], p[3], v[2], v[3], iso);
-	if(edges&   8u) vertex[ 3] = interpolate_vertex(p[3], p[0], v[3], v[0], iso);
-	if(edges&  16u) vertex[ 4] = interpolate_vertex(p[4], p[5], v[4], v[5], iso);
-	if(edges&  32u) vertex[ 5] = interpolate_vertex(p[5], p[6], v[5], v[6], iso);
-	if(edges&  64u) vertex[ 6] = interpolate_vertex(p[6], p[7], v[6], v[7], iso);
-	if(edges& 128u) vertex[ 7] = interpolate_vertex(p[7], p[4], v[7], v[4], iso);
-	if(edges& 256u) vertex[ 8] = interpolate_vertex(p[0], p[4], v[0], v[4], iso);
-	if(edges& 512u) vertex[ 9] = interpolate_vertex(p[1], p[5], v[1], v[5], iso);
-	if(edges&1024u) vertex[10] = interpolate_vertex(p[2], p[6], v[2], v[6], iso);
-	if(edges&2048u) vertex[11] = interpolate_vertex(p[3], p[7], v[3], v[7], iso);
+	vertex[ 0] = (float3)(interpolate(v[0], v[1], iso), 0.0f, 0.0f); // interpolate vertices on all 12 edges
+	vertex[ 1] = (float3)(1.0f, 0.0f, interpolate(v[1], v[2], iso)); // do interpolation only in 1D to reduce operations
+	vertex[ 2] = (float3)(interpolate(v[3], v[2], iso), 0.0f, 1.0f);
+	vertex[ 3] = (float3)(0.0f, 0.0f, interpolate(v[0], v[3], iso));
+	vertex[ 4] = (float3)(interpolate(v[4], v[5], iso), 1.0f, 0.0f);
+	vertex[ 5] = (float3)(1.0f, 1.0f, interpolate(v[5], v[6], iso));
+	vertex[ 6] = (float3)(interpolate(v[7], v[6], iso), 1.0f, 1.0f);
+	vertex[ 7] = (float3)(0.0f, 1.0f, interpolate(v[4], v[7], iso));
+	vertex[ 8] = (float3)(0.0f, interpolate(v[0], v[4], iso), 0.0f);
+	vertex[ 9] = (float3)(1.0f, interpolate(v[1], v[5], iso), 0.0f);
+	vertex[10] = (float3)(1.0f, interpolate(v[2], v[6], iso), 1.0f);
+	vertex[11] = (float3)(0.0f, interpolate(v[3], v[7], iso), 1.0f);
+	cube *= 15u;
+	uint i; // number of triangle vertices
+	for(i=0u; i<15u&&triangle_table(cube+i)!=15u; i+=3u) { // create the triangles
+		triangles[i   ] = vertex[triangle_table(cube+i   )];
+		triangles[i+1u] = vertex[triangle_table(cube+i+1u)];
+		triangles[i+2u] = vertex[triangle_table(cube+i+2u)];
+	}
+	return i/3u; // return number of triangles
+}
+)+R(uint marching_cubes_halfway(const bool* v, float3* triangles) { // input: 8 bool values v; output: returns number of triangles, 15 triangle vertices t
+	uint cube = 0u; // determine index of which vertices are inside of the isosurface
+	for(uint i=0u; i<8u; i++) cube |= (uint)(!v[i])<<i;
+	if(cube==0u||cube==255u) return 0u; // cube is entirely inside/outside of the isosurface
+	float3 vertex[12]; // find the vertices where the surface intersects the cube
+	vertex[ 0] = (float3)(0.5f, 0.0f, 0.0f); // vertices on all 12 edges
+	vertex[ 1] = (float3)(1.0f, 0.0f, 0.5f);
+	vertex[ 2] = (float3)(0.5f, 0.0f, 1.0f);
+	vertex[ 3] = (float3)(0.0f, 0.0f, 0.5f);
+	vertex[ 4] = (float3)(0.5f, 1.0f, 0.0f);
+	vertex[ 5] = (float3)(1.0f, 1.0f, 0.5f);
+	vertex[ 6] = (float3)(0.5f, 1.0f, 1.0f);
+	vertex[ 7] = (float3)(0.0f, 1.0f, 0.5f);
+	vertex[ 8] = (float3)(0.0f, 0.5f, 0.0f);
+	vertex[ 9] = (float3)(1.0f, 0.5f, 0.0f);
+	vertex[10] = (float3)(1.0f, 0.5f, 1.0f);
+	vertex[11] = (float3)(0.0f, 0.5f, 1.0f);
 	cube *= 15u;
 	uint i; // number of triangle vertices
 	for(i=0u; i<15u&&triangle_table(cube+i)!=15u; i+=3u) { // create the triangles
@@ -512,17 +498,17 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float intersect_triangle(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<-0.001f||s>1.001f||t<-0.001f||s+t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
+	return (f<0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_triangle_bidirectional(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (s<-0.001f||s>1.001f||t<-0.001f||s+t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
+	return (s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_rhombus(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
 	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<-0.001f||s>1.001f||t<-0.001f||t>1.001f) ? -1.0f : f*dot(v, q); // add 1E-3f tolerance values to avoid graphical artifacts with axis-aligned camera
+	return (f<0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_plane(const ray r, const float3 p0, const float3 p1, const float3 p2) { // ray-triangle intersection, but skip barycentric coordinates
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v);
@@ -682,36 +668,42 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(int last_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global int* skybox) {
 	return color_mix(skybox_color(reflection, skybox), color_mix(skybox_color(transmission, skybox), def_absorption_color, transmissivity), reflectivity);
 }
+)+R(float interpolate_phi(const float3 p, const global float* phi, const uint Nx, const uint Ny, const uint Nz) { // trilinear interpolation of velocity at point p
+	const float xa=p.x-0.5f+1.5f*(float)Nx, ya=p.y-0.5f+1.5f*(float)Ny, za=p.z-0.5f+1.5f*(float)Nz; // subtract lattice offsets
+	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
+	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+	float phin[8]; // phi at unit cube corner points
+	for(uint c=0u; c<8u; c++) { // count over eight corner points
+		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
+		const uint x=(xb+i)%Nx, y=(yb+j)%Ny, z=(zb+k)%Nz; // calculate corner lattice positions
+		const uxx n = (uxx)x+(uxx)(y+z*Ny)*(uxx)Nx; // calculate lattice linear index
+		phin[c] = phi[n]; // load velocity from lattice point
+	}
+	return (x0*y0*z0)*phin[0]+(x0*y0*z1)*phin[1]+(x0*y1*z0)*phin[2]+(x0*y1*z1)*phin[3]+(x1*y0*z0)*phin[4]+(x1*y0*z1)*phin[5]+(x1*y1*z0)*phin[6]+(x1*y1*z1)*phin[7]; // perform trilinear interpolation
+}
 )+R(float ray_grid_traverse(const ray r, const global float* phi, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
-	const float3 pa = r.origin;
-	const float3 pb = r.origin+r.direction;
-	const float xa=pa.x-0.5f+0.5f*(float)Nx, ya=pa.y-0.5f+0.5f*(float)Ny, za=pa.z-0.5f+0.5f*(float)Nz; // start point
-	const float xb=pb.x-0.5f+0.5f*(float)Nx, yb=pb.y-0.5f+0.5f*(float)Ny, zb=pb.z-0.5f+0.5f*(float)Nz; // end point
-	const int dx=(int)sign(xb-xa), dy=(int)sign(yb-ya), dz=(int)sign(zb-za); // fast ray-grid-traversal
-	const float fxa=xa-floor(xa), fya=ya-floor(ya), fza=za-floor(za);
-	int3 xyz = (int3)(floor(xa), floor(ya), floor(za));
-	const float tdx = fmin((float)dx/(xb-xa), 1E7f);
-	const float tdy = fmin((float)dy/(yb-ya), 1E7f);
-	const float tdz = fmin((float)dz/(zb-za), 1E7f);
-	float tmx = tdx*(dx>0 ? 1.0f-fxa : fxa);
-	float tmy = tdy*(dy>0 ? 1.0f-fya : fya);
-	float tmz = tdz*(dz>0 ? 1.0f-fza : fza);
-	uchar flags_cell = 0u;
-	while(true) {
-		if(tmx<tmy) {
-			if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; }
-		} else {
-			if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; }
-		}
-		if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break;
+	const float3 p = (float3)(r.origin.x-0.5f+0.5f*(float)Nx, r.origin.y-0.5f+0.5f*(float)Ny, r.origin.z-0.5f+0.5f*(float)Nz); // start point
+	const int dx=(int)sign(r.direction.x), dy=(int)sign(r.direction.y), dz=(int)sign(r.direction.z); // fast ray-grid-traversal
+	int3 xyz = (int3)((int)floor(p.x), (int)floor(p.y), (int)floor(p.z));
+	const float fxa=p.x-floor(p.x), fya=p.y-floor(p.y), fza=p.z-floor(p.z);
+	const float tdx = 1.0f/fmax(fabs(r.direction.x), 1E-6f);
+	const float tdy = 1.0f/fmax(fabs(r.direction.y), 1E-6f);
+	const float tdz = 1.0f/fmax(fabs(r.direction.z), 1E-6f);
+	float tmx = tdx*(dx>0 ? 1.0f-fxa : dx<0 ? fxa : 0.0f);
+	float tmy = tdy*(dy>0 ? 1.0f-fya : dy<0 ? fya : 0.0f);
+	float tmz = tdz*(dz>0 ? 1.0f-fza : dz<0 ? fza : 0.0f);
+	for(uint tc=0u; tc<Nx+Ny+Nz; tc++) { // limit number of traversed cells to space diagonal
+		if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
+		else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
+		if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
 		else if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx-1 || xyz.y>=(int)Ny-1 || xyz.z>=(int)Nz-1) continue;
-		const uint x0 =  (uint)xyz.x; // cube stencil
-		const uint xp =  (uint)xyz.x+1u;
-		const uint y0 =  (uint)xyz.y    *Nx;
-		const uint yp = ((uint)xyz.y+1u)*Nx;
-		const uint z0 =  (uint)xyz.z    *Ny*Nx;
-		const uint zp = ((uint)xyz.z+1u)*Ny*Nx;
-		uint j[8];
+		const uxx x0 = (uxx)        xyz.x; // cube stencil
+		const uxx xp = (uxx) (      xyz.x+1);
+		const uxx y0 = (uxx)( (uint)xyz.y   *Nx);
+		const uxx yp = (uxx)(((uint)xyz.y+1)*Nx);
+		const uxx z0 = (uxx)        xyz.z   *(uxx)(Ny*Nx);
+		const uxx zp = (uxx) (      xyz.z+1)*(uxx)(Ny*Nx);
+		uxx j[8];
 		j[0] = x0+y0+z0; // 000
 		j[1] = xp+y0+z0; // +00
 		j[2] = xp+y0+zp; // +0+
@@ -720,7 +712,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		j[5] = xp+yp+z0; // ++0
 		j[6] = xp+yp+zp; // +++
 		j[7] = x0+yp+zp; // 0++
-		flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
+		uchar flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
 		for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
 		if(!(flags_cell&(TYPE_S|TYPE_E|TYPE_I))) continue; // cell is entirely inside/outside of the isosurface
 		float v[8];
@@ -735,38 +727,29 @@ string opencl_c_container() { return R( // ########################## begin of O
 			const float3 p2 = triangles[3u*i+2u]+offset;
 			const float intersect = intersect_triangle_bidirectional(r, p0, p1, p2); // for each triangle, check ray-triangle intersection
 			if(intersect>0.0f) { // intersection found (there can only be exactly 1 intersection)
-				const uint xq =  ((uint)xyz.x   +2u)%Nx; // central difference stencil on each cube corner point
-				const uint xm =  ((uint)xyz.x+Nx-1u)%Nx;
-				const uint yq = (((uint)xyz.y   +2u)%Ny)*Nx;
-				const uint ym = (((uint)xyz.y+Ny-1u)%Ny)*Nx;
-				const uint zq = (((uint)xyz.z   +2u)%Nz)*Ny*Nx;
-				const uint zm = (((uint)xyz.z+Nz-1u)%Nz)*Ny*Nx;
+				const uxx xq = (uxx) (((uint)xyz.x   +2u)%Nx); // central difference stencil on each cube corner point
+				const uxx xm = (uxx) (((uint)xyz.x+Nx-1u)%Nx);
+				const uxx yq = (uxx)((((uint)xyz.y   +2u)%Ny)*Nx);
+				const uxx ym = (uxx)((((uint)xyz.y+Ny-1u)%Ny)*Nx);
+				const uxx zq = (uxx) (((uint)xyz.z   +2u)%Nz)*(uxx)(Ny*Nx);
+				const uxx zm = (uxx) (((uint)xyz.z+Nz-1u)%Nz)*(uxx)(Ny*Nx);
 				float3 n[8];
 				n[0] = (float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3]); // central difference stencil on each cube corner point
 				n[1] = (float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2]); // compute normal vectors from gradient
-				n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later during trilinear interpolation more efficiently
+				n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later after trilinear interpolation
 				n[3] = (float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]);
 				n[4] = (float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]);
 				n[5] = (float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]);
 				n[6] = (float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]);
 				n[7] = (float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]);
 				const float3 p = r.origin+intersect*r.direction-offset; // intersection point minus offset
-				const float x1=p.x-floor(p.x), y1=p.y-floor(p.y), z1=p.z-floor(p.z), x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-				*normal = normalize(
-					(x0*y0*z0*rsqrt(fma(n[0].x, n[0].x, fma(n[0].y, n[0].y, fma(n[0].z, n[0].z, 1E-9f)))))*n[0]+
-					(x1*y0*z0*rsqrt(fma(n[1].x, n[1].x, fma(n[1].y, n[1].y, fma(n[1].z, n[1].z, 1E-9f)))))*n[1]+
-					(x1*y0*z1*rsqrt(fma(n[2].x, n[2].x, fma(n[2].y, n[2].y, fma(n[2].z, n[2].z, 1E-9f)))))*n[2]+
-					(x0*y0*z1*rsqrt(fma(n[3].x, n[3].x, fma(n[3].y, n[3].y, fma(n[3].z, n[3].z, 1E-9f)))))*n[3]+
-					(x0*y1*z0*rsqrt(fma(n[4].x, n[4].x, fma(n[4].y, n[4].y, fma(n[4].z, n[4].z, 1E-9f)))))*n[4]+
-					(x1*y1*z0*rsqrt(fma(n[5].x, n[5].x, fma(n[5].y, n[5].y, fma(n[5].z, n[5].z, 1E-9f)))))*n[5]+
-					(x1*y1*z1*rsqrt(fma(n[6].x, n[6].x, fma(n[6].y, n[6].y, fma(n[6].z, n[6].z, 1E-9f)))))*n[6]+
-					(x0*y1*z1*rsqrt(fma(n[7].x, n[7].x, fma(n[7].y, n[7].y, fma(n[7].z, n[7].z, 1E-9f)))))*n[7]
-				); // perform normalization and trilinear interpolation
-				return intersect; // intersection found, exit loop, process transmission ray
+				*normal = normalize(trilinear3(p-floor(p), n)); // perform trilinear interpolation and normalization
+				return intersect; // intersection found, exit loop
 			}
 		}
 	}
-	return (flags_cell&TYPE_F)&&!(flags_cell&TYPE_S) ? intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx, (float)Ny, (float)Nz, normal) : -1.0f;
+	const float intersect = intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx-1.0f, (float)Ny-1.0f, (float)Nz-1.0f, normal); // -1 because marching-cubes surface ends between cells
+	return intersect>0.0f ? (interpolate_phi(r.origin+intersect*r.direction, phi, Nx, Ny, Nz)>0.5f ? intersect : -1.0f) : -1.0f; // interpolate phi at ray intersection point with simulation box, to check if ray is inside fluid
 }
 )+R(bool raytrace_phi_mirror(const ray ray_in, ray* ray_reflect, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) { // only reflection
 	float3 normal;
@@ -805,9 +788,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float d_internal = d;
 	d = ray_grid_traverse(ray_internal, phi, flags, &normal, Nx, Ny, Nz); // 2nd ray-grid traversal call: refraction (camera outside) or total internal reflection (camera inside)
 	ray_transmit->origin = d!=-1.0f ? ray_internal.origin+(d+0.005f)*ray_internal.direction : ray_internal.origin; // start intersection points a bit behind triangle to avoid self-transmission
-	ray_transmit->direction = d!=-1.0f ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
+	ray_transmit->direction = d!=-1.0f||is_inside ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
 	*reflectivity = is_inside ? 0.0f : wr; // is_inside means camera is inside fluid, so this is a total internal reflection down here
-	*transmissivity = d!=-1.0f ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
+	*transmissivity = d!=-1.0f||is_inside ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
 	return true;
 }
 )+R(bool is_above_plane(const float3 point, const float3 plane_p, const float3 plane_n) {
@@ -856,15 +839,18 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 // ################################################## LBM code ##################################################
 
-)+R(uint3 coordinates(const uint n) { // disassemble 1D index to 3D coordinates (n -> x,y,z)
-	const uint t = n%(def_Nx*def_Ny);
-	return (uint3)(t%def_Nx, t/def_Nx, n/(def_Nx*def_Ny)); // n = x+(y+z*Ny)*Nx
+)+R(uint3 coordinates(const uxx n) { // disassemble 1D index to 3D coordinates (n -> x,y,z)
+	const uint t = (uint)(n%(uxx)(def_Nx*def_Ny));
+	return (uint3)(t%def_Nx, t/def_Nx, (uint)(n/(uxx)(def_Nx*def_Ny))); // n = x+(y+z*Ny)*Nx
 }
-)+R(uint index(const uint3 xyz) { // assemble 1D index from 3D coordinates (x,y,z -> n)
-	return xyz.x+(xyz.y+xyz.z*def_Ny)*def_Nx; // n = x+(y+z*Ny)*Nx
+)+R(uxx index(const uint3 xyz) { // assemble 1D index from 3D coordinates (x,y,z -> n)
+	return (uxx)xyz.x+(uxx)(xyz.y+xyz.z*def_Ny)*(uxx)def_Nx; // n = x+(y+z*Ny)*Nx
 }
 )+R(float3 position(const uint3 xyz) { // 3D coordinates to 3D position
 	return (float3)((float)xyz.x+0.5f-0.5f*(float)def_Nx, (float)xyz.y+0.5f-0.5f*(float)def_Ny, (float)xyz.z+0.5f-0.5f*(float)def_Nz);
+}
+)+R(uint3 closest_coordinates(const float3 p) { // return closest lattice point to point p
+	return (uint3)((uint)(p.x+1.5f*(float)def_Nx)%def_Nx, (uint)(p.y+1.5f*(float)def_Ny)%def_Ny, (uint)(p.z+1.5f*(float)def_Nz)%def_Nz);
 }
 )+R(float3 mirror_position(const float3 p) { // mirror position into periodic boundaries
 	float3 r;
@@ -876,7 +862,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float3 mirror_distance(const float3 d) { // mirror distance vector into periodic boundaries
 	return mirror_position(d);
 }
-)+R(bool is_halo(const uint n) {
+)+R(bool is_halo(const uxx n) {
 	const uint3 xyz = coordinates(n);
 	return ((def_Dx>1u)&(xyz.x==0u||xyz.x>=def_Nx-1u))||((def_Dy>1u)&(xyz.y==0u||xyz.y>=def_Ny-1u))||((def_Dz>1u)&(xyz.z==0u||xyz.z>=def_Nz-1u));
 }
@@ -897,8 +883,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return (b&0x80000000)>>16 | (e>112)*((((e-112)<<11)&0x7800)|m>>12) | ((e<113)&(e>100))*((((0x007FF800+m)>>(124-e))+1)>>1); // sign : normalized : denormalized (assume [-2,2])
 }
 
-)+R(ulong index_f(const uint n, const uint i) { // 64-bit indexing (maximum 2^32 lattice points (1624^3 lattice resolution, 225GB)
-	return (ulong)i*def_N+(ulong)n; // SoA (229% faster on GPU)
+)+R(ulong index_f(const uxx n, const uint i) { // 64-bit indexing for DDFs
+	return (ulong)i*def_N+(ulong)n; // SoA (>2x faster on GPUs)
 }
 )+R(float c(const uint i) { // avoid constant keyword by encapsulating data in function which gets inlined by compiler
 	const float c[3u*def_velocity_set] = {
@@ -940,20 +926,20 @@ string opencl_c_container() { return R( // ########################## begin of O
 	};
 	return w[i];
 }
-)+R(void calculate_indices(const uint n, uint* x0, uint* xp, uint* xm, uint* y0, uint* yp, uint* ym, uint* z0, uint* zp, uint* zm) {
+)+R(void calculate_indices(const uxx n, uxx* x0, uxx* xp, uxx* xm, uxx* y0, uxx* yp, uxx* ym, uxx* z0, uxx* zp, uxx* zm) {
 	const uint3 xyz = coordinates(n);
-	*x0 =   xyz.x; // pre-calculate indices (periodic boundary conditions)
-	*xp =  (xyz.x       +1u)%def_Nx;
-	*xm =  (xyz.x+def_Nx-1u)%def_Nx;
-	*y0 =   xyz.y                   *def_Nx;
-	*yp = ((xyz.y       +1u)%def_Ny)*def_Nx;
-	*ym = ((xyz.y+def_Ny-1u)%def_Ny)*def_Nx;
-	*z0 =   xyz.z                   *def_Ny*def_Nx;
-	*zp = ((xyz.z       +1u)%def_Nz)*def_Ny*def_Nx;
-	*zm = ((xyz.z+def_Nz-1u)%def_Nz)*def_Ny*def_Nx;
+	*x0 = (uxx)   xyz.x; // pre-calculate indices (periodic boundary conditions)
+	*xp = (uxx) ((xyz.x       +1u)%def_Nx);
+	*xm = (uxx) ((xyz.x+def_Nx-1u)%def_Nx);
+	*y0 = (uxx)(  xyz.y                   *def_Nx);
+	*yp = (uxx)(((xyz.y       +1u)%def_Ny)*def_Nx);
+	*ym = (uxx)(((xyz.y+def_Ny-1u)%def_Ny)*def_Nx);
+	*z0 = (uxx)   xyz.z                   *(uxx)(def_Ny*def_Nx);
+	*zp = (uxx) ((xyz.z       +1u)%def_Nz)*(uxx)(def_Ny*def_Nx);
+	*zm = (uxx) ((xyz.z+def_Nz-1u)%def_Nz)*(uxx)(def_Ny*def_Nx);
 } // calculate_indices()
-)+R(void neighbors(const uint n, uint* j) { // calculate neighbor indices
-	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
+)+R(void neighbors(const uxx n, uxx* j) { // calculate neighbor indices
+	uxx x0, xp, xm, y0, yp, ym, z0, zp, zm;
 	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
 	j[0] = n;
 )+"#if defined(D2Q9)"+R(
@@ -996,28 +982,24 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // D3Q27
 } // neighbors()
 
-)+R(float3 load_u(const uint n, const global float* u) {
-	return (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]);
+)+R(float3 load3(const uxx n, const global float* v) {
+	return (float3)(v[n], v[def_N+(ulong)n], v[2ul*def_N+(ulong)n]);
 }
 )+R(float3 closest_u(const float3 p, const global float* u) { // return velocity of closest lattice point to point p
-	const uint x = (uint)(p.x+1.5f*(float)def_Nx)%def_Nx;
-	const uint y = (uint)(p.y+1.5f*(float)def_Ny)%def_Ny;
-	const uint z = (uint)(p.z+1.5f*(float)def_Nz)%def_Nz;
-	const uint n = x+(y+z*def_Ny)*def_Nx;
-	return load_u(n, u);
-} // closest_u()
+	return load3(index(closest_coordinates(p)), u);
+}
 )+R(float3 interpolate_u(const float3 p, const global float* u) { // trilinear interpolation of velocity at point p
-	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
-	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-	float3 un[8]; // velocities of unit cube corner points
+	const float3 pn = (float3)(xa-(float)xb, ya-(float)yb, za-(float)zb); // calculate interpolation factors
+	float3 un[8]; // velocitiy at unit cube corner points
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
 		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
-		const uint n = x+(y+z*def_Ny)*def_Nx; // calculate lattice linear index
-		un[c] = load_u(n, u); // load velocity from lattice point
+		const uxx n = (uxx)x+(uxx)(y+z*def_Ny)*(uxx)def_Nx; // calculate lattice linear index
+		un[c] = load3(n, u); // load velocity from lattice point
 	}
-	return (x0*y0*z0)*un[0]+(x0*y0*z1)*un[1]+(x0*y1*z0)*un[2]+(x0*y1*z1)*un[3]+(x1*y0*z0)*un[4]+(x1*y0*z1)*un[5]+(x1*y1*z0)*un[6]+(x1*y1*z1)*un[7]; // perform trilinear interpolation
+	return trilinear3(pn, un); // perform trilinear interpolation
 } // interpolate_u()
 )+R(float calculate_Q_cached(const float3 u0, const float3 u1, const float3 u2, const float3 u3, const float3 u4, const float3 u5) { // Q-criterion
 	const float duxdx=u0.x-u1.x, duydx=u0.y-u1.y, duzdx=u0.z-u1.z; // du/dx = (u2-u0)/2
@@ -1030,21 +1012,26 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float s2 = 2.0f*(sq(s_xx2)+sq(s_yy2)+sq(s_zz2))+sq(s_xy)+sq(s_xz)+sq(s_yz); // ||s||_2^2
 	return 0.25f*(omega2-s2); // Q = 1/2*(||omega||_2^2-||s||_2^2), addidional factor 1/2 from cental finite differences of velocity
 } // calculate_Q_cached()
-)+R(float calculate_Q(const uint n, const global float* u) { // Q-criterion
-	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
+)+R(float calculate_Q(const uxx n, const global float* u) { // Q-criterion
+	uxx x0, xp, xm, y0, yp, ym, z0, zp, zm;
 	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
-	uint j[6];
+	uxx j[6];
 	j[0] = xp+y0+z0; j[1] = xm+y0+z0; // +00 -00
 	j[2] = x0+yp+z0; j[3] = x0+ym+z0; // 0+0 0-0
 	j[4] = x0+y0+zp; j[5] = x0+y0+zm; // 00+ 00-
-	return calculate_Q_cached(load_u(j[0], u), load_u(j[1], u), load_u(j[2], u), load_u(j[3], u), load_u(j[4], u), load_u(j[5], u));
+	return calculate_Q_cached(load3(j[0], u), load3(j[1], u), load3(j[2], u), load3(j[3], u), load3(j[4], u), load3(j[5], u));
 } // calculate_Q()
 
 )+R(void calculate_f_eq(const float rho, float ux, float uy, float uz, float* feq) { // calculate f_equilibrium from density and velocity field (perturbation method / DDF-shifting)
-	const float c3=-3.0f*(sq(ux)+sq(uy)+sq(uz)), rhom1=rho-1.0f; // c3 = -2*sq(u)/(2*sq(c)), rhom1 is arithmetic optimization to minimize digit extinction
+	const float rhom1 = rho-1.0f; // rhom1 is arithmetic optimization to minimize digit extinction
+)+"#ifndef D2Q9"+R( // 3D
+	const float c3 = -3.0f*(sq(ux)+sq(uy)+sq(uz)); // c3 = -2*sq(u)/(2*sq(c))
+	uz *= 3.0f; // only needed for 3D
+)+"#else"+R( // D2Q9
+	const float c3 = -3.0f*(sq(ux)+sq(uy)); // c3 = -2*sq(u)/(2*sq(c))
+)+"#endif"+R( // D2Q9
 	ux *= 3.0f;
 	uy *= 3.0f;
-	uz *= 3.0f;
 	feq[ 0] = def_w0*fma(rho, 0.5f*c3, rhom1); // 000 (identical for all velocity sets)
 )+"#if defined(D2Q9)"+R(
 	const float u0=ux+uy, u1=ux-uy; // these pre-calculations make manual unrolling require less FLOPs
@@ -1136,10 +1123,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // VOLUME_FORCE
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
-)+R(void apply_moving_boundaries(float* fhn, const uint* j, const global float* u, const global uchar* flags) { // apply Dirichlet velocity boundaries if necessary (Krueger p.180, rho_solid=1)
-	uint ji; // reads velocities of only neighboring boundary cells, which do not change during simulation
+)+R(void apply_moving_boundaries(float* fhn, const uxx* j, const global float* u, const global uchar* flags) { // apply Dirichlet velocity boundaries if necessary (Krueger p.180, rho_solid=1)
+	uxx ji; // reads velocities of only neighboring boundary cells, which do not change during simulation
 	for(uint i=1u; i<def_velocity_set; i+=2u) { // loop is entirely unrolled by compiler, no unnecessary memory access is happening
-		const float w6 = -6.0f*w(i); // w(i) = w(i+1) if i is odd
+		const float w6 = -6.0f*w(i); // w6 = -2*w_i*rho_wall/c^2, w(i) = w(i+1) if i is odd, rho_wall is assumed as rho_avg=1 (necessary choice to assure mass conservation)
 		ji = j[i+1u]; fhn[i   ] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i+1u)*u[ji]+c(def_velocity_set+i+1u)*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i+1u)*u[2ul*def_N+(ulong)ji], fhn[i   ]) : fhn[i   ]; // boundary : regular
 		ji = j[i   ]; fhn[i+1u] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i   )*u[ji]+c(def_velocity_set+i   )*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i   )*u[2ul*def_N+(ulong)ji], fhn[i+1u]) : fhn[i+1u];
 	}
@@ -1147,8 +1134,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // MOVING_BOUNDARIES
 
 )+"#ifdef SURFACE"+R(
-)+R(void average_neighbors_non_gas(const uint n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of cell n
-	uint j[def_velocity_set]; // neighbor indices
+)+R(void average_neighbors_non_gas(const uxx n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of cell n
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float rhot=0.0f, uxt=0.0f, uyt=0.0f, uzt=0.0f, counter=0.0f; // average over all fluid/interface neighbors
 	for(uint i=1u; i<def_velocity_set; i++) {
@@ -1166,8 +1153,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	*uyn  = counter>0.0f ? uyt /counter : 0.0f;
 	*uzn  = counter>0.0f ? uzt /counter : 0.0f;
 }
-)+R(void average_neighbors_fluid(const uint n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of cell n
-	uint j[def_velocity_set]; // neighbor indices
+)+R(void average_neighbors_fluid(const uxx n, const global float* rho, const global float* u, const global uchar* flags, float* rhon, float* uxn, float* uyn, float* uzn) { // calculate average density and velocity of neighbors of cell n
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float rhot=0.0f, uxt=0.0f, uyt=0.0f, uzt=0.0f, counter=0.0f; // average over all fluid/interface neighbors
 	for(uint i=1u; i<def_velocity_set; i++) {
@@ -1225,29 +1212,29 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float d = plic_cube_reduced(V, n1, n2, n3); // calculate PLIC with reduced symmetry
 	return l*copysign(0.5f-d, V0-0.5f); // rescale result and apply symmetry for V0>0.5
 }
-)+R(void get_remaining_neighbor_phij(const uint n, const float* phit, const global float* phi, float* phij) { // get remaining phij for D3Q27 neighborhood
+)+R(void get_remaining_neighbor_phij(const uxx n, const float* phit, const global float* phi, float* phij) { // get remaining phij for D3Q27 neighborhood
 )+"#ifndef D3Q27"+R(
-	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
+	uxx x0, xp, xm, y0, yp, ym, z0, zp, zm;
 	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
 )+"#endif"+R( // D3Q27
 )+"#if defined(D3Q15)"+R(
-	uint j[12]; // calculate neighbor indices
+	uxx j[12]; // calculate neighbor indices
 	j[ 0] = xp+yp+z0; j[ 1] = xm+ym+z0; // ++0 --0
 	j[ 2] = xp+y0+zp; j[ 3] = xm+y0+zm; // +0+ -0-
 	j[ 4] = x0+yp+zp; j[ 5] = x0+ym+zm; // 0++ 0--
 	j[ 6] = xp+ym+z0; j[ 7] = xm+yp+z0; // +-0 -+0
 	j[ 8] = xp+y0+zm; j[ 9] = xm+y0+zp; // +0- -0+
 	j[10] = x0+yp+zm; j[11] = x0+ym+zp; // 0+- 0-+
-	for(uint i=0u; i<7u; i++) phij[i] = phit[i];
-	for(uint i=7u; i<19u; i++) phij[i] = phi[j[i-7u]];
+	for(uint i= 0u; i< 7u; i++) phij[i] = phit[i];
+	for(uint i= 7u; i<19u; i++) phij[i] = phi[j[i-7u]];
 	for(uint i=19u; i<27u; i++) phij[i] = phit[i-12u];
 )+"#elif defined(D3Q19)"+R(
-	uint j[8]; // calculate remaining neighbor indices
+	uxx j[8]; // calculate remaining neighbor indices
 	j[0] = xp+yp+zp; j[1] = xm+ym+zm; // +++ ---
 	j[2] = xp+yp+zm; j[3] = xm+ym+zp; // ++- --+
 	j[4] = xp+ym+zp; j[5] = xm+yp+zm; // +-+ -+-
 	j[6] = xm+yp+zp; j[7] = xp+ym+zm; // -++ +--
-	for(uint i=0u; i<19u; i++) phij[i] = phit[i];
+	for(uint i= 0u; i<19u; i++) phij[i] = phit[i];
 	for(uint i=19u; i<27u; i++) phij[i] = phi[j[i-19u]];
 )+"#elif defined(D3Q27)"+R(
 	for(uint i=0u; i<def_velocity_set; i++) phij[i] = phit[i];
@@ -1261,7 +1248,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	};
 	return c[i];
 }
-)+R(float calculate_curvature(const uint n, const float* phit, const global float* phi) { // calculate surface curvature, always use D3Q27 stencil here, source: https://doi.org/10.3390/computation10020021
+)+R(float calculate_curvature(const uxx n, const float* phit, const global float* phi) { // calculate surface curvature, always use D3Q27 stencil here, source: https://doi.org/10.3390/computation10020021
 )+"#ifndef D2Q9"+R(
 	float phij[27];
 	get_remaining_neighbor_phij(n, phit, phi, phij); // complete neighborhood from whatever velocity set is selected to D3Q27
@@ -1326,8 +1313,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // SURFACE
 
 )+"#ifdef TEMPERATURE"+R(
-)+R(void neighbors_temperature(const uint n, uint* j7) { // calculate neighbor indices
-	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
+)+R(void neighbors_temperature(const uxx n, uxx* j7) { // calculate neighbor indices
+	uxx x0, xp, xm, y0, yp, ym, z0, zp, zm;
 	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
 	j7[0] = n;
 	j7[1] = xp+y0+z0; j7[2] = xm+y0+z0; // +00 -00
@@ -1341,14 +1328,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 	geq[3] = fma(wsT4, uy, wsTm1); geq[4] = fma(wsT4, -uy, wsTm1); // 0+0 0-0
 	geq[5] = fma(wsT4, uz, wsTm1); geq[6] = fma(wsT4, -uz, wsTm1); // 00+ 00-
 }
-)+R(void load_g(const uint n, float* ghn, const global fpxx* gi, const uint* j7, const ulong t) {
+)+R(void load_g(const uxx n, float* ghn, const global fpxx* gi, const uxx* j7, const ulong t) {
 	ghn[0] = load(gi, index_f(n, 0u)); // Esoteric-Pull
 	for(uint i=1u; i<7u; i+=2u) {
 		ghn[i   ] = load(gi, index_f(n    , t%2ul ? i    : i+1u));
 		ghn[i+1u] = load(gi, index_f(j7[i], t%2ul ? i+1u : i   ));
 	}
 }
-)+R(void store_g(const uint n, const float* ghn, global fpxx* gi, const uint* j7, const ulong t) {
+)+R(void store_g(const uxx n, const float* ghn, global fpxx* gi, const uxx* j7, const ulong t) {
 	store(gi, index_f(n, 0u), ghn[0]); // Esoteric-Pull
 	for(uint i=1u; i<7u; i+=2u) {
 		store(gi, index_f(j7[i], t%2ul ? i+1u : i   ), ghn[i   ]);
@@ -1357,14 +1344,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 )+"#endif"+R( // TEMPERATURE
 
-)+R(void load_f(const uint n, float* fhn, const global fpxx* fi, const uint* j, const ulong t) {
+)+R(void load_f(const uxx n, float* fhn, const global fpxx* fi, const uxx* j, const ulong t) {
 	fhn[0] = load(fi, index_f(n, 0u)); // Esoteric-Pull
 	for(uint i=1u; i<def_velocity_set; i+=2u) {
 		fhn[i   ] = load(fi, index_f(n   , t%2ul ? i    : i+1u));
 		fhn[i+1u] = load(fi, index_f(j[i], t%2ul ? i+1u : i   ));
 	}
 }
-)+R(void store_f(const uint n, const float* fhn, global fpxx* fi, const uint* j, const ulong t) {
+)+R(void store_f(const uxx n, const float* fhn, global fpxx* fi, const uxx* j, const ulong t) {
 	store(fi, index_f(n, 0u), fhn[0]); // Esoteric-Pull
 	for(uint i=1u; i<def_velocity_set; i+=2u) {
 		store(fi, index_f(j[i], t%2ul ? i+1u : i   ), fhn[i   ]);
@@ -1373,13 +1360,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 
 )+"#ifdef SURFACE"+R(
-)+R(void load_f_outgoing(const uint n, float* fon, const global fpxx* fi, const uint* j, const ulong t) { // load outgoing DDFs, even: 1:1 like stream-out odd, odd: 1:1 like stream-out even
+)+R(void load_f_outgoing(const uxx n, float* fon, const global fpxx* fi, const uxx* j, const ulong t) { // load outgoing DDFs, even: 1:1 like stream-out odd, odd: 1:1 like stream-out even
 	for(uint i=1u; i<def_velocity_set; i+=2u) { // Esoteric-Pull
 		fon[i   ] = load(fi, index_f(j[i], t%2ul ? i    : i+1u));
 		fon[i+1u] = load(fi, index_f(n   , t%2ul ? i+1u : i   ));
 	}
 }
-)+R(void store_f_reconstructed(const uint n, const float* fhn, global fpxx* fi, const uint* j, const ulong t, const uchar* flagsj_su) { // store reconstructed gas DDFs, even: 1:1 like stream-in even, odd: 1:1 like stream-in odd
+)+R(void store_f_reconstructed(const uxx n, const float* fhn, global fpxx* fi, const uxx* j, const ulong t, const uchar* flagsj_su) { // store reconstructed gas DDFs, even: 1:1 like stream-in even, odd: 1:1 like stream-in odd
 	for(uint i=1u; i<def_velocity_set; i+=2u) { // Esoteric-Pull
 		if(flagsj_su[i+1u]==TYPE_G) store(fi, index_f(n   , t%2ul ? i    : i+1u), fhn[i   ]); // only store reconstructed gas DDFs to locations from which
 		if(flagsj_su[i   ]==TYPE_G) store(fi, index_f(j[i], t%2ul ? i+1u : i   ), fhn[i+1u]); // they are going to be streamed in during next stream_collide()
@@ -1397,11 +1384,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 	, global fpxx* gi, const global float* T // argument order is important
 )+"#endif"+R( // TEMPERATURE
 )+") {"+R( // initialize()
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute initialize() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute initialize() on halo
 	uchar flagsn = flags[n];
 	const uchar flagsn_bo = flagsn&TYPE_BO; // extract boundary flags
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	uchar flagsj[def_velocity_set]; // cache neighbor flags for multiple readings
 	for(uint i=1u; i<def_velocity_set; i++) flagsj[i] = flags[j[i]];
@@ -1465,7 +1452,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	{ // separate block to avoid variable name conflicts
 		float geq[7];
 		calculate_g_eq(T[n], u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n], geq);
-		uint j7[7]; // neighbors of D3Q7 subset
+		uxx j7[7]; // neighbors of D3Q7 subset
 		neighbors_temperature(n, j7);
 		store_g(n, geq, gi, j7, 1ul);
 	}
@@ -1475,11 +1462,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
 )+R(kernel void update_moving_boundaries(const global float* u, global uchar* flags) { // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute update_moving_boundaries() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute update_moving_boundaries() on halo
 	const uchar flagsn = flags[n];
 	const uchar flagsn_bo = flagsn&TYPE_BO; // extract boundary flags
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	uchar flagsj[def_velocity_set]; // cache neighbor flags for multiple readings
 	for(uint i=1u; i<def_velocity_set; i++) flagsj[i] = flags[j[i]];
@@ -1506,13 +1493,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 	, global fpxx* gi, global float* T // argument order is important
 )+"#endif"+R( // TEMPERATURE
 )+") {"+R( // stream_collide()
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute stream_collide() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute stream_collide() on halo
 	const uchar flagsn = flags[n]; // cache flags[n] for multiple readings
 	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
 	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // if cell is solid boundary or gas, just return
 
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 
 	float fhn[def_velocity_set]; // local DDFs
@@ -1562,7 +1549,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef TEMPERATURE"+R(
 	{ // separate block to avoid variable name conflicts
-		uint j7[7]; // neighbors of D3Q7 subset
+		uxx j7[7]; // neighbors of D3Q7 subset
 		neighbors_temperature(n, j7);
 		float ghn[7]; // read from gA and stream to gh (D3Q7 subset, periodic boundary conditions)
 		load_g(n, ghn, gi, j7, t); // perform streaming (part 2)
@@ -1689,13 +1676,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef SURFACE"+R(
 )+R(kernel void surface_0(global fpxx* fi, const global float* rho, const global float* u, const global uchar* flags, global float* mass, const global float* massex, const global float* phi, const ulong t, const float fx, const float fy, const float fz) { // capture outgoing DDFs before streaming
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute surface_0() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute surface_0() on halo
 	const uchar flagsn = flags[n]; // cache flags[n] for multiple readings
 	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
 	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // cell processed here is fluid or interface
 
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float fhn[def_velocity_set]; // incoming DDFs
 	load_f(n, fhn, fi, j, t); // load incoming DDFs
@@ -1751,11 +1738,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 	mass[n] = massn;
 }
 )+R(kernel void surface_1(global uchar* flags) { // prevent neighbors from interface->fluid cells to become/be gas cells
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N) return; // execute surface_1() also on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N) return; // execute surface_1() also on halo
 	const uchar flagsn_sus = flags[n]&(TYPE_SU|TYPE_S); // extract SURFACE flags
 	if(flagsn_sus==TYPE_IF) { // flag interface->fluid is set
-		uint j[def_velocity_set]; // neighbor indices
+		uxx j[def_velocity_set]; // neighbor indices
 		neighbors(n, j); // calculate neighbor indices
 		for(uint i=1u; i<def_velocity_set; i++) {
 			const uchar flagsji = flags[j[i]];
@@ -1767,19 +1754,19 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 } // possible types at the end of surface_1(): TYPE_F / TYPE_I / TYPE_G / TYPE_IF / TYPE_IG / TYPE_GI
 )+R(kernel void surface_2(global fpxx* fi, const global float* rho, const global float* u, global uchar* flags, const ulong t) {  // apply flag changes and calculate excess mass
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N) return; // execute surface_2() also on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N) return; // execute surface_2() also on halo
 	const uchar flagsn_sus = flags[n]&(TYPE_SU|TYPE_S); // extract SURFACE flags
 	if(flagsn_sus==TYPE_GI) { // initialize the fi of gas cells that should become interface
 		float rhon, uxn, uyn, uzn; // average over all fluid/interface neighbors
 		average_neighbors_non_gas(n, rho, u, flags, &rhon, &uxn, &uyn, &uzn); // get average rho/u from all fluid/interface neighbors
 		float feq[def_velocity_set];
 		calculate_f_eq(rhon, uxn, uyn, uzn, feq); // calculate equilibrium DDFs
-		uint j[def_velocity_set];
+		uxx j[def_velocity_set];
 		neighbors(n, j);
 		store_f(n, feq, fi, j, t); // write feq to fi in video memory
 	} else if(flagsn_sus==TYPE_IG) { // flag interface->gas is set
-		uint j[def_velocity_set]; // neighbor indices
+		uxx j[def_velocity_set]; // neighbor indices
 		neighbors(n, j); // calculate neighbor indices
 		for(uint i=1u; i<def_velocity_set; i++) {
 			const uchar flagsji = flags[j[i]];
@@ -1792,8 +1779,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 } // possible types at the end of surface_2(): TYPE_F / TYPE_I / TYPE_G / TYPE_IF / TYPE_IG / TYPE_GI
 )+R(kernel void surface_3(const global float* rho, global uchar* flags, global float* mass, global float* massex, global float* phi) { // apply flag changes and calculate excess mass
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute surface_3() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute surface_3() on halo
 	const uchar flagsn_sus = flags[n]&(TYPE_SU|TYPE_S); // extract SURFACE flags
 	if(flagsn_sus&TYPE_S) return;
 	const float rhon = rho[n]; // density of cell n
@@ -1828,7 +1815,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		massn = clamp(massn, 0.0f, rhon);
 		phin = calculate_phi(rhon, massn, TYPE_I); // calculate fill level for next step (only necessary for interface cells)
 	}
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	uint counter = 0u; // count (fluid|interface) neighbors
 	for(uint i=1u; i<def_velocity_set; i++) { // simple model: distribute excess mass equally to all interface and fluid neighbors
@@ -1851,13 +1838,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 	, const global fpxx* gi, global float* T // argument order is important
 )+"#endif"+R( // TEMPERATURE
 )+") {"+R( // update_fields()
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute update_fields() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute update_fields() on halo
 	const uchar flagsn = flags[n];
 	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
 	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // don't update fields for boundary or gas lattice points
 
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float fhn[def_velocity_set]; // local DDFs
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
@@ -1880,7 +1867,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef TEMPERATURE"+R(
 	{ // separate block to avoid variable name conflicts
-		uint j7[7]; // neighbors of D3Q7 subset
+		uxx j7[7]; // neighbors of D3Q7 subset
 		neighbors_temperature(n, j7);
 		float ghn[7]; // read from gA and stream to gh (D3Q7 subset, periodic boundary conditions)
 		load_g(n, ghn, gi, j7, t); // perform streaming (part 2)
@@ -1929,10 +1916,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef FORCE_FIELD"+R(
 )+R(kernel void calculate_force_on_boundaries(const global fpxx* fi, const global uchar* flags, const ulong t, global float* F) { // calculate force from the fluid on solid boundaries from fi directly
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute calculate_force_on_boundaries() on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute calculate_force_on_boundaries() on halo
 	if((flags[n]&TYPE_BO)!=TYPE_S) return; // only continue for solid boundary cells
-	uint j[def_velocity_set]; // neighbor indices
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	float fhn[def_velocity_set]; // local DDFs
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
@@ -1943,20 +1930,35 @@ string opencl_c_container() { return R( // ########################## begin of O
 	F[2ul*def_N+(ulong)n] = 2.0f*fz*Fb;
 } // calculate_force_on_boundaries()
 )+R(kernel void reset_force_field(global float* F) { // reset force field
-	const uint n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uint)def_N) return; // execute reset_force_field() also on halo
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	if(n>=(uxx)def_N) return; // execute reset_force_field() also on halo
 	F[                 n] = 0.0f;
 	F[    def_N+(ulong)n] = 0.0f;
 	F[2ul*def_N+(ulong)n] = 0.0f;
 } // reset_force_field()
+)+"#endif"+R( // FORCE_FIELD
+
+)+"#ifdef PARTICLES"+R(
+)+"#ifdef FORCE_FIELD"+R(
+void atomic_add_f(volatile global float* addr, const float val) {
+)+"#if defined(cl_nv_pragma_unroll)"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
+	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
+)+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
+	atomic_fetch_add_explicit((volatile global atomic_float*)addr, val, memory_order_relaxed);
+)+"#elif __has_builtin(__builtin_amdgcn_global_atomic_fadd_f32)"+R( // use hardware-supported atomic addition on some AMD GPUs
+	__builtin_amdgcn_global_atomic_fadd_f32(addr, val);
+)+"#else"+R( // fallback emulation: https://forums.developer.nvidia.com/t/atomicadd-float-float-atomicmul-float-float/14639/5
+	float old = val; while((old=atomic_xchg(addr, atomic_xchg(addr, 0.0f)+old))!=0.0f);
+)+"#endif"+R(
+}
 )+R(void spread_force(volatile global float* F, const float3 p, const float3 Fn) {
-	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
 	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb; // calculate interpolation factors
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
 		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
-		const uint n = x+(y+z*def_Ny)*def_Nx; // calculate lattice linear index
+		const uxx n = (uxx)x+(uxx)(y+z*def_Ny)*(uxx)def_Nx; // calculate lattice linear index
 		const float d = (1.0f-fabs(x1-(float)i))*(1.0f-fabs(y1-(float)j))*(1.0f-fabs(z1-(float)k)); // force spreading
 		atomic_add_f(&F[                 n], Fn.x*d); // F[                 n] += Fn.x*d;
 		atomic_add_f(&F[    def_N+(ulong)n], Fn.y*d); // F[    def_N+(ulong)n] += Fn.y*d;
@@ -1965,9 +1967,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 } // spread_force()
 )+"#endif"+R( // FORCE_FIELD
 
-)+"#ifdef PARTICLES"+R(
 )+R(float3 particle_boundary_force(const float3 p, const global uchar* flags) { // normalized pseudo-force to prevent particles from entering solid boundaries or exiting fluid phase
-	const float xa=p.x-0.5f+1.5f*def_Nx, ya=p.y-0.5f+1.5f*def_Ny, za=p.z-0.5f+1.5f*def_Nz; // subtract lattice offsets
+	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
 	const float x1=xa-(float)xb, y1=ya-(float)yb, z1=za-(float)zb; // calculate interpolation factors
 	float3 boundary_force = (float3)(0.0f, 0.0f, 0.0f);
@@ -1975,7 +1976,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	for(uint c=0u; c<8u; c++) { // count over eight corner points
 		const uint i=(c&0x04u)>>2, j=(c&0x02u)>>1, k=c&0x01u; // disassemble c into corner indices ijk
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
-		const uint n = x+(y+z*def_Ny)*def_Nx; // calculate lattice linear index
+		const uxx n = (uxx)x+(uxx)(y+z*def_Ny)*(uxx)def_Nx; // calculate lattice linear index
 		if(flags[n]&(TYPE_S|TYPE_G)) {
 			boundary_force += (float3)(0.5f, 0.5f, 0.5f)-(float3)((float)i, (float)j, (float)k);
 			boundary_distance = fmin(boundary_distance, length((float3)(x1, y1, z1)-(float3)((float)i, (float)j, (float)k)));
@@ -1990,8 +1991,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	, volatile global float* F, const float fx, const float fy, const float fz
 )+"#endif"+R( // FORCE_FIELD
 )+") {"+R( // integrate_particles()
-	const uint n = get_global_id(0); // index of membrane points
-	if(n>=(uint)def_particles_N) return;
+	const uxx n = get_global_id(0); // index of membrane points
+	if(n>=(uxx)def_particles_N) return;
 	const float3 p0 = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]); // cache particle position
 )+"#ifdef FORCE_FIELD"+R(
 	if(def_particles_rho!=1.0f) {
@@ -2016,19 +2017,19 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint A[3] = { def_Ax, def_Ay, def_Az };
 	return A[direction];
 }
-)+R(uint index_extract_p(const uint a, const uint direction) {
+)+R(uxx index_extract_p(const uint a, const uint direction) {
 	const uint3 coordinates[3] = { (uint3)(def_Nx-2u, a%def_Ny, a/def_Ny), (uint3)(a/def_Nz, def_Ny-2u, a%def_Nz), (uint3)(a%def_Nx, a/def_Nx, def_Nz-2u) };
 	return index(coordinates[direction]);
 }
-)+R(uint index_extract_m(const uint a, const uint direction) {
+)+R(uxx index_extract_m(const uint a, const uint direction) {
 	const uint3 coordinates[3] = { (uint3)(       1u, a%def_Ny, a/def_Ny), (uint3)(a/def_Nz,        1u, a%def_Nz), (uint3)(a%def_Nx, a/def_Nx,        1u) };
 	return index(coordinates[direction]);
 }
-)+R(uint index_insert_p(const uint a, const uint direction) {
+)+R(uxx index_insert_p(const uint a, const uint direction) {
 	const uint3 coordinates[3] = { (uint3)(def_Nx-1u, a%def_Ny, a/def_Ny), (uint3)(a/def_Nz, def_Ny-1u, a%def_Nz), (uint3)(a%def_Nx, a/def_Nx, def_Nz-1u) };
 	return index(coordinates[direction]);
 }
-)+R(uint index_insert_m(const uint a, const uint direction) {
+)+R(uxx index_insert_m(const uint a, const uint direction) {
 	const uint3 coordinates[3] = { (uint3)(       0u, a%def_Ny, a/def_Ny), (uint3)(a/def_Nz,        0u, a%def_Nz), (uint3)(a%def_Nx, a/def_Nx,        0u) };
 	return index(coordinates[direction]);
 }
@@ -2065,8 +2066,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	};
 	return (uint)index_transfer_data[side_i];
 }
-)+R(void extract_fi(const uint a, const uint A, const uint n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* fi) {
-	uint j[def_velocity_set]; // neighbor indices
+)+R(void extract_fi(const uint a, const uint A, const uxx n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* fi) {
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	for(uint b=0u; b<def_transfers; b++) {
 		const uint i = index_transfer(side*def_transfers+b);
@@ -2074,8 +2075,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 		transfer_buffer[b*A+a] = fi[index]; // fpxx_copy allows direct copying without decompression+compression
 	}
 }
-)+R(void insert_fi(const uint a, const uint A, const uint n, const uint side, const ulong t, const global fpxx_copy* transfer_buffer, global fpxx_copy* fi) {
-	uint j[def_velocity_set]; // neighbor indices
+)+R(void insert_fi(const uint a, const uint A, const uxx n, const uint side, const ulong t, const global fpxx_copy* transfer_buffer, global fpxx_copy* fi) {
+	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 	for(uint b=0u; b<def_transfers; b++) {
 		const uint i = index_transfer(side*def_transfers+b);
@@ -2096,14 +2097,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 	insert_fi(a, A, index_insert_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
 }
 
-)+R(void extract_rho_u_flags(const uint a, const uint A, const uint n, global char* transfer_buffer, const global float* rho, const global float* u, const global uchar* flags) {
+)+R(void extract_rho_u_flags(const uint a, const uint A, const uxx n, global char* transfer_buffer, const global float* rho, const global float* u, const global uchar* flags) {
 	((global float*)transfer_buffer)[      a] = rho[               n];
 	((global float*)transfer_buffer)[    A+a] = u[                 n];
 	((global float*)transfer_buffer)[ 2u*A+a] = u[    def_N+(ulong)n];
 	((global float*)transfer_buffer)[ 3u*A+a] = u[2ul*def_N+(ulong)n];
 	((global uchar*)transfer_buffer)[16u*A+a] = flags[             n];
 }
-)+R(void insert_rho_u_flags(const uint a, const uint A, const uint n, const global char* transfer_buffer, global float* rho, global float* u, global uchar* flags) {
+)+R(void insert_rho_u_flags(const uint a, const uint A, const uxx n, const global char* transfer_buffer, global float* rho, global float* u, global uchar* flags) {
 	rho[               n] = ((const global float*)transfer_buffer)[      a];
 	u[                 n] = ((const global float*)transfer_buffer)[    A+a];
 	u[    def_N+(ulong)n] = ((const global float*)transfer_buffer)[ 2u*A+a];
@@ -2123,7 +2124,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	insert_rho_u_flags(a, A, index_insert_m(a, direction), transfer_buffer_m, rho, u, flags);
 }
 
-)+"#ifdef SURFACE"+R(
 )+R(kernel void transfer_extract_flags(const uint direction, const ulong t, global uchar* transfer_buffer_p, global uchar* transfer_buffer_m, const global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
@@ -2137,12 +2137,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 	flags[index_insert_m(a, direction)] = transfer_buffer_m[a];
 }
 
-)+R(void extract_phi_massex_flags(const uint a, const uint A, const uint n, global char* transfer_buffer, const global float* phi, const global float* massex, const global uchar* flags) {
+)+"#ifdef SURFACE"+R(
+)+R(void extract_phi_massex_flags(const uint a, const uint A, const uxx n, global char* transfer_buffer, const global float* phi, const global float* massex, const global uchar* flags) {
 	((global float*)transfer_buffer)[     a] = phi   [n];
 	((global float*)transfer_buffer)[   A+a] = massex[n];
 	((global uchar*)transfer_buffer)[8u*A+a] = flags [n];
 }
-)+R(void insert_phi_massex_flags(const uint a, const uint A, const uint n, const global char* transfer_buffer, global float* phi, global float* massex, global uchar* flags) {
+)+R(void insert_phi_massex_flags(const uint a, const uint A, const uxx n, const global char* transfer_buffer, global float* phi, global float* massex, global uchar* flags) {
 	phi   [n] = ((global float*)transfer_buffer)[     a];
 	massex[n] = ((global float*)transfer_buffer)[   A+a];
 	flags [n] = ((global uchar*)transfer_buffer)[8u*A+a];
@@ -2162,15 +2163,15 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // SURFACE
 
 )+"#ifdef TEMPERATURE"+R(
-)+R(void extract_gi(const uint a, const uint n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* gi) {
-	uint j7[7u]; // neighbor indices
+)+R(void extract_gi(const uint a, const uxx n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* gi) {
+	uxx j7[7u]; // neighbor indices
 	neighbors_temperature(n, j7); // calculate neighbor indices
 	const uint i = side+1u;
 	const ulong index = index_f(i%2u ? j7[i] : n, t%2ul ? (i%2u ? i+1u : i-1u) : i); // Esoteric-Pull: standard store, or streaming part 1/2
 	transfer_buffer[a] = gi[index]; // fpxx_copy allows direct copying without decompression+compression
 }
-)+R(void insert_gi(const uint a, const uint n, const uint side, const ulong t, const global fpxx_copy* transfer_buffer, global fpxx_copy* gi) {
-	uint j7[7u]; // neighbor indices
+)+R(void insert_gi(const uint a, const uxx n, const uint side, const ulong t, const global fpxx_copy* transfer_buffer, global fpxx_copy* gi) {
+	uxx j7[7u]; // neighbor indices
 	neighbors_temperature(n, j7); // calculate neighbor indices
 	const uint i = side+1u;
 	const ulong index = index_f(i%2u ? n : j7[i-1u], t%2ul ? i : (i%2u ? i+1u : i-1u)); // Esoteric-Pull: standard load, or streaming part 2/2
@@ -2205,16 +2206,19 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 
 
-)+R(kernel void voxelize_mesh(const uint direction, global fpxx* fi, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu) { // voxelize triangle mesh
+)+R(kernel void voxelize_mesh)+"("+R(const uint direction, global fpxx* fi, global float* u, global uchar* flags, const ulong t, const uchar flag, const global float* p0, const global float* p1, const global float* p2, const global float* bbu // ) { // voxelize triangle mesh
+)+"#ifdef SURFACE"+R(
+	, global float* mass, global float* massex // argument order is important
+)+"#endif"+R( // SURFACE
+)+") {"+R( // voxelize_mesh()
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
 	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
 	const uint triangle_number = as_uint(bbu[0]);
 	const float x0=bbu[ 1], y0=bbu[ 2], z0=bbu[ 3], x1=bbu[ 4], y1=bbu[ 5], z1=bbu[ 6];
 	const float cx=bbu[ 7], cy=bbu[ 8], cz=bbu[ 9], ux=bbu[10], uy=bbu[11], uz=bbu[12], rx=bbu[13], ry=bbu[14], rz=bbu[15];
 	const uint3 xyz = direction==0u ? (uint3)((uint)clamp((int)x0-def_Ox, 0, (int)def_Nx-1), a%def_Ny, a/def_Ny) : direction==1u ? (uint3)(a/def_Nz, (uint)clamp((int)y0-def_Oy, 0, (int)def_Ny-1), a%def_Nz) : (uint3)(a%def_Nx, a/def_Nx, (uint)clamp((int)z0-def_Oz, 0, (int)def_Nz-1));
-	const float3 p = position(xyz);
-	const float3 offset = (float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
-	const float3 r_origin = p+offset;
+	const float3 offset = (float3)(0.5f*(float)((int)def_Nx+2*def_Ox)-0.5f, 0.5f*(float)((int)def_Ny+2*def_Oy)-0.5f, 0.5f*(float)((int)def_Nz+2*def_Oz)-0.5f);
+	const float3 r_origin = position(xyz)+offset;
 	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
 	uint intersections=0u, intersections_check=0u;
 	ushort distances[64]; // allow up to 64 mesh intersections
@@ -2252,48 +2256,50 @@ string opencl_c_container() { return R( // ########################## begin of O
 	uint intersection = intersections%2u!=intersections_check%2u; // iterate through column, start with 0 regularly, start with 1 if forward and backward intersection count evenness differs (error correction)
 	const uint h0 = direction==0u ? xyz.x : direction==1u ? xyz.y : xyz.z;
 	const uint hmax = direction==0u ? (uint)clamp((int)x1-def_Ox, 0, (int)def_Nx) : direction==1u ? (uint)clamp((int)y1-def_Oy, 0, (int)def_Ny) : (uint)clamp((int)z1-def_Oz, 0, (int)def_Nz);
-	const uint hmesh = h0+(uint)distances[intersections-1u];
+	const uint hmesh = h0+(uint)distances[min(intersections-1u, 63u)]; // clamp (intersections-1u) to prevent array out-of-bounds access
 	for(uint h=h0; h<hmax; h++) {
-		while(intersection<intersections&&h>h0+(uint)distances[intersection]) {
+		while(intersection<intersections&&h>h0+(uint)distances[min(intersection, 63u)]) { // clamp intersection to prevent array out-of-bounds access
 			inside = !inside; // passed mesh intersection, so switch inside/outside state
 			intersection++;
 		}
-		inside &= (intersection<intersections&&h<hmesh); // point must be outside if there are no more ray-mesh intersections ahead (error correction)
-		const ulong n = index((uint3)(direction==0u?h:xyz.x, direction==1u?h:xyz.y, direction==2u?h:xyz.z));
+		inside = inside&&(intersection<intersections&&h<hmesh); // point must be outside if there are no more ray-mesh intersections ahead (error correction)
+		const uxx n = index((uint3)(direction==0u?h:xyz.x, direction==1u?h:xyz.y, direction==2u?h:xyz.z));
 		uchar flagsn = flags[n];
-		if(inside) {
-			flagsn = (flagsn&~TYPE_BO)|flag;
-			if(set_u) {
-				const float3 p = position(coordinates(n))+offset;
-				const float3 un = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-p, (float3)(rx, ry, rz));
-				u[                 n] = un.x;
-				u[    def_N+(ulong)n] = un.y;
-				u[2ul*def_N+(ulong)n] = un.z;
+		const float3 p = position(coordinates(n))+offset;
+		const float3 u_set = (float3)(ux, uy, uz)+cross((float3)(cx, cy, cz)-p, (float3)(rx, ry, rz));
+		if(inside) { // cell is inside of mesh geometry
+			flagsn = (flagsn&~TYPE_BO)|flag; // set flag
+			if(set_u) { // set solid velocity
+				u[                 n] = u_set.x;
+				u[    def_N+(ulong)n] = u_set.y;
+				u[2ul*def_N+(ulong)n] = u_set.z;
 			}
-		} else {
-			if(set_u) {
-				const float3 un = (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]); // for velocity voxelization, only clear moving boundaries
-				if((flagsn&TYPE_BO)==TYPE_S) { // reconstruct DDFs when boundary point is converted to fluid
-					uint j[def_velocity_set]; // neighbor indices
-					neighbors(n, j); // calculate neighbor indices
-					float feq[def_velocity_set]; // f_equilibrium
-					calculate_f_eq(1.0f, un.x, un.y, un.z, feq);
-					store_f(n, feq, fi, j, t); // write to fi
-				}
-				if(sq(un.x)+sq(un.y)+sq(un.z)>0.0f) {
-					flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag;
-				}
-			} else {
-				flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag;
+		} else { // cell is outside of mesh geometry
+			if((flagsn&TYPE_BO)==TYPE_S) { // cell was previously solid
+				const float3 un = (float3)(u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n]); // load previous velocity
+				if(un.x==u_set.x&&un.y==u_set.y&&un.z==u_set.z) { // velocity matched: cell belonged to the currently voxelized geometry
+					if(set_u) { // reconstruct DDFs when solid cell is converted to fluid
+						uxx j[def_velocity_set]; // neighbor indices
+						neighbors(n, j); // calculate neighbor indices
+						float feq[def_velocity_set]; // f_equilibrium
+						calculate_f_eq(1.0f, un.x, un.y, un.z, feq); // use rhon=1 to prevent mass drift
+						store_f(n, feq, fi, j, t); // write to fi
+					}
+					flagsn = (flagsn&TYPE_BO)==TYPE_MS ? flagsn&~TYPE_MS : flagsn&~flag; // clear flag
+				} // else: don't change cell state
 			}
 		}
 		flags[n] = flagsn;
+)+"#ifdef SURFACE"+R(
+		mass[n] += massex[n]; // apply distributed excess mass
+		massex[n] = 0.0f; // clear excess mass
+)+"#endif"+R( // SURFACE
 	}
 } // voxelize_mesh()
 
 )+R(kernel void unvoxelize_mesh(global uchar* flags, const uchar flag, float x0, float y0, float z0, float x1, float y1, float z1) { // remove voxelized triangle mesh
-	const uint n = get_global_id(0);
-	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((def_Nx-2u*(def_Dx>1u))*def_Dx)-0.5f, 0.5f*(float)((def_Ny-2u*(def_Dy>1u))*def_Dy)-0.5f, 0.5f*(float)((def_Nz-2u*(def_Dz>1u))*def_Dz)-0.5f)+(float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z);
+	const uxx n = get_global_id(0);
+	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((int)def_Nx+2*def_Ox)-0.5f, 0.5f*(float)((int)def_Ny+2*def_Oy)-0.5f, 0.5f*(float)((int)def_Nz+2*def_Oz)-0.5f);
 	if(p.x>=x0-1.0f&&p.y>=y0-1.0f&&p.z>=z0-1.0f&&p.x<=x1+1.0f&&p.y<=y1+1.0f&&p.z<=z1+1.0f) flags[n] &= ~flag;
 } // unvoxelize_mesh()
 
@@ -2303,23 +2309,85 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef GRAPHICS"+R(
 
+)+R(void calculate_j8(const uint3 xyz, uxx* j) {
+	const uxx x0 = (uxx)  xyz.x; // cube stencil
+	const uxx xp = (uxx) (xyz.x+1u);
+	const uxx y0 = (uxx)( xyz.y    *def_Nx);
+	const uxx yp = (uxx)((xyz.y+1u)*def_Nx);
+	const uxx z0 = (uxx)  xyz.z    *(uxx)(def_Ny*def_Nx);
+	const uxx zp = (uxx) (xyz.z+1u)*(uxx)(def_Ny*def_Nx);
+	j[0] = x0+y0+z0; // 000 // cube stencil
+	j[1] = xp+y0+z0; // +00
+	j[2] = xp+y0+zp; // +0+
+	j[3] = x0+y0+zp; // 00+
+	j[4] = x0+yp+z0; // 0+0
+	j[5] = xp+yp+z0; // ++0
+	j[6] = xp+yp+zp; // +++
+	j[7] = x0+yp+zp; // 0++
+} // calculate_j8()
+)+R(void calculate_j32(const uint3 xyz, uxx* j) {
+	const uxx x0 = (uxx)   xyz.x; // cube stencil
+	const uxx xp = (uxx)  (xyz.x+1u);
+	const uxx y0 = (uxx) ( xyz.y    *def_Nx);
+	const uxx yp = (uxx) ((xyz.y+1u)*def_Nx);
+	const uxx z0 = (uxx)   xyz.z    *(uxx)(def_Ny*def_Nx);
+	const uxx zp = (uxx)  (xyz.z+1u)*(uxx)(def_Ny*def_Nx);
+	const uxx xq = (uxx) ((xyz.x       +2u)%def_Nx); // central difference stencil on each cube corner point
+	const uxx xm = (uxx) ((xyz.x+def_Nx-1u)%def_Nx);
+	const uxx yq = (uxx)(((xyz.y       +2u)%def_Ny)*def_Nx);
+	const uxx ym = (uxx)(((xyz.y+def_Ny-1u)%def_Ny)*def_Nx);
+	const uxx zq = (uxx) ((xyz.z       +2u)%def_Nz)*(uxx)(def_Ny*def_Nx);
+	const uxx zm = (uxx) ((xyz.z+def_Nz-1u)%def_Nz)*(uxx)(def_Ny*def_Nx);
+	j[ 0] = x0+y0+z0; // 000 // cube stencil
+	j[ 1] = xp+y0+z0; // +00
+	j[ 2] = xp+y0+zp; // +0+
+	j[ 3] = x0+y0+zp; // 00+
+	j[ 4] = x0+yp+z0; // 0+0
+	j[ 5] = xp+yp+z0; // ++0
+	j[ 6] = xp+yp+zp; // +++
+	j[ 7] = x0+yp+zp; // 0++
+	j[ 8] = xm+y0+z0; // -00 // central difference stencil on each cube corner point
+	j[ 9] = x0+ym+z0; // 0-0
+	j[10] = x0+y0+zm; // 00-
+	j[11] = xq+y0+z0; // #00
+	j[12] = xp+ym+z0; // +-0
+	j[13] = xp+y0+zm; // +0-
+	j[14] = xq+y0+zp; // #0+
+	j[15] = xp+ym+zp; // +-+
+	j[16] = xp+y0+zq; // +0#
+	j[17] = xm+y0+zp; // -0+
+	j[18] = x0+ym+zp; // 0-+
+	j[19] = x0+y0+zq; // 00#
+	j[20] = xm+yp+z0; // -+0
+	j[21] = x0+yq+z0; // 0#0
+	j[22] = x0+yp+zm; // 0+-
+	j[23] = xq+yp+z0; // #+0
+	j[24] = xp+yq+z0; // +#0
+	j[25] = xp+yp+zm; // ++-
+	j[26] = xq+yp+zp; // #++
+	j[27] = xp+yq+zp; // +#+
+	j[28] = xp+yp+zq; // ++#
+	j[29] = xm+yp+zp; // -++
+	j[30] = x0+yq+zp; // 0#+
+	j[31] = x0+yp+zq; // 0+#
+} // calculate_j32()
+
 )+"#ifndef FORCE_FIELD"+R( // render flags as grid
 )+R(kernel void graphics_flags(const global float* camera, global int* bitmap, global int* zbuffer, const global uchar* flags) {
 )+"#else"+R( // FORCE_FIELD
 )+R(kernel void graphics_flags(const global float* camera, global int* bitmap, global int* zbuffer, const global uchar* flags, const global float* F) {
 )+"#endif"+R( // FORCE_FIELD
-	const uint n = get_global_id(0);
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
+	const uxx n = get_global_id(0);
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
 	const uchar flagsn = flags[n]; // cache flags
 	const uchar flagsn_bo = flagsn&TYPE_BO; // extract boundary flags
 	if(flagsn==0u||flagsn==TYPE_G) return; // don't draw regular fluid cells
-	//if(flagsn&TYPE_SU) return; // don't draw surface
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const uint3 xyz = coordinates(n);
 	const float3 p = position(xyz);
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	uint x0, xp, xm, y0, yp, ym, z0, zp, zm;
+	uxx x0, xp, xm, y0, yp, ym, z0, zp, zm;
 	calculate_indices(n, &x0, &xp, &xm, &y0, &yp, &ym, &z0, &zp, &zm);
 	const int c =  // coloring scheme
 		flagsn_bo==TYPE_S ? COLOR_S : // solid boundary
@@ -2334,7 +2402,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		flagsn&TYPE_Y ? COLOR_Y : // reserved type Y
 		COLOR_0; // regular or gas cell
 	//draw_point(p, c, camera_cache, bitmap, zbuffer); // draw one pixel for every boundary cell
-	uint t;
+	uxx t;
 	t = xp+y0+z0; const bool not_xp = xyz.x<def_Nx-1u && flagsn==flags[t] && !is_halo(t); // +00
 	t = xm+y0+z0; const bool not_xm = xyz.x>       0u && flagsn==flags[t] && !is_halo(t); // -00
 	t = x0+yp+z0; const bool not_yp = xyz.y<def_Ny-1u && flagsn==flags[t] && !is_halo(t); // 0+0
@@ -2378,65 +2446,42 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // FORCE_FIELD
 )+R(kernel void graphics_flags_mc(const global float* camera, global int* bitmap, global int* zbuffer, const global uchar* flags, const global float* F) {
 )+"#endif"+R( // FORCE_FIELD
-	const uint n = get_global_id(0);
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
+	const uxx n = get_global_id(0);
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
 	const uint3 xyz = coordinates(n);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
-	//if(xyz.x==0u||xyz.y==0u||xyz.z==0u||xyz.x>=def_Nx-2u||xyz.y>=def_Ny-2u||xyz.z>=def_Nz-2u) return;
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float3 p = position(xyz);
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	uint j[8];
-	const uint x0 =  xyz.x; // cube stencil
-	const uint xp =  xyz.x+1u;
-	const uint y0 =  xyz.y    *def_Nx;
-	const uint yp = (xyz.y+1u)*def_Nx;
-	const uint z0 =  xyz.z    *def_Ny*def_Nx;
-	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
-	j[0] = n       ; // 000
-	j[1] = xp+y0+z0; // +00
-	j[2] = xp+y0+zp; // +0+
-	j[3] = x0+y0+zp; // 00+
-	j[4] = x0+yp+z0; // 0+0
-	j[5] = xp+yp+z0; // ++0
-	j[6] = xp+yp+zp; // +++
-	j[7] = x0+yp+zp; // 0++
-	float v[8];
-	for(uint i=0u; i<8u; i++) v[i] = (float)((flags[j[i]]&TYPE_BO)==TYPE_S);
+	uxx j[8];
+	calculate_j8(xyz, j);
+	bool v[8];
+	for(uint i=0u; i<8u; i++) v[i] = (flags[j[i]]&TYPE_BO)==TYPE_S;
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
-	const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
+	const uint tn = marching_cubes_halfway(v, triangles); // run marching cubes algorithm
 	if(tn==0u) return;
 )+"#ifdef FORCE_FIELD"+R(
 	float3 Fj[8];
-	for(uint i=0u; i<8u; i++) Fj[i] = v[i]==1.0f ? (float3)(F[j[i]], F[def_N+(ulong)j[i]], F[2ul*def_N+(ulong)j[i]]) : (float3)(0.0f, 0.0f, 0.0f);
+	for(uint i=0u; i<8u; i++) Fj[i] = v[i] ? load3(j[i], F) : (float3)(0.0f, 0.0f, 0.0f);
 )+"#endif"+R( // FORCE_FIELD
 	for(uint i=0u; i<tn; i++) {
 		const float3 p0 = triangles[3u*i   ];
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		int c0=0xDFDFDF, c1=0xDFDFDF, c2=0xDFDFDF;
 )+"#ifdef FORCE_FIELD"+R(
-		int c0, c1, c2; {
-			const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-			const float3 Fi = (x0*y0*z0)*Fj[0]+(x1*y0*z0)*Fj[1]+(x1*y0*z1)*Fj[2]+(x0*y0*z1)*Fj[3]+(x0*y1*z0)*Fj[4]+(x1*y1*z0)*Fj[5]+(x1*y1*z1)*Fj[6]+(x0*y1*z1)*Fj[7]; // perform trilinear interpolation
-			c0 = shading(colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal)), p+p0, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal));
-		} {
-			const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-			const float3 Fi = (x0*y0*z0)*Fj[0]+(x1*y0*z0)*Fj[1]+(x1*y0*z1)*Fj[2]+(x0*y0*z1)*Fj[3]+(x0*y1*z0)*Fj[4]+(x1*y1*z0)*Fj[5]+(x1*y1*z1)*Fj[6]+(x0*y1*z1)*Fj[7]; // perform trilinear interpolation
-			c1 = shading(colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal)), p+p1, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal));
-		} {
-			const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-			const float3 Fi = (x0*y0*z0)*Fj[0]+(x1*y0*z0)*Fj[1]+(x1*y0*z1)*Fj[2]+(x0*y0*z1)*Fj[3]+(x0*y1*z0)*Fj[4]+(x1*y1*z0)*Fj[5]+(x1*y1*z1)*Fj[6]+(x0*y1*z1)*Fj[7]; // perform trilinear interpolation
-			c2 = shading(colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal)), p+p2, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_F*dot(Fi, normal));
-		}
-		draw_triangle_interpolated(p+p0, p+p1, p+p2, c0, c1, c2, camera_cache, bitmap, zbuffer); // draw triangle with interpolated colors
+		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		c0 = colorscale_twocolor(0.5f+def_scale_F*dot(trilinear3(p0, Fj), normal));
+		c1 = colorscale_twocolor(0.5f+def_scale_F*dot(trilinear3(p1, Fj), normal));
+		c2 = colorscale_twocolor(0.5f+def_scale_F*dot(trilinear3(p2, Fj), normal));
 )+"#else"+R( // FORCE_FIELD
-		const int c0 = shading(0xDFDFDF, p+p0, normal, camera_cache);
-		const int c1 = shading(0xDFDFDF, p+p1, normal, camera_cache);
-		const int c2 = shading(0xDFDFDF, p+p2, normal, camera_cache);
-		draw_triangle_interpolated(p+p0, p+p1, p+p2, c0, c1, c2, camera_cache, bitmap, zbuffer);
+		const float3 normal = cross(p1-p0, p2-p0); // no normalize needed for shading()
 )+"#endif"+R( // FORCE_FIELD
+		c0 = shading(c0, p+p0, normal, camera_cache);
+		c1 = shading(c1, p+p1, normal, camera_cache);
+		c2 = shading(c2, p+p2, normal, camera_cache);
+		draw_triangle_interpolated(p+p0, p+p1, p+p2, c0, c1, c2, camera_cache, bitmap, zbuffer); // draw triangle with interpolated colors
 	}
 }
 
@@ -2445,8 +2490,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // TEMPERATURE
 )+R(kernel void graphics_field(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
 )+"#endif"+R( // TEMPERATURE
-	const uint n = get_global_id(0);
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_field() on halo
+	const uxx n = get_global_id(0);
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute graphics_field() on halo
 	const uint3 xyz = coordinates(n);
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
@@ -2454,10 +2499,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
 )+"#ifndef MOVING_BOUNDARIES"+R(
 	if(flags[n]&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
-)+"#else"+R( // EQUILIBRIUM_BOUNDARIES
+)+"#else"+R( // MOVING_BOUNDARIES
 	if(flags[n]&(TYPE_I|TYPE_G)) return;
-)+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
-	const float3 un = load_u(n, u); // cache velocity
+)+"#endif"+R( // MOVING_BOUNDARIES
+	const float3 un = load3(n, u); // cache velocity
 	const float ul = length(un);
 	if(def_scale_u*ul<0.1f) return; // don't draw lattice points where the velocity is lower than this threshold
 	int c = 0; // coloring
@@ -2469,6 +2514,110 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // TEMPERATURE
 	}
 	draw_line(p-(0.5f/ul)*un, p+(0.5f/ul)*un, c, camera_cache, bitmap, zbuffer);
+}
+
+)+"#ifndef TEMPERATURE"+R(
+)+R(int ray_grid_traverse_sum(const int background_color, const ray r, const uint Nx, const uint Ny, const uint Nz, const int field_mode, const global float* rho, const global float* u, const global uchar* flags) {
+)+"#else"+R( // TEMPERATURE
+)+R(int ray_grid_traverse_sum(const int background_color, const ray r, const uint Nx, const uint Ny, const uint Nz, const int field_mode, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
+)+"#endif"+R( // TEMPERATURE
+	float sum = 0.0f;
+	float traversed_cells_weighted = 0.0f;
+	uint traversed_cells = 0u;
+	const float3 p = (float3)(r.origin.x+0.5f*(float)Nx, r.origin.y+0.5f*(float)Ny, r.origin.z+0.5f*(float)Nz); // start point
+	const int dx=(int)sign(r.direction.x), dy=(int)sign(r.direction.y), dz=(int)sign(r.direction.z); // fast ray-grid-traversal
+	int3 xyz = (int3)((int)floor(p.x), (int)floor(p.y), (int)floor(p.z));
+	const float fxa=p.x-floor(p.x), fya=p.y-floor(p.y), fza=p.z-floor(p.z);
+	const float tdx = 1.0f/fmax(fabs(r.direction.x), 1E-6f);
+	const float tdy = 1.0f/fmax(fabs(r.direction.y), 1E-6f);
+	const float tdz = 1.0f/fmax(fabs(r.direction.z), 1E-6f);
+	float tmx = tdx*(dx>0 ? 1.0f-fxa : dx<0 ? fxa : 0.0f);
+	float tmy = tdy*(dy>0 ? 1.0f-fya : dy<0 ? fya : 0.0f);
+	float tmz = tdz*(dz>0 ? 1.0f-fza : dz<0 ? fza : 0.0f);
+	int color = 0;
+	switch(field_mode) {
+		case 0: // coloring by velocity
+			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
+				if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
+				else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
+				if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
+				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
+				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
+					const float un = length(load3(n, u));
+					const float weight = sq(un)+sq(un-0.5f/def_scale_u);
+					sum = fma(weight, un, sum);
+					traversed_cells_weighted += weight;
+				}
+				traversed_cells++;
+			}
+			color = colorscale_rainbow(def_scale_u*sum/traversed_cells_weighted);
+			traversed_cells_weighted *= sq(def_scale_u);
+			break;
+		case 1: // coloring by density
+			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
+				if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
+				else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
+				if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
+				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
+				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
+					const float rhon = rho[n];
+					const float weight = sq(rhon-1.0f);
+					sum = fma(weight, rhon, sum);
+					traversed_cells_weighted += weight;
+				}
+				traversed_cells++;
+			}
+			color = colorscale_twocolor(0.5f+def_scale_rho*(sum/traversed_cells_weighted-1.0f));
+			traversed_cells_weighted *= sq(def_scale_rho);
+			break;
+)+"#ifdef TEMPERATURE"+R(
+		case 2: // coloring by temperature
+			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
+				if(tmx<tmy) { if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; } }
+				else /****/ { if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; } }
+				if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break; // out of simulation box
+				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
+				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
+					const float Tn = T[n];
+					const float weight = sq(Tn-def_T_avg);
+					sum = fma(weight, Tn, sum);
+					traversed_cells_weighted += weight;
+				}
+				traversed_cells++;
+			}
+			color = colorscale_iron(0.5f+def_scale_T*(sum/traversed_cells_weighted-def_T_avg));
+			traversed_cells_weighted *= sq(4.0f*def_scale_T);
+			break;
+)+"#endif"+R( // TEMPERATURE
+	}
+	const float opacity = clamp((traversed_cells_weighted-1.0f)/(float)traversed_cells, 0.0f, 1.0f);
+	return color_mix(color, background_color, opacity);
+}
+
+)+"#ifndef TEMPERATURE"+R(
+)+R(kernel void graphics_field_rt(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags) {
+)+"#else"+R( // TEMPERATURE
+)+R(kernel void graphics_field_rt(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
+)+"#endif"+R( // TEMPERATURE
+	const uint gid = get_global_id(0); // workgroup size alignment is critical
+	const uint lid = get_local_id(0); // make workgropus not horizontal stripes of pixels, but 8x8 rectangular (close to square) tiles
+	const uint lsi = get_local_size(0); // (50% performance boost due to more coalesced memory access)
+	const uint tile_width=8u, tile_height=lsi/tile_width, tiles_x=def_screen_width/tile_width;
+	const int lx=lid%tile_width, ly=lid/tile_width;
+	const int tx=(gid/lsi)%tiles_x, ty=(gid/lsi)/tiles_x;
+	const int x=tx*tile_width+lx, y=ty*tile_height+ly;
+	const uint n = x+y*def_screen_width;
+	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
+	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
+	ray camray = get_camray(x, y, camera_cache);
+	const float distance = intersect_cuboid(camray, (float3)(0.0f, 0.0f, 0.0f), (float)def_Nx, (float)def_Ny, (float)def_Nz);
+	if(distance==-1.0f) return;
+	camray.origin = camray.origin+fmax(distance+0.005f, 0.005f)*camray.direction;
+)+"#ifndef TEMPERATURE"+R(
+	bitmap[n] = ray_grid_traverse_sum(bitmap[n], camray, def_Nx, def_Ny, def_Nz, field_mode, rho, u, flags);
+)+"#else"+R( // TEMPERATURE
+	bitmap[n] = ray_grid_traverse_sum(bitmap[n], camray, def_Nx, def_Ny, def_Nz, field_mode, rho, u, flags, T);
+)+"#endif"+R( // TEMPERATURE
 }
 
 )+"#ifndef TEMPERATURE"+R(
@@ -2490,7 +2639,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	const ulong n00=index(xyz00), n01=index(xyz01), n10=index(xyz10), n11=index(xyz11);
+	const uxx n00=index(xyz00), n01=index(xyz01), n10=index(xyz10), n11=index(xyz11);
 	bool d00=true, d01=true, d10=true, d11=true;
 )+"#ifdef SURFACE"+R(
 	d00 = flags[n00]&(TYPE_F|TYPE_I); // only draw fluid or interface cells
@@ -2502,10 +2651,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	int c00=0, c01=0, c10=0, c11=0;
 	switch(field_mode) {
 		case 0: // coloring by velocity
-			c00 = colorscale_rainbow(def_scale_u*length(load_u(n00, u)));
-			c01 = colorscale_rainbow(def_scale_u*length(load_u(n01, u)));
-			c10 = colorscale_rainbow(def_scale_u*length(load_u(n10, u)));
-			c11 = colorscale_rainbow(def_scale_u*length(load_u(n11, u)));
+			c00 = colorscale_rainbow(def_scale_u*length(load3(n00, u)));
+			c01 = colorscale_rainbow(def_scale_u*length(load3(n01, u)));
+			c10 = colorscale_rainbow(def_scale_u*length(load3(n10, u)));
+			c11 = colorscale_rainbow(def_scale_u*length(load3(n11, u)));
 			break;
 		case 1: // coloring by density
 			c00 = colorscale_twocolor(0.5f+def_scale_rho*(rho[n00]-1.0f));
@@ -2538,20 +2687,20 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // TEMPERATURE
 )+R(kernel void graphics_streamline(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const int slice_mode, const int slice_x, const int slice_y, const int slice_z, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
 )+"#endif"+R( // TEMPERATURE
-	const uint n = get_global_id(0);
+	const uxx n = get_global_id(0);
 	const float3 ps = (float3)((float)slice_x+0.5f-0.5f*(float)def_Nx, (float)slice_y+0.5f-0.5f*(float)def_Ny, (float)slice_z+0.5f-0.5f*(float)def_Nz);
 )+"#ifndef D2Q9"+R(
-	if(n>=(def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)*(def_Nz/def_streamline_sparse)) return;
-	const uint z = n/((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)); // disassemble 1D index to 3D coordinates
-	const uint t = n%((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse));
-	const uint y = t/(def_Nx/def_streamline_sparse);
-	const uint x = t%(def_Nx/def_streamline_sparse);
+	if(n>=(uxx)(def_Nx/def_streamline_sparse)*(uxx)(def_Ny/def_streamline_sparse)*(uxx)(def_Nz/def_streamline_sparse)) return;
+	const uint z = (uint)(n/(uxx)((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse))); // disassemble 1D index to 3D coordinates
+	const uint t = (uint)(n%(uxx)((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)));
+	const uint y = (uint)(t/(def_Nx/def_streamline_sparse));
+	const uint x = (uint)(t%(def_Nx/def_streamline_sparse));
 	float3 p = (float)def_streamline_sparse*((float3)((float)x+0.5f, (float)y+0.5f, (float)z+0.5f))-0.5f*((float3)((float)def_Nx, (float)def_Ny, (float)def_Nz));
 	const bool rx=fabs(p.x-ps.x)>0.5f*(float)def_streamline_sparse, ry=fabs(p.y-ps.y)>0.5f*(float)def_streamline_sparse, rz=fabs(p.z-ps.z)>0.5f*(float)def_streamline_sparse;
 )+"#else"+R( // D2Q9
 	if(n>=(def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)) return;
-	const uint y = n/(def_Nx/def_streamline_sparse); // disassemble 1D index to 3D coordinates
-	const uint x = n%(def_Nx/def_streamline_sparse);
+	const uint y = (uint)(n/(uxx)(def_Nx/def_streamline_sparse)); // disassemble 1D index to 3D coordinates
+	const uint x = (uint)(n%(uxx)(def_Nx/def_streamline_sparse));
 	float3 p = ((float3)((float)def_streamline_sparse*((float)x+0.5f), (float)def_streamline_sparse*((float)y+0.5f), 0.5f))-0.5f*((float3)((float)def_Nx, (float)def_Ny, (float)def_Nz));
 	const bool rx=fabs(p.x-ps.x)>0.5f*(float)def_streamline_sparse, ry=fabs(p.y-ps.y)>0.5f*(float)def_streamline_sparse, rz=true;
 )+"#endif"+R( // D2Q9
@@ -2569,9 +2718,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 			const uint x = (uint)(p1.x+1.5f*(float)def_Nx)%def_Nx;
 			const uint y = (uint)(p1.y+1.5f*(float)def_Ny)%def_Ny;
 			const uint z = (uint)(p1.z+1.5f*(float)def_Nz)%def_Nz;
-			const uint n = x+(y+z*def_Ny)*def_Nx;
+			const uxx n = (uxx)x+(uxx)(y+z*def_Ny)*(uxx)def_Nx;
 			if(flags[n]&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
-			const float3 un = load_u(n, u); // interpolate_u(p1, u)
+			const float3 un = load3(n, u); // interpolate_u(p1, u)
 			const float ul = length(un);
 			p0 = p1;
 			p1 += (dt/ul)*un; // integrate forward in time
@@ -2594,14 +2743,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // TEMPERATURE
 )+R(kernel void graphics_q_field(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
 )+"#endif"+R( // TEMPERATURE
-	const uint n = get_global_id(0);
-	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_q_field() on halo
+	const uxx n = get_global_id(0);
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute graphics_q_field() on halo
 	if(flags[n]&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
 	const float3 p = position(coordinates(n));
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	float3 un = load_u(n, u); // cache velocity
+	float3 un = load3(n, u); // cache velocity
 	const float ul = length(un);
 	const float Q = calculate_Q(n, u);
 	if(Q<def_scale_Q_min||ul==0.0f) return; // don't draw lattice points where the velocity is very low
@@ -2616,77 +2765,39 @@ string opencl_c_container() { return R( // ########################## begin of O
 	draw_line(p-(0.5f/ul)*un, p+(0.5f/ul)*un, c, camera_cache, bitmap, zbuffer);
 }
 
-)+"#ifndef TEMPERATURE"+R(
-)+R(kernel void graphics_q(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags) {
-)+"#else"+R( // TEMPERATURE
-)+R(kernel void graphics_q(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u, const global uchar* flags, const global float* T) {
+)+R(kernel void graphics_q)+"("+R(const global float* camera, global int* bitmap, global int* zbuffer, const int field_mode, const global float* rho, const global float* u // ) {
+)+"#ifdef SURFACE"+R(
+	, const global uchar* flags // argument order is important
+)+"#endif"+R( // SURFACE
+)+"#ifdef TEMPERATURE"+R(
+	, const global float* T // argument order is important
 )+"#endif"+R( // TEMPERATURE
-	const uint n = get_global_id(0);
+)+") {"+R( // graphics_q()
+	const uxx n = get_global_id(0);
 	const uint3 xyz = coordinates(n);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_q(xyz)) return; // don't execute graphics_q_field() on marching-cubes halo
 	const float3 p = position(xyz);
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	const uint x0 =  xyz.x; // cube stencil
-	const uint xp =  xyz.x+1u;
-	const uint y0 =  xyz.y    *def_Nx;
-	const uint yp = (xyz.y+1u)*def_Nx;
-	const uint z0 =  xyz.z    *def_Ny*def_Nx;
-	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
-	const uint xq =  (xyz.x       +2u)%def_Nx; // central difference stencil on each cube corner point
-	const uint xm =  (xyz.x+def_Nx-1u)%def_Nx;
-	const uint yq = ((xyz.y       +2u)%def_Ny)*def_Nx;
-	const uint ym = ((xyz.y+def_Ny-1u)%def_Ny)*def_Nx;
-	const uint zq = ((xyz.z       +2u)%def_Nz)*def_Ny*def_Nx;
-	const uint zm = ((xyz.z+def_Nz-1u)%def_Nz)*def_Ny*def_Nx;
-	uint j[32];
-	j[ 0] = n       ; // 000 // cube stencil
-	j[ 1] = xp+y0+z0; // +00
-	j[ 2] = xp+y0+zp; // +0+
-	j[ 3] = x0+y0+zp; // 00+
-	j[ 4] = x0+yp+z0; // 0+0
-	j[ 5] = xp+yp+z0; // ++0
-	j[ 6] = xp+yp+zp; // +++
-	j[ 7] = x0+yp+zp; // 0++
-	j[ 8] = xm+y0+z0; // -00 // central difference stencil on each cube corner point
-	j[ 9] = x0+ym+z0; // 0-0
-	j[10] = x0+y0+zm; // 00-
-	j[11] = xq+y0+z0; // #00
-	j[12] = xp+ym+z0; // +-0
-	j[13] = xp+y0+zm; // +0-
-	j[14] = xq+y0+zp; // #0+
-	j[15] = xp+ym+zp; // +-+
-	j[16] = xp+y0+zq; // +0#
-	j[17] = xm+y0+zp; // -0+
-	j[18] = x0+ym+zp; // 0-+
-	j[19] = x0+y0+zq; // 00#
-	j[20] = xm+yp+z0; // -+0
-	j[21] = x0+yq+z0; // 0#0
-	j[22] = x0+yp+zm; // 0+-
-	j[23] = xq+yp+z0; // #+0
-	j[24] = xp+yq+z0; // +#0
-	j[25] = xp+yp+zm; // ++-
-	j[26] = xq+yp+zp; // #++
-	j[27] = xp+yq+zp; // +#+
-	j[28] = xp+yp+zq; // ++#
-	j[29] = xm+yp+zp; // -++
-	j[30] = x0+yq+zp; // 0#+
-	j[31] = x0+yp+zq; // 0+#
+	uxx j[32];
+	calculate_j32(xyz, j);
+)+"#ifdef SURFACE"+R(
 	uchar flags_cell = 0u;
-	for(uint i=0u; i<32u; i++) flags_cell |= flags[j[i]];
-	if(flags_cell&(TYPE_S|TYPE_E|TYPE_I|TYPE_G)) return;
-	float3 uj[8];
-	for(uint i=0u; i<8u; i++) uj[i] = load_u(j[i], u);
+	for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
+	if(flags_cell&(TYPE_I|TYPE_G)) return;
+)+"#endif"+R( // SURFACE
+	float3 uj[32];
+	for(uint i=0u; i<32u; i++) uj[i] = load3(j[i], u);
 	float v[8]; // don't load any velocity twice from global memory
-	v[0] = calculate_Q_cached(      uj[ 1]    , load_u(j[ 8], u),       uj[ 4]    , load_u(j[ 9], u),       uj[ 3]    , load_u(j[10], u));
-	v[1] = calculate_Q_cached(load_u(j[11], u),       uj[ 0]    ,       uj[ 5]    , load_u(j[12], u),       uj[ 2]    , load_u(j[13], u));
-	v[2] = calculate_Q_cached(load_u(j[14], u),       uj[ 3]    ,       uj[ 6]    , load_u(j[15], u), load_u(j[16], u),       uj[ 1]    );
-	v[3] = calculate_Q_cached(      uj[ 2]    , load_u(j[17], u),       uj[ 7]    , load_u(j[18], u), load_u(j[19], u),       uj[ 0]    );
-	v[4] = calculate_Q_cached(      uj[ 5]    , load_u(j[20], u), load_u(j[21], u),       uj[ 0]    ,       uj[ 7]    , load_u(j[22], u));
-	v[5] = calculate_Q_cached(load_u(j[23], u),       uj[ 4]    , load_u(j[24], u),       uj[ 1]    ,       uj[ 6]    , load_u(j[25], u));
-	v[6] = calculate_Q_cached(load_u(j[26], u),       uj[ 7]    , load_u(j[27], u),       uj[ 2]    , load_u(j[28], u),       uj[ 5]    );
-	v[7] = calculate_Q_cached(      uj[ 6]    , load_u(j[29], u), load_u(j[30], u),       uj[ 3]    , load_u(j[31], u),       uj[ 4]    );
+	v[0] = calculate_Q_cached(uj[ 1], uj[ 8], uj[ 4], uj[ 9], uj[ 3], uj[10]);
+	v[1] = calculate_Q_cached(uj[11], uj[ 0], uj[ 5], uj[12], uj[ 2], uj[13]);
+	v[2] = calculate_Q_cached(uj[14], uj[ 3], uj[ 6], uj[15], uj[16], uj[ 1]);
+	v[3] = calculate_Q_cached(uj[ 2], uj[17], uj[ 7], uj[18], uj[19], uj[ 0]);
+	v[4] = calculate_Q_cached(uj[ 5], uj[20], uj[21], uj[ 0], uj[ 7], uj[22]);
+	v[5] = calculate_Q_cached(uj[23], uj[ 4], uj[24], uj[ 1], uj[ 6], uj[25]);
+	v[6] = calculate_Q_cached(uj[26], uj[ 7], uj[27], uj[ 2], uj[28], uj[ 5]);
+	v[7] = calculate_Q_cached(uj[ 6], uj[29], uj[30], uj[ 3], uj[31], uj[ 4]);
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
 	const uint tn = marching_cubes(v, def_scale_Q_min, triangles); // run marching cubes algorithm
 	if(tn==0u) return;
@@ -2694,56 +2805,26 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float3 p0 = triangles[3u*i   ]; // triangle coordinates in [0,1] (local cell)
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		const float3 normal = cross(p1-p0, p2-p0); // no normalize needed for shading()
 		int c0=0, c1=0, c2=0;
 		switch(field_mode) {
 			case 0: // coloring by velocity
-				{
-					const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-					c0 = shading(colorscale_rainbow(def_scale_u*length(ui)), p+p0, normal, camera_cache); // colorscale_rainbow(def_scale_u*length(ui));
-				} {
-					const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-					c1 = shading(colorscale_rainbow(def_scale_u*length(ui)), p+p1, normal, camera_cache); // colorscale_rainbow(def_scale_u*length(ui));
-				} {
-					const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float3 ui = (x0*y0*z0)*uj[0]+(x1*y0*z0)*uj[1]+(x1*y0*z1)*uj[2]+(x0*y0*z1)*uj[3]+(x0*y1*z0)*uj[4]+(x1*y1*z0)*uj[5]+(x1*y1*z1)*uj[6]+(x0*y1*z1)*uj[7]; // perform trilinear interpolation
-					c2 = shading(colorscale_rainbow(def_scale_u*length(ui)), p+p2, normal, camera_cache); // colorscale_rainbow(def_scale_u*length(ui));
-				}
+				c0 = shading(colorscale_rainbow(def_scale_u*length(trilinear3(p0, uj))), p+p0, normal, camera_cache);
+				c1 = shading(colorscale_rainbow(def_scale_u*length(trilinear3(p1, uj))), p+p1, normal, camera_cache);
+				c2 = shading(colorscale_rainbow(def_scale_u*length(trilinear3(p2, uj))), p+p2, normal, camera_cache);
 				break;
 			case 1: // coloring by density
 				for(uint i=0u; i<8u; i++) v[i] = rho[j[i]];
-				{
-					const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c0 = shading(colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f)), p+p0, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f));
-				} {
-					const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c1 = shading(colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f)), p+p1, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f));
-				} {
-					const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c2 = shading(colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f)), p+p2, normal, camera_cache); // colorscale_twocolor(0.5f+def_scale_rho*(vi-1.0f));
-				}
+				c0 = shading(colorscale_twocolor(0.5f+def_scale_rho*(trilinear(p0, v)-1.0f)), p+p0, normal, camera_cache);
+				c1 = shading(colorscale_twocolor(0.5f+def_scale_rho*(trilinear(p1, v)-1.0f)), p+p1, normal, camera_cache);
+				c2 = shading(colorscale_twocolor(0.5f+def_scale_rho*(trilinear(p2, v)-1.0f)), p+p2, normal, camera_cache);
 				break;
 )+"#ifdef TEMPERATURE"+R(
 			case 2: // coloring by temperature
 				for(uint i=0u; i<8u; i++) v[i] = T[j[i]];
-				{
-					const float x1=p0.x, y1=p0.y, z1=p0.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c0 = shading(colorscale_iron(0.5f+def_scale_T*(vi-def_T_avg)), p+p0, normal, camera_cache); // colorscale_iron(0.5f+def_scale_T*(T[n]-def_T_avg));
-				} {
-					const float x1=p1.x, y1=p1.y, z1=p1.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c1 = shading(colorscale_iron(0.5f+def_scale_T*(vi-def_T_avg)), p+p1, normal, camera_cache); // colorscale_iron(0.5f+def_scale_T*(T[n]-def_T_avg));
-				} {
-					const float x1=p2.x, y1=p2.y, z1=p2.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-					const float vi = (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
-					c2 = shading(colorscale_iron(0.5f+def_scale_T*(vi-def_T_avg)), p+p2, normal, camera_cache); // colorscale_iron(0.5f+def_scale_T*(T[n]-def_T_avg));
-				}
+				c0 = shading(colorscale_iron(0.5f+def_scale_T*(trilinear(p0, v)-def_T_avg)), p+p0, normal, camera_cache);
+				c1 = shading(colorscale_iron(0.5f+def_scale_T*(trilinear(p1, v)-def_T_avg)), p+p1, normal, camera_cache);
+				c2 = shading(colorscale_iron(0.5f+def_scale_T*(trilinear(p2, v)-def_T_avg)), p+p2, normal, camera_cache);
 				break;
 )+"#endif"+R( // TEMPERATURE
 		}
@@ -2753,38 +2834,25 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef SURFACE"+R(
 )+R(kernel void graphics_rasterize_phi(const global float* camera, global int* bitmap, global int* zbuffer, const global float* phi) { // marching cubes
-	const uint n = get_global_id(0);
+	const uxx n = get_global_id(0);
 	const uint3 xyz = coordinates(n);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
 	const float3 p = position(xyz);
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustrum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-	uint j[8];
-	const uint x0 =  xyz.x; // cube stencil
-	const uint xp =  xyz.x+1u;
-	const uint y0 =  xyz.y    *def_Nx;
-	const uint yp = (xyz.y+1u)*def_Nx;
-	const uint z0 =  xyz.z    *def_Ny*def_Nx;
-	const uint zp = (xyz.z+1u)*def_Ny*def_Nx;
-	j[0] = n       ; // 000
-	j[1] = xp+y0+z0; // +00
-	j[2] = xp+y0+zp; // +0+
-	j[3] = x0+y0+zp; // 00+
-	j[4] = x0+yp+z0; // 0+0
-	j[5] = xp+yp+z0; // ++0
-	j[6] = xp+yp+zp; // +++
-	j[7] = x0+yp+zp; // 0++
+	uxx j[8];
+	calculate_j8(xyz, j);
 	float v[8];
 	for(uint i=0u; i<8u; i++) v[i] = phi[j[i]];
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
-	const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
+	const uint tn = marching_cubes(v, 0.502f, triangles); // run marching cubes algorithm, isovalue slightly larger than 0.5f to fix z-fighting with graphics_flags_mc()
 	if(tn==0u) return;
 	for(uint i=0u; i<tn; i++) {
 		const float3 p0 = triangles[3u*i   ];
 		const float3 p1 = triangles[3u*i+1u];
 		const float3 p2 = triangles[3u*i+2u];
-		const float3 normal = normalize(cross(p1-p0, p2-p0));
+		const float3 normal = cross(p1-p0, p2-p0); // no normalize needed for shading()
 		const int c0 = shading(0x379BFF, p+p0, normal, camera_cache);
 		const int c1 = shading(0x379BFF, p+p1, normal, camera_cache);
 		const int c2 = shading(0x379BFF, p+p2, normal, camera_cache);
@@ -2858,8 +2926,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 
 )+"#ifdef PARTICLES"+R(
 )+R(kernel void graphics_particles(const global float* camera, global int* bitmap, global int* zbuffer, const global float* particles) {
-	const uint n = get_global_id(0);
-	if(n>=(uint)def_particles_N) return;
+	const uxx n = get_global_id(0);
+	if(n>=(uxx)def_particles_N) return;
 	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const int c = COLOR_P; // coloring scheme
