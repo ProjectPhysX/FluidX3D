@@ -552,6 +552,8 @@ section RX 7900 XT
 	5986 :crit, 0, 5986
 section PRO W7800
 	4426 :crit, 0, 4426
+section RX 7900 GRE
+	4570 :crit, 0, 4570
 section PRO W7700
 	2943 :crit, 0, 2943
 section RX 7600
@@ -903,6 +905,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7900               |              61.30 |          48 |          864 |             3107 (55%) |              5939 (53%) |              5780 (52%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XT         |              51.61 |          20 |          800 |             3013 (58%) |              5856 (56%) |              5986 (58%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7800               |              45.20 |          32 |          576 |             1872 (50%) |              4426 (59%) |              4145 (55%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;GRE        |              42.03 |          16 |          576 |             1996 (53%) |              4570 (61%) |              4463 (60%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7700               |              28.30 |          16 |          576 |             1547 (41%) |              2943 (39%) |              2899 (39%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7600                 |              21.75 |           8 |          288 |             1250 (66%) |              2561 (68%) |              2512 (67%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7600               |              20.00 |           8 |          288 |             1179 (63%) |              2263 (61%) |              2287 (61%) |
