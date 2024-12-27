@@ -313,12 +313,10 @@ private:
 	}
 	inline void allocate_host_buffer(Device& device, const bool allocate_host, const bool allow_zero_copy) {
 		if(allocate_host) {
-			if(allow_zero_copy&&device.info.uses_ram) {
-				host_buffer_unaligned = new T[N*(ulong)d+4160ull/sizeof(T)]; // over-allocate by (4096+64) Bytes
-				host_buffer = (T*)((((ulong)host_buffer_unaligned+4095ull)/4096ull)*4096ull); // host_buffer must be aligned to 4096 Bytes for CL_MEM_USE_HOST_PTR
-			} else {
-				host_buffer = new T[N*(ulong)d];
-			}
+			const ulong alignment = allow_zero_copy&&device.info.uses_ram ? 4096ull : 64ull; // host_buffer must be aligned to 4096 Bytes for CL_MEM_USE_HOST_PTR, and to 64 Bytes for optimal enqueueReadBuffer performance on modern CPUs
+			const ulong padding   = allow_zero_copy&&device.info.uses_ram ?   64ull :  0ull; // for CL_MEM_USE_HOST_PTR, 64 Bytes padding is required because device_buffer capacity in this case must be a multiple of 64 Bytes
+			host_buffer_unaligned = new T[N*(ulong)d+(alignment+padding)/sizeof(T)]; // over-allocate host_buffer_unaligned by (alignment+padding) Bytes
+			host_buffer = (T*)((((ulong)host_buffer_unaligned+alignment-1ull)/alignment)*alignment); // align host_buffer by fine-tuning pointer to be a multiple of alignment
 			initialize_auxiliary_pointers();
 			host_buffer_exists = true;
 		}
@@ -334,7 +332,7 @@ private:
 			device_buffer = cl::Buffer( // if(is_zero_copy) { don't allocate extra memory on CPUs/iGPUs } else { allocate VRAM on GPUs }
 				device.get_cl_context(),
 				CL_MEM_READ_WRITE|((int)is_zero_copy*CL_MEM_USE_HOST_PTR)|((int)device.info.patch_intel_gpu_above_4gb<<23), // for Intel GPUs set flag CL_MEM_ALLOW_UNRESTRICTED_SIZE_INTEL = (1<<23)
-				is_zero_copy ? ((capacity()+63ull)/64ull)*64ull : capacity(), // buffer capacity must be a multiple of 64 Bytes for CL_MEM_USE_HOST_PTR
+				is_zero_copy ? ((capacity()+63ull)/64ull)*64ull : capacity(), // device_buffer capacity must be a multiple of 64 Bytes for CL_MEM_USE_HOST_PTR
 				is_zero_copy ? (void*)host_buffer : nullptr,
 				&error
 			);
@@ -423,12 +421,8 @@ public:
 	inline void delete_host_buffer() {
 		host_buffer_exists = false;
 		if(!external_host_buffer) {
-			if(host_buffer_unaligned!=nullptr) {
-				host_buffer = nullptr;
-				delete[] host_buffer_unaligned;
-			} else {
-				delete[] host_buffer;
-			}
+			host_buffer = nullptr;
+			delete[] host_buffer_unaligned;
 		}
 		if(!device_buffer_exists) {
 			N = 0ull;
