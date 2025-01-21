@@ -2231,7 +2231,7 @@ void atomic_add_f(volatile global float* addr, const float val) {
 		const float3 p1i = (float3)(p1[tx], p1[ty], p1[tz]);
 		const float3 p2i = (float3)(p2[tx], p2[ty], p2[tz]);
 		const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, h=cross(r_direction, v), q=cross(w, u); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-		const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q);
+		const float uh=dot(u, h), f=(uh!=0.0f ? 1.0f/uh : 1E9f), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q); // avoid division by zero, otherwise f=NaN can cause hang
 		if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f) { // ray-triangle intersection ahead or behind
 			if(d>0.0f) { // ray-triangle intersection ahead
 				if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
