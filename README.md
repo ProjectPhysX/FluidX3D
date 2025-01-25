@@ -482,8 +482,8 @@ axisFormat %s
 			'sectionBkgColor': '#99999999',
 			'sectionBkgColor2': '#99999999',
 			'altSectionBkgColor': '#00000000',
-			'titleColor': '#7F7F7F',
-			'textColor': '#7F7F7F',
+			'titleColor': '#BFBFBF',
+			'textColor': '#BFBFBF',
 			'taskTextColor': 'lightgray',
 			'taskBorderColor': '#487E3A'
 		}
@@ -606,6 +606,8 @@ section Arc A580
 	3889 :done, 0, 3889
 section Arc A380
 	1115 :done, 0, 1115
+section RTX 5090
+	19141 : 0, 19141
 section RTX 4090
 	11496 : 0, 11496
 section RTX 6000 Ada
@@ -618,6 +620,8 @@ section RTX 4080
 	7933 : 0, 7933
 section RTX 4070 Ti Super
 	7295 : 0, 7295
+section RTX 4090M
+	6901 : 0, 6901
 section RTX 4070
 	5016 : 0, 5016
 section RTX 4080M
@@ -932,12 +936,14 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                    |              17.20 |           8 |          512 |             2555 (76%) |              4314 (65%) |              4047 (61%) |
 | 🔵&nbsp;Arc&nbsp;A580                            |              12.29 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |
 | 🔵&nbsp;Arc&nbsp;A380                            |               4.20 |           6 |          186 |              622 (51%) |              1097 (45%) |              1115 (46%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;5090               |             104.88 |          32 |         1792 |             9522 (81%) |             18459 (79%) |             19141 (82%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090               |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
 | 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                   |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
 | 🟢&nbsp;L40S                                     |              91.61 |          48 |          864 |             3788 (67%) |              7637 (68%) |              7617 (68%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080&nbsp;Super    |              52.22 |          16 |          736 |             4089 (85%) |              7660 (80%) |              8218 (86%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Ti&nbsp;Super |         44.10 |          16 |          672 |             3694 (84%) |              6435 (74%) |              7295 (84%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090M              |              28.31 |          16 |          576 |             3367 (89%) |              6545 (87%) |              6901 (92%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070               |              29.15 |          12 |          504 |             2646 (80%) |              4548 (69%) |              5016 (77%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080M              |              33.85 |          12 |          432 |             2577 (91%) |              5086 (91%) |              5114 (91%) |
 | 🟢&nbsp;RTX&nbsp;4000&nbsp;Ada                   |              26.73 |          20 |          360 |             2130 (91%) |              3964 (85%) |              4221 (90%) |
