@@ -78,7 +78,7 @@ int shading(const int color, const float3& p, const float3& normal, const bool t
 	return color_mul(color, fmax(1.25f*br, 0.3f));
 }
 ulong get_font_pixels(const int character) {
-	ulong pixels[224] = { // font data (my own 6x11 monospace font)
+	const ulong pixels[224] = { // font data (my own 6x11 monospace font)
 		0x0000000000000000ull, 0x2082082080082000ull, 0x5145000000000000ull, 0x514F94514F945000ull, 0x21CAA870AA9C2000ull, 0x4AA50421052A9000ull, 0x2145085628A27400ull, 0x2082000000000000ull,
 		0x0842082082040800ull, 0x4081041041084000ull, 0xA9C72A0000000000ull, 0x000208F882000000ull, 0x0000000000041080ull, 0x000000F800000000ull, 0x00000000000C3000ull, 0x0821042104208000ull,
 		0x7228A28A28A27000ull, 0x0862928820820800ull, 0x722882108420F800ull, 0x7228823028A27000ull, 0x10C51493E1041000ull, 0xFA083C082082F000ull, 0x722820F228A27000ull, 0xF821042084104000ull,

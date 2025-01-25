@@ -497,27 +497,28 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 )+R(float intersect_triangle(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
-	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
+	const float g=dot(u, h), f=1.0f/g, s=f*dot(w, h), t=f*dot(r.direction, q);
+	return (g<=0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_triangle_bidirectional(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
-	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
+	const float g=dot(u, h), f=1.0f/g, s=f*dot(w, h), t=f*dot(r.direction, q);
+	return (g==0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||s+t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_rhombus(const ray r, const float3 p0, const float3 p1, const float3 p2) { // Moeller-Trumbore algorithm
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v), q=cross(w, u);
-	const float f=1.0f/dot(u, h), s=f*dot(w, h), t=f*dot(r.direction, q);
-	return (f<0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
+	const float g=dot(u, h), f=1.0f/g, s=f*dot(w, h), t=f*dot(r.direction, q);
+	return (g<=0.0f||s<-0.0001f||s>1.0001f||t<-0.0001f||t>1.0001f) ? -1.0f : f*dot(v, q); // add tolerance values to avoid graphical artifacts with axis-aligned camera
 }
 )+R(float intersect_plane(const ray r, const float3 p0, const float3 p1, const float3 p2) { // ray-triangle intersection, but skip barycentric coordinates
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v);
-	const float f = 1.0f/dot(u, h);
-	return f<0.0f ? -1.0f : f*dot(v, cross(w, u));
+	const float g = dot(u, h);
+	return g<=0.0f ? -1.0f : dot(v, cross(w, u))/g;
 }
-)+R(float intersect_plane_always(const ray r, const float3 p0, const float3 p1, const float3 p2) { // ray-triangle intersection, but skip barycentric coordinates and visibility check
+)+R(float intersect_plane_bidirectional(const ray r, const float3 p0, const float3 p1, const float3 p2) { // ray-triangle intersection, but skip barycentric coordinates
 	const float3 u=p1-p0, v=p2-p0, w=r.origin-p0, h=cross(r.direction, v);
-	return dot(v, cross(w, u))/dot(u, h);
+	const float g = dot(u, h);
+	return g==0.0f ? -1.0f : dot(v, cross(w, u))/g;
 }
 )+R(bool intersect_cuboid_bool(const ray r, const float3 center, const float Lx, const float Ly, const float Lz) {
 	const float3 bmin = center-0.5f*(float3)(Lx, Ly, Lz);
@@ -2231,8 +2232,8 @@ void atomic_add_f(volatile global float* addr, const float val) {
 		const float3 p1i = (float3)(p1[tx], p1[ty], p1[tz]);
 		const float3 p2i = (float3)(p2[tx], p2[ty], p2[tz]);
 		const float3 u=p1i-p0i, v=p2i-p0i, w=r_origin-p0i, h=cross(r_direction, v), q=cross(w, u); // bidirectional ray-triangle intersection (Moeller-Trumbore algorithm)
-		const float uh=dot(u, h), f=(uh!=0.0f ? 1.0f/uh : 1E9f), s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q); // avoid division by zero, otherwise f=NaN can cause hang
-		if(s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f) { // ray-triangle intersection ahead or behind
+		const float g=dot(u, h), f=1.0f/g, s=f*dot(w, h), t=f*dot(r_direction, q), d=f*dot(v, q); // check for division by zero in case g==0, otherwise f=NaN can cause hang
+		if(g!=0.0f&&s>=0.0f&&s<1.0f&&t>=0.0f&&s+t<1.0f) { // ray-triangle intersection ahead or behind
 			if(d>0.0f) { // ray-triangle intersection ahead
 				if(intersections<64u&&d<65536.0f) distances[intersections] = (ushort)d; // store distance to intersection in array as ushort
 				intersections++;
