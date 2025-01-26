@@ -477,14 +477,24 @@ dateFormat X
 axisFormat %s
 %%{
 	init: {
+		"gantt": {
+			'titleTopMargin': 42,
+			'topPadding': 70,
+			'rightPadding': 0,
+			'leftPadding': 260,
+			'sectionFontSize': 20,
+			'fontSize': 20,
+			'barHeight': 20,
+			'barGap': 3
+		},
 		'theme': 'forest',
 		'themeVariables': {
 			'sectionBkgColor': '#99999999',
 			'sectionBkgColor2': '#99999999',
 			'altSectionBkgColor': '#00000000',
-			'titleColor': '#BFBFBF',
-			'textColor': '#BFBFBF',
-			'taskTextColor': 'lightgray',
+			'titleColor': '#AFAFAF',
+			'textColor': '#AFAFAF',
+			'taskTextColor': 'black',
 			'taskBorderColor': '#487E3A'
 		}
 	}
@@ -735,15 +745,15 @@ section NVS 290
 section Arise 1020
 	6 :active, 0, 6
 section M2 Max (38-CU, 32GB)
-	4641 :done, 0, 4641
+	4641 :active, 0, 4641
 section M1 Ultra (64-CU, 128GB)
-	8418 :done, 0, 8418
+	8418 :active, 0, 8418
 section M1 Max (24-CU, 32GB)
-	4496 :done, 0, 4496
+	4496 :active, 0, 4496
 section M1 Pro (16-CU, 16GB)
-	2329 :done, 0, 2329
+	2329 :active, 0, 2329
 section M1 (8-CU, 16GB)
-	759 :done, 0, 759
+	759 :active, 0, 759
 section Radeon Graphics (7800X3D)
 	498 :crit, 0, 498
 section 780M (Z1 Extreme)
@@ -772,7 +782,7 @@ section HD 4600
 	115 :done, 0, 115
 section Orange Pi 5 Mali-G610 MP4
 	232 :active, 0, 232
-section Samsung Mali-G72 MP18 (S9+)
+section Samsung Mali-G72 MP18
 	230 :active, 0, 230
 section 2x EPYC 9754
 	5179 :crit, 0, 5179
