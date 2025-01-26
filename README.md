@@ -480,17 +480,17 @@ axisFormat %s
 		"gantt": {
 			'titleTopMargin': 42,
 			'topPadding': 70,
-			'rightPadding': 0,
 			'leftPadding': 260,
+			'rightPadding': 0,
 			'sectionFontSize': 20,
 			'fontSize': 20,
 			'barHeight': 20,
-			'barGap': 3
+			'barGap': 3,
+			'numberSectionStyles': 2
 		},
 		'theme': 'forest',
 		'themeVariables': {
 			'sectionBkgColor': '#99999999',
-			'sectionBkgColor2': '#99999999',
 			'altSectionBkgColor': '#00000000',
 			'titleColor': '#AFAFAF',
 			'textColor': '#AFAFAF',
