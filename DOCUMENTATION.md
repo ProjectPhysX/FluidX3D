@@ -96,7 +96,7 @@
     ```
 
   </details>
--- **macOS**
+- **macOS**
   <details><summary>Apple M-series GPUs</summary>
 
   - Download homebrew
