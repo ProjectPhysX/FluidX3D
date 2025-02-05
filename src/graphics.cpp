@@ -688,19 +688,41 @@ int main(int argc, char* argv[]) {
 	if(!x11_display) print_error("No X11 display available.");
 
 	Window x11_root_window = DefaultRootWindow(x11_display);
-	XRRScreenResources* x11_screen_resources = XRRGetScreenResources(x11_display, x11_root_window);
-	XRROutputInfo* x11_output_info = XRRGetOutputInfo(x11_display, x11_screen_resources, XRRGetOutputPrimary(x11_display, x11_root_window));
-	XRRCrtcInfo* x11_crtc_info = XRRGetCrtcInfo(x11_display, x11_screen_resources, x11_output_info->crtc);
+	// TODO: only skip these XRR tasks on macOS
+	// erroneously returns nil on macOS
+	//XRRScreenResources* x11_screen_resources = XRRGetScreenResources(x11_display, x11_root_window);
+	// depends on x11_screen_resources
+	//XRROutputInfo* x11_output_info = XRRGetOutputInfo(x11_display, x11_screen_resources, XRRGetOutputPrimary(x11_display, x11_root_window));
+	// depends on x11_screen_resources
+	//XRRCrtcInfo* x11_crtc_info = XRRGetCrtcInfo(x11_display, x11_screen_resources, x11_output_info->crtc);
 	XRRScreenConfiguration* x11_screen_configuration = XRRGetScreenInfo(x11_display, x11_root_window);
-	const uint width  = (uint)x11_crtc_info->width; // width and height of primary monitor
-	const uint height = (uint)x11_crtc_info->height;
-	const int window_offset_x = (int)x11_crtc_info->x; // offset of primary monitor in multi-monitor coordinates
-	const int window_offset_y = (int)x11_crtc_info->y;
-	const uint fps_limit = (uint)XRRConfigCurrentRate(x11_screen_configuration);
+	// depends on x11_screen_resources
+	//const uint width  = (uint)x11_crtc_info->width; // width and height of primary monitor
+	// depends on x11_screen_resources
+	//const uint height = (uint)x11_crtc_info->height;
+	// hardcode
+	const uint width = 800;
+	// hardcode
+	const uint height = 600;
+	// hardcode
+	const int window_offset_x = 50;
+	// hardcode
+	const int window_offset_y = 50;
+	// depends on x11_screen_resources
+	//const int window_offset_x = (int)x11_crtc_info->x; // offset of primary monitor in multi-monitor coordinates
+	// depends on x11_screen_resources
+	//const int window_offset_y = (int)x11_crtc_info->y;
+	// always returns 1 on macOS
+	//const uint fps_limit = (uint)XRRConfigCurrentRate(x11_screen_configuration);
+	// hardcode
+	const uint fps_limit = 60;
 	XRRFreeScreenConfigInfo(x11_screen_configuration);
-	XRRFreeCrtcInfo(x11_crtc_info);
-	XRRFreeOutputInfo(x11_output_info);
-	XRRFreeScreenResources(x11_screen_resources);
+	// depends on x11_screen_resources
+	//XRRFreeCrtcInfo(x11_crtc_info);
+	// depends on x11_screen_resources
+	//XRRFreeOutputInfo(x11_output_info);
+	// depends on x11_screen_resources
+	//XRRFreeScreenResources(x11_screen_resources);
 
 	camera = Camera(width, height, fps_limit);
 
