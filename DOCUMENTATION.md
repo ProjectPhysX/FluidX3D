@@ -102,7 +102,7 @@
   - Download homebrew
   - In a terminal, run:
     ```zsh
-    brew install libxrandr quartz clang
+    brew install libxrandr xquartz clang
     ```  
   </details>
 
