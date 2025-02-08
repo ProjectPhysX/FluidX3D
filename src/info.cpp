@@ -42,7 +42,7 @@ void Info::print_logo() const {
 	print("|                                  ");                 print("\\  \\ /  /", c);                print("                                  |\n");
 	print("|                                   ");                 print("\\  '  /", c);                 print("                                   |\n");
 	print("|                                    ");                 print("\\   /", c);                 print("                                    |\n");
-	print("|                                     ");                 print("\\ /", c);                 print("                FluidX3D Version 3.0 |\n");
+	print("|                                     ");                 print("\\ /", c);                 print("                FluidX3D Version 3.1 |\n");
 	print("|                                      ");                 print( "'", c);                 print("     Copyright (c) Dr. Moritz Lehmann |\n");
 	print("|-----------------------------------------------------------------------------|\n");
 }

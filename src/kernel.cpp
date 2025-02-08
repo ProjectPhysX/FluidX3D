@@ -367,7 +367,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		convert_triangle(p0, p1, p2, color, camera_cache, bitmap, zbuffer, +1); // right eye
 	}
 }
-)+R(void draw_triangle_interpolated(const float3 p0, const float3 p1, const float3 p2, const int c0, const int c1, const int c2, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
+)+R(__attribute__((always_inline)) void draw_triangle_interpolated(const float3 p0, const float3 p1, const float3 p2, const int c0, const int c1, const int c2, const float* camera_cache, global int* bitmap, global int* zbuffer) { // 3D -> 2D
 	const bool vr = (as_int(camera_cache[14])>>31)&0x1;
 	if(!vr) {
 		convert_triangle_interpolated(p0, p1, p2, c0, c1, c2, camera_cache, bitmap, zbuffer,  0);
@@ -1942,7 +1942,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef PARTICLES"+R(
 )+"#ifdef FORCE_FIELD"+R(
 void atomic_add_f(volatile global float* addr, const float val) {
-)+"#if defined(cl_nv_pragma_unroll)"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
+)+"#if cl_nv_compute_capability>=20"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
 	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
 )+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
 	atomic_fetch_add_explicit((volatile global atomic_float*)addr, val, memory_order_relaxed);

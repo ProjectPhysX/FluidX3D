@@ -25,7 +25,7 @@
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
     mkdir -p ~/amdgpu
-    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.2.3/ubuntu/noble/amdgpu-install_6.2.60203-1_all.deb
+    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.3.2/ubuntu/noble/amdgpu-install_6.3.60302-1_all.deb
     sudo apt install -y ~/amdgpu/amdgpu-install*.deb
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
     sudo usermod -a -G render,video $(whoami)
@@ -51,7 +51,7 @@
   - Download and install [Nvidia GPU Drivers](https://www.nvidia.com/Download/index.aspx), which contain the OpenCL Runtime, with:
     ```bash
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-550
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-560
     sudo shutdown -r now
     ```
 
@@ -60,21 +60,21 @@
 
   - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=oneAPI+DPC%2B%2B+Compiler) and [oneTBB](https://github.com/oneapi-src/oneTBB/releases) with:
     ```bash
-    export OCLV="2024.18.10.0.08_rel"
-    export TBBV="2022.0.0"
+    export OCLV="oclcpuexp-2024.18.10.0.08_rel"
+    export TBBV="oneapi-tbb-2022.0.0"
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
-    sudo mkdir -p ~/cpurt /opt/intel/oclcpuexp_${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
-    sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW43/oclcpuexp-${OCLV}.tar.gz
-    sudo wget -P ~/cpurt https://github.com/oneapi-src/oneTBB/releases/download/v${TBBV}/oneapi-tbb-${TBBV}-lin.tgz
-    sudo tar -zxvf ~/cpurt/oclcpuexp-${OCLV}.tar.gz -C /opt/intel/oclcpuexp_${OCLV}
-    sudo tar -zxvf ~/cpurt/oneapi-tbb-${TBBV}-lin.tgz -C /opt/intel
-    echo /opt/intel/oclcpuexp_${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
-    echo /opt/intel/oclcpuexp_${OCLV}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
-    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so /opt/intel/oclcpuexp_${OCLV}/x64
-    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/oclcpuexp_${OCLV}/x64
-    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/oclcpuexp_${OCLV}/x64
-    sudo ln -sf /opt/intel/oneapi-tbb-${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/oclcpuexp_${OCLV}/x64
+    sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
+    sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2024-WW43/${OCLV}.tar.gz
+    sudo wget -P ~/cpurt https://github.com/oneapi-src/oneTBB/releases/download/v2022.0.0/${TBBV}-lin.tgz
+    sudo tar -zxvf ~/cpurt/${OCLV}.tar.gz -C /opt/intel/${OCLV}
+    sudo tar -zxvf ~/cpurt/${TBBV}-lin.tgz -C /opt/intel
+    echo /opt/intel/${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
+    echo /opt/intel/${OCLV}/x64 | sudo tee /etc/ld.so.conf.d/libintelopenclexp.conf
+    sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbb.so /opt/intel/${OCLV}/x64
+    sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so /opt/intel/${OCLV}/x64
+    sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbb.so.12 /opt/intel/${OCLV}/x64
+    sudo ln -sf /opt/intel/${TBBV}/lib/intel64/gcc4.8/libtbbmalloc.so.2 /opt/intel/${OCLV}/x64
     sudo ldconfig -f /etc/ld.so.conf.d/libintelopenclexp.conf
     sudo rm -r ~/cpurt
     ```

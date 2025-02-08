@@ -200,6 +200,19 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed velocity voxelization for overlapping geometry with different velocity
   - fixed Remaining Time printout during paused simulation
   - fixed CPU/GPU memory printout for CPU/iGPU simulations
+- [v3.1](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.1) (08.02.2025) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.0...v3.1) (more bug fixes)
+  - faster `enqueueReadBuffer()` on modern CPUs with 64-Byte-aligned `host_buffer`
+  - hardened ray intersection functions against planar ray edge case
+  - updated OpenCL headers
+  - better OpenCL device specs detection using vendor ID and Nvidia compute capability
+  - better VRAM capacity reporting correction for Intel dGPUs
+  - improved styling of performance mermaid gantt chart in Readme
+  - added multi-GPU performance mermaid gantt chart in Readme
+  - updated driver install guides
+  - fixed voxelization being broken on some GPUs
+  - added workaround for compiler bug in Intel CPU Runtime for OpenCL that causes Q-criterion isosurface rendering corruption
+  - fixed TFlops estimate for Intel Battlemage GPUs
+  - fixed wrong device name reporting for AMD GPUs
 
 </details>
 
@@ -481,7 +494,7 @@ axisFormat %s
 			'titleTopMargin': 42,
 			'topPadding': 70,
 			'leftPadding': 260,
-			'rightPadding': 0,
+			'rightPadding': 5,
 			'sectionFontSize': 20,
 			'fontSize': 20,
 			'barHeight': 20,
@@ -618,12 +631,16 @@ section Arc A380
 	1115 :done, 0, 1115
 section RTX 5090
 	19141 : 0, 19141
+section RTX 5080
+	10304 : 0, 10304
 section RTX 4090
 	11496 : 0, 11496
 section RTX 6000 Ada
 	10293 : 0, 10293
 section L40S
 	7637 : 0, 7637
+section L40
+	7945 : 0, 7945
 section RTX 4080 Super
 	8218 : 0, 8218
 section RTX 4080
@@ -744,6 +761,8 @@ section NVS 290
 	9 : 0, 9
 section Arise 1020
 	6 :active, 0, 6
+section M2 Ultra (76-CU, 192GB)
+	8769 :active, 0, 8769
 section M2 Max (38-CU, 32GB)
 	4641 :active, 0, 4641
 section M1 Ultra (64-CU, 128GB)
@@ -788,6 +807,8 @@ section 2x EPYC 9754
 	5179 :crit, 0, 5179
 section 2x EPYC 9654
 	1814 :crit, 0, 1814
+section 2x EPYC 9554
+	2552 :crit, 0, 2552
 section 2x EPYC 7352
 	739 :crit, 0, 739
 section 2x EPYC 7313
@@ -947,9 +968,11 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;Arc&nbsp;A580                            |              12.29 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |
 | 🔵&nbsp;Arc&nbsp;A380                            |               4.20 |           6 |          186 |              622 (51%) |              1097 (45%) |              1115 (46%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;5090               |             104.88 |          32 |         1792 |             9522 (81%) |             18459 (79%) |             19141 (82%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;5080               |              56.34 |          16 |          960 |             5174 (82%) |             10252 (82%) |             10304 (83%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090               |              82.58 |          24 |         1008 |             5624 (85%) |             11091 (85%) |             11496 (88%) |
 | 🟢&nbsp;RTX&nbsp;6000&nbsp;Ada                   |              91.10 |          48 |          960 |             4997 (80%) |             10249 (82%) |             10293 (83%) |
 | 🟢&nbsp;L40S                                     |              91.61 |          48 |          864 |             3788 (67%) |              7637 (68%) |              7617 (68%) |
+| 🟢&nbsp;L40                                      |              90.52 |          48 |          864 |             3870 (69%) |              7778 (69%) |              7945 (71%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080&nbsp;Super    |              52.22 |          16 |          736 |             4089 (85%) |              7660 (80%) |              8218 (86%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Ti&nbsp;Super |         44.10 |          16 |          672 |             3694 (84%) |              6435 (74%) |              7295 (84%) |
@@ -1011,6 +1034,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |         1/4 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
 | 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
+| ⚪&nbsp;M2&nbsp;Ultra&nbsp;GPU&nbsp;76CU&nbsp;192GB |           19.46 |         147 |          800 |             4629 (89%) |              8769 (84%) |              7972 (77%) |
 | ⚪&nbsp;M2&nbsp;Max&nbsp;GPU&nbsp;38CU&nbsp;32GB |               9.73 |          22 |          400 |             2405 (92%) |              4641 (89%) |              2444 (47%) |
 | ⚪&nbsp;M1&nbsp;Ultra&nbsp;GPU&nbsp;64CU&nbsp;128GB |           16.38 |          98 |          800 |             4519 (86%) |              8418 (81%) |              6915 (67%) |
 | ⚪&nbsp;M1&nbsp;Max&nbsp;GPU&nbsp;24CU&nbsp;32GB |               6.14 |          22 |          400 |             2369 (91%) |              4496 (87%) |              2777 (53%) |
@@ -1034,6 +1058,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 |                                                  |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754                   |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9554                   |              30.72 |         384 |          922 |             2552 (42%) |              2127 (18%) |              2144 (18%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7352                   |               3.53 |         512 |          410 |              739 (28%) |               106 ( 2%) |               412 ( 8%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7313                   |               3.07 |         128 |          410 |              498 (19%) |               367 ( 7%) |               418 ( 8%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7302                   |               3.07 |         128 |          410 |              784 (29%) |               336 ( 6%) |               411 ( 8%) |
@@ -1087,6 +1112,158 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 
 Multi-GPU benchmarks are done at the largest possible grid resolution with cubic domains, and either 2x1x1, 2x2x1 or 2x2x2 of these domains together. The (percentages in round brackets) are single-GPU [roofline model](https://en.wikipedia.org/wiki/Roofline_model) efficiency, and the (multiplicators in round brackets) are scaling factors relative to benchmarked single-GPU performance.
 
+```mermaid
+gantt
+
+title FluidX3D Performance [MLUPs/s] - FP32 arithmetic, (fastest of FP32/FP16S/FP16C) memory storage
+dateFormat X
+axisFormat %s
+%%{
+	init: {
+		"gantt": {
+			'titleTopMargin': 42,
+			'topPadding': 70,
+			'leftPadding': 260,
+			'rightPadding': 5,
+			'sectionFontSize': 20,
+			'fontSize': 20,
+			'barHeight': 20,
+			'barGap': 3,
+			'numberSectionStyles': 2
+		},
+		'theme': 'forest',
+		'themeVariables': {
+			'sectionBkgColor': '#99999999',
+			'altSectionBkgColor': '#00000000',
+			'titleColor': '#AFAFAF',
+			'textColor': '#AFAFAF',
+			'taskTextColor': 'black',
+			'taskBorderColor': '#487E3A'
+		}
+	}
+}%%
+
+section 4x Instinct MI250 (8 GCD)
+	53521 :crit, 0, 53521
+section 2x Instinct MI250 (4 GCD)
+	29627 :crit, 0, 29627
+section 1x Instinct MI250 (2 GCD
+	17338 :crit, 0, 17338
+section 1x Instinct MI250 (1 GCD)
+	9030 :crit, 0, 9030
+
+section 32x Instinct MI210 GigaIO
+	50952 :crit, 0, 50952
+section 24x Instinct MI210 GigaIO
+	45033 :crit, 0, 45033
+section 16x Instinct MI210 GigaIO
+	37922 :crit, 0, 37922
+section 8x Instinct MI210 GigaIO
+	27996 :crit, 0, 27996
+section 4x Instinct MI210 GigaIO
+	17232 :crit, 0, 17232
+section 2x Instinct MI210 GigaIO
+	13539 :crit, 0, 13539
+section 1x Instinct MI210 GigaIO
+	9105 :crit, 0, 9105
+
+section 4x Instinct MI210
+	31408 :crit, 0, 31408
+section 2x Instinct MI210
+	16156 :crit, 0, 16156
+section 1x Instinct MI210
+	8757 :crit, 0, 8757
+
+section 8x Radeon VII
+	30826 :crit, 0, 30826
+section 4x Radeon VII
+	24273 :crit, 0, 24273
+section 2x Radeon VII
+	15591 :crit, 0, 15591
+section 1x Radeon VII
+	7778 :crit, 0, 7778
+
+section 4x DC GPU Max 1100
+	22777 :done, 0, 22777
+section 2x DC GPU Max 1100
+	11815 :done, 0, 11815
+section 1x DC GPU Max 1100
+	6209 :done, 0, 6209
+
+section 4x A100 PCIe 80GB
+	52056 : 0, 52056
+section 2x A100 PCIe 80GB
+	27165 : 0, 27165
+section 1x A100 PCIe 80GB
+	17896 : 0, 17896
+
+section 4x PG506-243/242
+	41088 : 0, 41088
+section 2x PG506-243/242
+	24168 : 0, 24168
+section 1x PG506-243/242
+	15654 : 0, 15654
+
+section 8x A100 SXM4 40GB
+	72965 : 0, 72965
+section 4x A100 SXM4 40GB
+	42400 : 0, 42400
+section 2x A100 SXM4 40GB
+	23707 : 0, 23707
+section 1x A100 SXM4 40GB
+	15917 : 0, 15917
+
+section 4x Tesla V100 SXM2 32GB
+	26527 : 0, 26527
+section 2x Tesla V100 SXM2 32GB
+	15469 : 0, 15469
+section 1x Tesla V100 SXM2 32GB
+	8947 : 0, 8947
+
+section 3x K40m + 1x Titan Xp
+	5174 : 0, 5174
+section 2x Tesla K40m
+	3300 : 0, 3300
+section 1x Tesla K40m
+	1868 : 0, 1868
+
+section 1x Tesla K80 (2 GPU)
+	3448 : 0, 3448
+section 1x Tesla K80 (1 GPU)
+	1642 : 0, 1642
+
+section 2x L40
+	14164 : 0, 14164
+section 1x L40
+	7945 : 0, 7945
+
+section 8x RTX A6000
+	40063 : 0, 40063
+section 4x RTX A6000
+	27915 : 0, 27915
+section 2x RTX A6000
+	15026 : 0, 15026
+section 1x RTX A6000
+	8814 : 0, 8814
+
+section 2x Quadro RTX 8000 Pa.
+	10214 : 0, 10214
+section 1x Quadro RTX 8000 Pa.
+	5607 : 0, 5607
+
+section 7x 2080 Ti + 1x A100 40GB
+	33857 : 0, 33857
+section 4x GeForce RTX 2080 Ti
+	18598 : 0, 18598
+section 2x GeForce RTX 2080 Ti
+	10922 : 0, 10922
+section 1x GeForce RTX 2080 Ti
+	6853 : 0, 6853
+
+section 1x A770 + 1x Titan Xp
+	8380 :done, 0, 8380
+```
+
 <details><summary>Multi-GPU Benchmark Table</summary>
 
 Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
@@ -1094,68 +1271,71 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | Device                                                          | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :-------------------------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI250&nbsp;(1&nbsp;GCD)           |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
-| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI250&nbsp;(2&nbsp;GCD)           |              90.52 |         128 |         3277 |            9460 (1.7x) |            14313 (1.6x) |            17338 (2.0x) |
-| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI250&nbsp;(4&nbsp;GCD)           |             181.04 |         256 |         6554 |      16925&nbsp;(3.0x) |            29163 (3.2x) |            29627 (3.5x) |
 | 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI250&nbsp;(8&nbsp;GCD)           |             362.08 |         512 |        13107 |      27350&nbsp;(4.9x) |            52258 (5.8x) |            53521 (6.3x) |
+| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI250&nbsp;(4&nbsp;GCD)           |             181.04 |         256 |         6554 |      16925&nbsp;(3.0x) |            29163 (3.2x) |            29627 (3.5x) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI250&nbsp;(2&nbsp;GCD)           |              90.52 |         128 |         3277 |            9460 (1.7x) |            14313 (1.6x) |            17338 (2.0x) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI250&nbsp;(1&nbsp;GCD)           |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;&nbsp;&nbsp;1x&nbsp;Instinct&nbsp;MI210                 |              45.26 |          64 |         1638 |             6347 (59%) |              8486 (40%) |              9105 (43%) |
-| 🔴&nbsp;&nbsp;&nbsp;2x&nbsp;Instinct&nbsp;MI210                 |              90.52 |         128 |         3277 |            7245 (1.1x) |            12050 (1.4x) |            13539 (1.5x) |
-| 🔴&nbsp;&nbsp;&nbsp;4x&nbsp;Instinct&nbsp;MI210                 |             181.04 |         256 |         6554 |            8816 (1.4x) |            17232 (2.0x) |            16892 (1.9x) |
-| 🔴&nbsp;&nbsp;&nbsp;8x&nbsp;Instinct&nbsp;MI210                 |             362.08 |         512 |        13107 |      13546&nbsp;(2.1x) |            27996 (3.3x) |            27820 (3.1x) |
-| 🔴&nbsp;16x&nbsp;Instinct&nbsp;MI210                            |             724.16 |        1024 |        26214 |      18094&nbsp;(2.9x) |            37360 (4.4x) |            37922 (4.2x) |
-| 🔴&nbsp;24x&nbsp;Instinct&nbsp;MI210                            |            1086.24 |        1536 |        39322 |      22056&nbsp;(3.5x) |            45033 (5.3x) |            44631 (4.9x) |
-| 🔴&nbsp;32x&nbsp;Instinct&nbsp;MI210                            |            1448.32 |        2048 |        52429 |      23881&nbsp;(3.8x) |            50952 (6.0x) |            48848 (5.4x) |
+| 🔴&nbsp;32x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO                |            1448.32 |        2048 |        52429 |      23881&nbsp;(3.8x) |            50952 (6.0x) |            48848 (5.4x) |
+| 🔴&nbsp;24x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO                |            1086.24 |        1536 |        39322 |      22056&nbsp;(3.5x) |            45033 (5.3x) |            44631 (4.9x) |
+| 🔴&nbsp;16x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO                |             724.16 |        1024 |        26214 |      18094&nbsp;(2.9x) |            37360 (4.4x) |            37922 (4.2x) |
+| 🔴&nbsp;&nbsp;&nbsp;8x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO     |             362.08 |         512 |        13107 |      13546&nbsp;(2.1x) |            27996 (3.3x) |            27820 (3.1x) |
+| 🔴&nbsp;&nbsp;&nbsp;4x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO     |             181.04 |         256 |         6554 |            8816 (1.4x) |            17232 (2.0x) |            16892 (1.9x) |
+| 🔴&nbsp;&nbsp;&nbsp;2x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO     |              90.52 |         128 |         3277 |            7245 (1.1x) |            12050 (1.4x) |            13539 (1.5x) |
+| 🔴&nbsp;&nbsp;&nbsp;1x&nbsp;Instinct&nbsp;MI210&nbsp;GigaIO     |              45.26 |          64 |         1638 |             6347 (59%) |              8486 (40%) |              9105 (43%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;1x&nbsp;Radeon&nbsp;VII                                 |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
-| 🔴&nbsp;2x&nbsp;Radeon&nbsp;VII                                 |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
-| 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                 |              55.32 |          64 |         4096 |      12911&nbsp;(2.6x) |            24273 (3.1x) |            17080 (3.2x) |
+| 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI210                             |             181.04 |         256 |         6554 |           17075 (2.6x) |            31408 (3.6x) |            30643 (3.5x) |
+| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI210                             |              90.52 |         128 |         3277 |            9624 (1.5x) |            15909 (1.8x) |            16156 (1.8x) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI210                             |              45.26 |          64 |         1638 |             6454 (60%) |              8757 (41%) |              8751 (41%) |
+|                                                                 |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;8x&nbsp;Radeon&nbsp;VII                                 |             110.64 |         128 |         8192 |      21946&nbsp;(4.5x) |            30826 (4.0x) |            24572 (4.7x) |
+| 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                 |              55.32 |          64 |         4096 |      12911&nbsp;(2.6x) |            24273 (3.1x) |            17080 (3.2x) |
+| 🔴&nbsp;2x&nbsp;Radeon&nbsp;VII                                 |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
+| 🔴&nbsp;1x&nbsp;Radeon&nbsp;VII                                 |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔵&nbsp;1x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
-| 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
 | 🔵&nbsp;4x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              88.88 |         192 |         4915 |           12162 (3.5x) |            22777 (3.7x) |            11759 (3.6x) |
+| 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
+| 🔵&nbsp;1x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
-| 🟢&nbsp;2x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              38.98 |         160 |         3870 |      15742&nbsp;(1.6x) |       27165&nbsp;(1.5x) |       17510&nbsp;(1.6x) |
 | 🟢&nbsp;4x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              77.96 |         320 |         7740 |      25957&nbsp;(2.7x) |       52056&nbsp;(2.9x) |       33283&nbsp;(3.1x) |
+| 🟢&nbsp;2x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              38.98 |         160 |         3870 |      15742&nbsp;(1.6x) |       27165&nbsp;(1.5x) |       17510&nbsp;(1.6x) |
+| 🟢&nbsp;1x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              22.14 |          64 |         1638 |             8195 (77%) |        15654&nbsp;(74%) |        12271&nbsp;(58%) |
-| 🟢&nbsp;2x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              44.28 |         128 |         3277 |      13885&nbsp;(1.7x) |       24168&nbsp;(1.5x) |       20906&nbsp;(1.7x) |
 | 🟢&nbsp;4x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              88.57 |         256 |         6554 |      23097&nbsp;(2.8x) |       41088&nbsp;(2.6x) |       36130&nbsp;(2.9x) |
+| 🟢&nbsp;2x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              44.28 |         128 |         3277 |      13885&nbsp;(1.7x) |       24168&nbsp;(1.5x) |       20906&nbsp;(1.7x) |
+| 🟢&nbsp;1x&nbsp;PG506-243&nbsp;/&nbsp;PG506-242                 |              22.14 |          64 |         1638 |             8195 (77%) |        15654&nbsp;(74%) |        12271&nbsp;(58%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8543 (84%) |        15917&nbsp;(79%) |              8748 (43%) |
-| 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |      14311&nbsp;(1.7x) |            23707 (1.5x) |            15512 (1.8x) |
-| 🟢&nbsp;4x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              77.96 |         160 |         6220 |      23411&nbsp;(2.7x) |            42400 (2.7x) |            29017 (3.3x) |
 | 🟢&nbsp;8x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |             155.92 |         320 |        12440 |      37619&nbsp;(4.4x) |            72965 (4.6x) |            63009 (7.2x) |
+| 🟢&nbsp;4x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              77.96 |         160 |         6220 |      23411&nbsp;(2.7x) |            42400 (2.7x) |            29017 (3.3x) |
+| 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |      14311&nbsp;(1.7x) |            23707 (1.5x) |            15512 (1.8x) |
+| 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8543 (84%) |        15917&nbsp;(79%) |              8748 (43%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              19.49 |          40 |         1555 |             8522 (84%) |        16013&nbsp;(79%) |        11251&nbsp;(56%) |
-| 🟢&nbsp;2x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              38.98 |          80 |         3110 |      13629&nbsp;(1.6x) |            24620 (1.5x) |            18850 (1.7x) |
-| 🟢&nbsp;4x&nbsp;A100&nbsp;SXM4&nbsp;40GB                        |              77.96 |         160 |         6220 |      17978&nbsp;(2.1x) |            30604 (1.9x) |            30627 (2.7x) |
-|                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              15.67 |          32 |          900 |             4471 (76%) |              8947 (77%) |              7217 (62%) |
-| 🟢&nbsp;2x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              31.34 |          64 |         1800 |            7953 (1.8x) |            15469 (1.7x) |            12932 (1.8x) |
 | 🟢&nbsp;4x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              62.68 |         128 |         3600 |      13135&nbsp;(2.9x) |            26527 (3.0x) |            22686 (3.1x) |
+| 🟢&nbsp;2x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              31.34 |          64 |         1800 |            7953 (1.8x) |            15469 (1.7x) |            12932 (1.8x) |
+| 🟢&nbsp;1x&nbsp;Tesla&nbsp;V100&nbsp;SXM2&nbsp;32GB             |              15.67 |          32 |          900 |             4471 (76%) |              8947 (77%) |              7217 (62%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K40m                                 |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
-| 🟢&nbsp;2x&nbsp;Tesla&nbsp;K40m                                 |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
 | 🟢&nbsp;3x&nbsp;K40m&nbsp;+&nbsp;1x&nbsp;Titan&nbsp;Xp          |              17.16 |          48 |         1154 |            3117 (2.8x) |             5174 (2.8x) |             3127 (3.4x) |
+| 🟢&nbsp;2x&nbsp;Tesla&nbsp;K40m                                 |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
+| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K40m                                 |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)                |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(2&nbsp;GPU)                |               8.22 |          24 |          480 |            2086 (2.3x) |             3448 (2.1x) |             2174 (2.3x) |
+| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)                |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;RTX&nbsp;A6000                                  |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
-| 🟢&nbsp;2x&nbsp;RTX&nbsp;A6000                                  |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
-| 🟢&nbsp;4x&nbsp;RTX&nbsp;A6000                                  |             160.00 |         192 |         3072 |      14314&nbsp;(3.2x) |            27915 (3.2x) |            27227 (3.2x) |
+| 🟢&nbsp;2x&nbsp;L40                                             |             181.04 |          96 |         1728 |            7137 (1.8x) |            13547 (1.7x) |            14164 (1.8x) |
+| 🟢&nbsp;1x&nbsp;L40                                             |              90.52 |          48 |          864 |             3870 (69%) |              7778 (69%) |              7945 (71%) |
+|                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;8x&nbsp;RTX&nbsp;A6000                                  |             320.00 |         384 |         6144 |      19311&nbsp;(4.4x) |            40063 (4.5x) |            39004 (4.6x) |
+| 🟢&nbsp;4x&nbsp;RTX&nbsp;A6000                                  |             160.00 |         192 |         3072 |      14314&nbsp;(3.2x) |            27915 (3.2x) |            27227 (3.2x) |
+| 🟢&nbsp;2x&nbsp;RTX&nbsp;A6000                                  |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
+| 🟢&nbsp;1x&nbsp;RTX&nbsp;A6000                                  |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
 | 🟢&nbsp;2x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              29.86 |          96 |         1248 |            4767 (1.8x) |             9607 (1.8x) |            10214 (1.8x) |
+| 🟢&nbsp;1x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
-| 🟢&nbsp;2x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
-| 🟢&nbsp;4x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              53.80 |          44 |         2464 |            9117 (2.9x) |            18415 (2.7x) |            18598 (2.7x) |
 | 🟢&nbsp;7x&nbsp;2080&nbsp;Ti&nbsp;+&nbsp;1x&nbsp;A100&nbsp;40GB |             107.60 |          88 |         4928 |      16146&nbsp;(5.1x) |            33732 (5.0x) |            33857 (4.9x) |
+| 🟢&nbsp;4x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              53.80 |          44 |         2464 |            9117 (2.9x) |            18415 (2.7x) |            18598 (2.7x) |
+| 🟢&nbsp;2x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
+| 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔵&nbsp;1x&nbsp;A770&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;Titan&nbsp;Xp  |              24.30 |          24 |         1095 |            4717 (1.7x) |             8380 (1.7x) |             8026 (1.6x) |
 
@@ -1221,7 +1401,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 
 ## External Code/Libraries/Images used in FluidX3D
 
-- [OpenCL-Headers](https://github.com/KhronosGroup/OpenCL-Headers) for GPU parallelization ([Khronos Group](https://www.khronos.org/opencl/))
+- [OpenCL-Headers](https://github.com/KhronosGroup/OpenCL-Headers) and [C++ Wrapper](https://github.com/KhronosGroup/OpenCL-CLHPP) for GPU parallelization ([Khronos Group](https://www.khronos.org/opencl/))
 - [Win32 API](https://learn.microsoft.com/en-us/windows/win32/api/winbase/) for interactive graphics in Windows ([Microsoft](https://www.microsoft.com/))
 - [X11/Xlib](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html) for interactive graphics in Linux ([The Open Group](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html))
 - [marching-cubes tables](http://paulbourke.net/geometry/polygonise/) for isosurface generation on GPU ([Paul Bourke](http://paulbourke.net/geometry/))
