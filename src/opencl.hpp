@@ -148,8 +148,8 @@ struct Device_Info {
 		} else if(vendor_id==0x10DE||vendor_id==0x13B5) { // Nvidia GPU/CPU
 			nvidia_compute_capability = 10u*(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV>()+(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV>();
 			const bool nvidia__32_cores_per_cu = (nvidia_compute_capability <30); // identify Fermi GPUs
-			const bool nvidia_192_cores_per_cu = (nvidia_compute_capability>=30&&nvidia_compute_capability<50); // identify Kepler GPUs
-			const bool nvidia__64_cores_per_cu = (nvidia_compute_capability>=70&&nvidia_compute_capability<80)||contains_any(to_lower(name), {"p100", "a100", "a30"}); // identify Volta, Turing, P100, A100, A30
+			const bool nvidia_192_cores_per_cu = (nvidia_compute_capability>=30&&nvidia_compute_capability< 50); // identify Kepler GPUs
+			const bool nvidia__64_cores_per_cu = (nvidia_compute_capability>=70&&nvidia_compute_capability<=80)||nvidia_compute_capability==60; // identify Volta, Turing, P100, A100, A30
 			cores_per_cu = is_gpu ? (nvidia__32_cores_per_cu ? 32.0f : nvidia_192_cores_per_cu ? 192.0f : nvidia__64_cores_per_cu ? 64.0f : 128.0f) : 1.0f; // 32 (Fermi), 192 (Kepler), 64 (Volta, Turing, P100, A100, A30), 128 (Maxwell, Pascal, Ampere, Hopper, Ada, Blackwell) or 1 (CPUs)
 			patch_nvidia_fp16 = patch_nvidia_fp16||(nvidia_compute_capability>=60&&atof(driver_version.substr(0, 6).c_str())>=520.00); // enable for all Nvidia Pascal or newer GPUs with driver>=520.00
 			if(patch_nvidia_fp16) is_fp16_capable = 2u;
