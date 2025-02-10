@@ -1,6 +1,5 @@
 #include "setup.hpp"
 
-
 /*void main_setup() { // 3D Taylor-Green vortices
 	// ######################################################### define simulation box size, viscosity and volume force ############################################################################
 	LBM lbm(128u, 128u, 128u, 0.01f);
@@ -208,7 +207,7 @@ void main_setup() { // giving it a shot
 	// const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-0.0f))*float3x3(float3(0, 0, 1), radians(270.0f))*float3x3(float3(1, 0, 0), radians(0.0f));
 	// #############################################################################################################################################################################################
 	const float3x3 rotation = float3x3(float3(1, 0, 0), radians(-10.0f))*float3x3(float3(0, 0, 1), radians(90.0f))*float3x3(float3(1, 0, 0), radians(90.0f));
-	lbm.voxelize_stl(get_exe_path()+"../stl/F117.stl", center, rotation, size);
+	lbm.voxelize_stl(get_exe_path()+"../stl/b52.stl", center, rotation, size);
 	const uint N=lbm.get_N(), Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); for(uint n=0u, x=0u, y=0u, z=0u; n<N; n++, lbm.coordinates(n, x, y, z)) {
 		// ########################################################################### define geometry #############################################################################################
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = u;
