@@ -2087,13 +2087,13 @@ void atomic_add_f(volatile global float* addr, const float val) {
 }
 )+R(kernel void transfer_extract_fi(const uint direction, const ulong t, global fpxx_copy* transfer_buffer_p, global fpxx_copy* transfer_buffer_m, const global fpxx_copy* fi) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	extract_fi(a, A, index_extract_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, fi);
 	extract_fi(a, A, index_extract_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
 }
 )+R(kernel void transfer__insert_fi(const uint direction, const ulong t, const global fpxx_copy* transfer_buffer_p, const global fpxx_copy* transfer_buffer_m, global fpxx_copy* fi) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	insert_fi(a, A, index_insert_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, fi);
 	insert_fi(a, A, index_insert_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, fi);
 }
@@ -2114,26 +2114,26 @@ void atomic_add_f(volatile global float* addr, const float val) {
 }
 )+R(kernel void transfer_extract_rho_u_flags(const uint direction, const ulong t, global char* transfer_buffer_p, global char* transfer_buffer_m, const global float* rho, const global float* u, const global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	extract_rho_u_flags(a, A, index_extract_p(a, direction), transfer_buffer_p, rho, u, flags);
 	extract_rho_u_flags(a, A, index_extract_m(a, direction), transfer_buffer_m, rho, u, flags);
 }
 )+R(kernel void transfer__insert_rho_u_flags(const uint direction, const ulong t, const global char* transfer_buffer_p, const global char* transfer_buffer_m, global float* rho, global float* u, global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	insert_rho_u_flags(a, A, index_insert_p(a, direction), transfer_buffer_p, rho, u, flags);
 	insert_rho_u_flags(a, A, index_insert_m(a, direction), transfer_buffer_m, rho, u, flags);
 }
 
 )+R(kernel void transfer_extract_flags(const uint direction, const ulong t, global uchar* transfer_buffer_p, global uchar* transfer_buffer_m, const global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	transfer_buffer_p[a] = flags[index_extract_p(a, direction)];
 	transfer_buffer_m[a] = flags[index_extract_m(a, direction)];
 }
 )+R(kernel void transfer__insert_flags(const uint direction, const ulong t, const global uchar* transfer_buffer_p, const global uchar* transfer_buffer_m, global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	flags[index_insert_p(a, direction)] = transfer_buffer_p[a];
 	flags[index_insert_m(a, direction)] = transfer_buffer_m[a];
 }
@@ -2151,13 +2151,13 @@ void atomic_add_f(volatile global float* addr, const float val) {
 }
 )+R(kernel void transfer_extract_phi_massex_flags(const uint direction, const ulong t, global char* transfer_buffer_p, global char* transfer_buffer_m, const global float* phi, const global float* massex, const global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	extract_phi_massex_flags(a, A, index_extract_p(a, direction), transfer_buffer_p, phi, massex, flags);
 	extract_phi_massex_flags(a, A, index_extract_m(a, direction), transfer_buffer_m, phi, massex, flags);
 }
 )+R(kernel void transfer__insert_phi_massex_flags(const uint direction, const ulong t, const global char* transfer_buffer_p, const global char* transfer_buffer_m, global float* phi, global float* massex, global uchar* flags) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	insert_phi_massex_flags(a, A, index_insert_p(a, direction), transfer_buffer_p, phi, massex, flags);
 	insert_phi_massex_flags(a, A, index_insert_m(a, direction), transfer_buffer_m, phi, massex, flags);
 }
@@ -2180,26 +2180,26 @@ void atomic_add_f(volatile global float* addr, const float val) {
 }
 )+R(kernel void transfer_extract_gi(const uint direction, const ulong t, global fpxx_copy* transfer_buffer_p, global fpxx_copy* transfer_buffer_m, const global fpxx_copy* gi) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	extract_gi(a, index_extract_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, gi);
 	extract_gi(a, index_extract_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, gi);
 }
 )+R(kernel void transfer__insert_gi(const uint direction, const ulong t, const global fpxx_copy* transfer_buffer_p, const global fpxx_copy* transfer_buffer_m, global fpxx_copy* gi) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	insert_gi(a, index_insert_p(a, direction), 2u*direction+0u, t, transfer_buffer_p, gi);
 	insert_gi(a, index_insert_m(a, direction), 2u*direction+1u, t, transfer_buffer_m, gi);
 }
 
 )+R(kernel void transfer_extract_T(const uint direction, const ulong t, global float* transfer_buffer_p, global float* transfer_buffer_m, const global float* T) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	transfer_buffer_p[a] = T[index_extract_p(a, direction)];
 	transfer_buffer_m[a] = T[index_extract_m(a, direction)];
 }
 )+R(kernel void transfer__insert_T(const uint direction, const ulong t, const global float* transfer_buffer_p, const global float* transfer_buffer_m, global float* T) {
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	T[index_insert_p(a, direction)] = transfer_buffer_p[a];
 	T[index_insert_m(a, direction)] = transfer_buffer_m[a];
 }
@@ -2213,7 +2213,7 @@ void atomic_add_f(volatile global float* addr, const float val) {
 )+"#endif"+R( // SURFACE
 )+") {"+R( // voxelize_mesh()
 	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
-	if(a>=A) return; // area might not be a multiple of def_workgroup_size, so return here to avoid writing in unallocated memory space
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
 	const uint triangle_number = as_uint(bbu[0]);
 	const float x0=bbu[ 1], y0=bbu[ 2], z0=bbu[ 3], x1=bbu[ 4], y1=bbu[ 5], z1=bbu[ 6];
 	const float cx=bbu[ 7], cy=bbu[ 8], cz=bbu[ 9], ux=bbu[10], uy=bbu[11], uz=bbu[12], rx=bbu[13], ry=bbu[14], rz=bbu[15];

@@ -261,7 +261,7 @@ private:
 		string(info.patch_nvidia_fp16         ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
 		string(info.patch_legacy_gpu_fma      ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
 		string(info.nvidia_compute_capability ? "\n #define cl_nv_compute_capability "+to_string(info.nvidia_compute_capability) : "")+ // allows querying Nvidia compute capability for inline PTX
-		"\n #define def_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
+		"\n #define cl_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
 		"\n #ifdef cl_khr_fp64"
 		"\n #pragma OPENCL EXTENSION cl_khr_fp64 : enable" // make sure cl_khr_fp64 extension is enabled
 		"\n #endif"
