@@ -741,6 +741,10 @@ section GTX 1050M Ti
 	1224 : 0, 1224
 section P1000
 	839 : 0, 839
+section GTX 980 Ti
+	2703 : 0, 2703
+section GTX 980
+	1965 : 0, 1965
 section GTX 970
 	1721 : 0, 1721
 section M4000
@@ -1023,6 +1027,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1060M              |               4.44 |           6 |          192 |              983 (78%) |              1882 (75%) |              1803 (72%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1050M Ti           |               2.49 |           4 |          112 |              631 (86%) |              1224 (84%) |              1115 (77%) |
 | 🟢&nbsp;Quadro&nbsp;P1000                        |               1.89 |           4 |           82 |              426 (79%) |               839 (79%) |               778 (73%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;980&nbsp;Ti        |               6.05 |           6 |          336 |             1509 (69%) |              2703 (62%) |              2381 (55%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;980                |               4.98 |           4 |          224 |             1018 (70%) |              1965 (68%) |              1872 (64%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;970                |               4.17 |           4 |          224 |              980 (67%) |              1721 (59%) |              1623 (56%) |
 | 🟢&nbsp;Quadro&nbsp;M4000                        |               2.57 |           8 |          192 |              899 (72%) |              1519 (61%) |              1050 (42%) |
 | 🟢&nbsp;Tesla&nbsp;M60&nbsp;(1&nbsp;GPU)         |               4.82 |           8 |          160 |              853 (82%) |              1571 (76%) |              1557 (75%) |
