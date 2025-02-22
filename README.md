@@ -531,7 +531,9 @@ section GH200 94GB GPU
 	34689 : 0, 34689
 section H100 NVL
 	32613 : 0, 32613
-section H100 PCIe
+section H100 SXM5 80GB HBM3
+	28522 : 0, 28522
+section H100 PCIe 80GB HBM2e
 	20624 : 0, 20624
 section A100 SXM4 80GB
 	18448 : 0, 18448
@@ -921,7 +923,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
 | 🟢&nbsp;GH200&nbsp;94GB&nbsp;GPU                 |              66.91 |          94 |         4000 |       20595&nbsp;(79%) |        34689&nbsp;(67%) |        19407&nbsp;(37%) |
 | 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20018&nbsp;(78%) |        32613&nbsp;(64%) |        17605&nbsp;(34%) |
-| 🟢&nbsp;H100&nbsp;PCIe                           |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
+| 🟢&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3       |              66.91 |          80 |         3360 |       17262&nbsp;(79%) |        28522&nbsp;(65%) |        20065&nbsp;(46%) |
+| 🟢&nbsp;H100&nbsp;PCIe&nbsp;80GB&nbsp;HBM2e      |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                 |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |        18448&nbsp;(70%) |        11197&nbsp;(42%) |
 | 🟢&nbsp;A100&nbsp;PCIe&nbsp;80GB                 |              19.49 |          80 |         1935 |             9657 (76%) |        17896&nbsp;(71%) |        10817&nbsp;(43%) |
 | 🟢&nbsp;PG506-243&nbsp;/&nbsp;PG506-242          |              22.14 |          64 |         1638 |             8195 (77%) |        15654&nbsp;(74%) |        12271&nbsp;(58%) |
@@ -1196,6 +1199,11 @@ section 2x DC GPU Max 1100
 section 1x DC GPU Max 1100
 	6209 :done, 0, 6209
 
+section 2x H100 SXM5 80GB HBM3
+	46189 : 0, 46189
+section 1x H100 SXM5 80GB HBM3
+	28522 : 0, 28522
+
 section 4x A100 PCIe 80GB
 	52056 : 0, 52056
 section 2x A100 PCIe 80GB
@@ -1302,6 +1310,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;4x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              88.88 |         192 |         4915 |           12162 (3.5x) |            22777 (3.7x) |            11759 (3.6x) |
 | 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
 | 🔵&nbsp;1x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;2x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |             133.82 |         160 |         6720 |      26838&nbsp;(1.6x) |            46189 (1.6x) |            34147 (1.7x) |
+| 🟢&nbsp;1x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |              66.91 |          80 |         3360 |       17262&nbsp;(79%) |             28522 (65%) |             20065 (46%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;4x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              77.96 |         320 |         7740 |      25957&nbsp;(2.7x) |       52056&nbsp;(2.9x) |       33283&nbsp;(3.1x) |
 | 🟢&nbsp;2x&nbsp;A100&nbsp;PCIe&nbsp;80GB                        |              38.98 |         160 |         3870 |      15742&nbsp;(1.6x) |       27165&nbsp;(1.5x) |       17510&nbsp;(1.6x) |
