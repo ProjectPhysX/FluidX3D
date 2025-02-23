@@ -1199,6 +1199,8 @@ section 2x DC GPU Max 1100
 section 1x DC GPU Max 1100
 	6209 :done, 0, 6209
 
+section 4x H100 SXM5 80GB HBM3
+	78462 : 0, 78462
 section 2x H100 SXM5 80GB HBM3
 	46189 : 0, 46189
 section 1x H100 SXM5 80GB HBM3
@@ -1311,6 +1313,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
 | 🔵&nbsp;1x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
 |                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;4x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |             267.63 |         320 |        13440 |      46442&nbsp;(2.7x) |            78462 (2.8x) |            60490 (3.0x) |
 | 🟢&nbsp;2x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |             133.82 |         160 |         6720 |      26838&nbsp;(1.6x) |            46189 (1.6x) |            34147 (1.7x) |
 | 🟢&nbsp;1x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |              66.91 |          80 |         3360 |       17262&nbsp;(79%) |             28522 (65%) |             20065 (46%) |
 |                                                                 |                    |             |              |                        |                         |                         |
