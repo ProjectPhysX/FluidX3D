@@ -655,6 +655,8 @@ section RTX 4070 Ti Super
 	7295 : 0, 7295
 section RTX 4090M
 	6901 : 0, 6901
+section RTX 4070 Super
+	5554 : 0, 5554
 section RTX 4070
 	5016 : 0, 5016
 section RTX 4080M
@@ -679,6 +681,8 @@ section RTX A6000
 	8814 : 0, 8814
 section RTX 3080 10GB
 	8118 : 0, 8118
+section RTX 3070 Ti
+	6807 : 0, 6807
 section RTX 3080M Ti
 	5908 : 0, 5908
 section RTX 3070
@@ -709,8 +713,12 @@ section RTX 2080 Super
 	5284 : 0, 5284
 section RTX 5000
 	4773 : 0, 4773
+section RTX 2080
+	4977 : 0, 4977
 section RTX 2070 Super
 	4893 : 0, 4893
+section RTX 2070
+	5017 : 0, 5017
 section RTX 2060 Super
 	5035 : 0, 5035
 section RTX 4000
@@ -990,6 +998,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080               |              55.45 |          16 |          717 |             3914 (84%) |              7626 (82%) |              7933 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Ti&nbsp;Super |         44.10 |          16 |          672 |             3694 (84%) |              6435 (74%) |              7295 (84%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4090M              |              28.31 |          16 |          576 |             3367 (89%) |              6545 (87%) |              6901 (92%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070&nbsp;Super    |              35.55 |          12 |          504 |             2751 (83%) |              5149 (79%) |              5554 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4070               |              29.15 |          12 |          504 |             2646 (80%) |              4548 (69%) |              5016 (77%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;4080M              |              33.85 |          12 |          432 |             2577 (91%) |              5086 (91%) |              5114 (91%) |
 | 🟢&nbsp;RTX&nbsp;4000&nbsp;Ada                   |              26.73 |          20 |          360 |             2130 (91%) |              3964 (85%) |              4221 (90%) |
@@ -1002,6 +1011,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;12GB     |              32.26 |          12 |          912 |             5071 (85%) |              9657 (81%) |              8615 (73%) |
 | 🟢&nbsp;RTX&nbsp;A6000                           |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080&nbsp;10GB     |              29.77 |          10 |          760 |             4230 (85%) |              8118 (82%) |              7714 (78%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3070&nbsp;Ti       |              21.75 |           8 |          608 |             3490 (88%) |              6807 (86%) |              5926 (75%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3080M&nbsp;Ti      |              23.61 |          16 |          512 |             2985 (89%) |              5908 (89%) |              5780 (87%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3070               |              20.31 |           8 |          448 |             2578 (88%) |              5096 (88%) |              5060 (87%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060&nbsp;Ti       |              16.49 |           8 |          448 |             2644 (90%) |              5129 (88%) |              4718 (81%) |
@@ -1017,7 +1027,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti       |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Super    |              11.34 |           8 |          496 |             2434 (75%) |              5284 (82%) |              5087 (79%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;5000                |              11.15 |          16 |          448 |             2341 (80%) |              4766 (82%) |              4773 (82%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2080               |              10.07 |           8 |          448 |             2318 (79%) |              4977 (86%) |              4963 (85%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2070&nbsp;Super    |               9.22 |           8 |          448 |             2255 (77%) |              4866 (84%) |              4893 (84%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2070               |               7.47 |           8 |          448 |             2444 (83%) |              4387 (75%) |              5017 (86%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;Super    |               7.18 |           8 |          448 |             2503 (85%) |              5035 (87%) |              4463 (77%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;4000                |               7.12 |           8 |          416 |             2284 (84%) |              4584 (85%) |              4062 (75%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;KO       |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
@@ -1246,11 +1258,11 @@ section 2x A100 SXM4 40GB
 section 1x A100 SXM4 40GB
 	15917 : 0, 15917
 
-section 4x Tesla V100 SXM2 32GB
+section 4x V100 SXM2 32GB
 	26527 : 0, 26527
-section 2x Tesla V100 SXM2 32GB
+section 2x V100 SXM2 32GB
 	15469 : 0, 15469
-section 1x Tesla V100 SXM2 32GB
+section 1x V100 SXM2 32GB
 	8947 : 0, 8947
 
 section 3x K40m + 1x Titan Xp
