@@ -124,10 +124,14 @@ void LBM_Domain::allocate(Device& device) {
 
 #ifdef FORCE_FIELD
 	F = Memory<float>(device, N, 3u);
+	object_sum = Memory<float>(device, 1u, 4u); // x, y, z, cell count
 	kernel_stream_collide.add_parameters(F);
 	kernel_update_fields.add_parameters(F);
-	kernel_calculate_force_on_boundaries = Kernel(device, N, "calculate_force_on_boundaries", fi, flags, t, F);
+	kernel_update_force_field = Kernel(device, N, "update_force_field", fi, flags, t, F);
 	kernel_reset_force_field = Kernel(device, N, "reset_force_field", F);
+	kernel_object_center_of_mass = Kernel(device, N, "object_center_of_mass", flags, (uchar)0u, object_sum);
+	kernel_object_force = Kernel(device, N, "object_force", F, flags, (uchar)0u, object_sum);
+	kernel_object_torque = Kernel(device, N, "object_torque", F, flags, (uchar)0u, 0.0f, 0.0f, 0.0f, object_sum);
 #endif // FORCE_FIELD
 
 #ifdef MOVING_BOUNDARIES
@@ -194,8 +198,37 @@ void LBM_Domain::enqueue_surface_3() {
 }
 #endif // SURFACE
 #ifdef FORCE_FIELD
-void LBM_Domain::enqueue_calculate_force_on_boundaries() { // calculate forces from fluid on TYPE_S cells
-	kernel_calculate_force_on_boundaries.set_parameters(2u, t).enqueue_run();
+void LBM_Domain::enqueue_update_force_field() { // calculate forces from fluid on TYPE_S cells
+	if(t!=t_last_force_field) { // only run kernel_update_force_field if the time step has changed since last update
+		kernel_update_force_field.set_parameters(2u, t).enqueue_run();
+		t_last_force_field = t;
+	}
+}
+void LBM_Domain::enqueue_object_center_of_mass(const uchar flag_marker) { // calculate center of mass of all cells flagged with flag_marker
+	object_sum.x[0] = 0.0f; // reset object_sum
+	object_sum.y[0] = 0.0f;
+	object_sum.z[0] = 0.0f;
+	object_sum.enqueue_write_to_device();
+	kernel_object_center_of_mass.set_parameters(1u, flag_marker).enqueue_run();
+	object_sum.enqueue_read_from_device();
+}
+void LBM_Domain::enqueue_object_force(const uchar flag_marker) { // add up force for all cells flagged with flag_marker
+	enqueue_update_force_field(); // update force field if it is not yet up-to-date
+	object_sum.x[0] = 0.0f; // reset object_sum
+	object_sum.y[0] = 0.0f;
+	object_sum.z[0] = 0.0f;
+	object_sum.enqueue_write_to_device();
+	kernel_object_force.set_parameters(2u, flag_marker).enqueue_run();
+	object_sum.enqueue_read_from_device();
+}
+void LBM_Domain::enqueue_object_torque(const float3& rotation_center, const uchar flag_marker) { // add up torque around specified rotation_center for all cells flagged with flag_marker
+	enqueue_update_force_field(); // update force field if it is not yet up-to-date
+	object_sum.x[0] = 0.0f; // reset object_sum
+	object_sum.y[0] = 0.0f;
+	object_sum.z[0] = 0.0f;
+	object_sum.enqueue_write_to_device();
+	kernel_object_torque.set_parameters(2u, flag_marker, rotation_center.x, rotation_center.y, rotation_center.z).enqueue_run();
+	object_sum.enqueue_read_from_device();
 }
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
@@ -906,60 +939,34 @@ void LBM::reset() { // reset simulation (takes effect in following run() call)
 }
 
 #ifdef FORCE_FIELD
-void LBM::calculate_force_on_boundaries() { // calculate forces from fluid on TYPE_S cells
-	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_calculate_force_on_boundaries();
+void LBM::update_force_field() { // calculate forces from fluid on TYPE_S cells
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_update_force_field();
 	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->finish_queue();
 }
-float3 LBM::calculate_object_center_of_mass(const uchar flag_marker) { // calculate center of mass of all cells flagged with flag_marker
-	double3 com(0.0, 0.0, 0.0);
-	ulong counter = 0ull;
-	const uint threads = thread::hardware_concurrency();
-	vector<double3> coms(threads, double3(0.0, 0.0, 0.0));
-	vector<ulong> counters(threads, 0ull);
-	parallel_for(get_N(), threads, [&](ulong n, uint t) {
-		if(flags[n]==flag_marker) {
-			const float3 p = position(n);
-			coms[t].x += (double)p.x;
-			coms[t].y += (double)p.y;
-			coms[t].z += (double)p.z;
-			counters[t]++;
-		}
-	});
-	for(uint t=0u; t<threads; t++) {
-		com += coms[t];
-		counter += counters[t];
+float3 LBM::object_center_of_mass(const uchar flag_marker) { // calculate center of mass of all cells flagged with flag_marker
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_object_center_of_mass(flag_marker);
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->finish_queue();
+	float3 object_com = float3(0.0f, 0.0f, 0.0f);
+	ulong object_cells = 0ull;
+	for(uint d=0u; d<get_D(); d++) {
+		object_com += float3(lbm_domain[d]->object_sum.x[0], lbm_domain[d]->object_sum.y[0], lbm_domain[d]->object_sum.z[0]);
+		object_cells += (ulong)as_uint(lbm_domain[d]->object_sum.w[0]);
 	}
-	return float3((float)com.x/(float)counter, (float)com.y/(float)counter, (float)com.z/(float)counter)+center();
+	return object_com/(float)object_cells;
 }
-float3 LBM::calculate_force_on_object(const uchar flag_marker) { // add up force for all cells flagged with flag_marker
-	double3 force(0.0, 0.0, 0.0);
-	const uint threads = thread::hardware_concurrency();
-	vector<double3> forces(threads, double3(0.0, 0.0, 0.0));
-	parallel_for(get_N(), threads, [&](ulong n, uint t) {
-		if(flags[n]==flag_marker) {
-			forces[t].x += (double)F.x[n];
-			forces[t].y += (double)F.y[n];
-			forces[t].z += (double)F.z[n];
-		}
-	});
-	for(uint t=0u; t<threads; t++) force += forces[t];
-	return float3((float)force.x, (float)force.y, (float)force.z);
+float3 LBM::object_force(const uchar flag_marker) { // add up force for all cells flagged with flag_marker
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_object_force(flag_marker);
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->finish_queue();
+	float3 object_force = float3(0.0f, 0.0f, 0.0f);
+	for(uint d=0u; d<get_D(); d++) object_force += float3(lbm_domain[d]->object_sum.x[0], lbm_domain[d]->object_sum.y[0], lbm_domain[d]->object_sum.z[0]);
+	return object_force;
 }
-float3 LBM::calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker) { // add up torque around specified rotation center for all cells flagged with flag_marker
-	double3 torque(0.0, 0.0, 0.0);
-	const float3 rotation_center_in_box = rotation_center-center();
-	const uint threads = thread::hardware_concurrency();
-	vector<double3> torques(threads, double3(0.0, 0.0, 0.0));
-	parallel_for(get_N(), threads, [&](ulong n, uint t) {
-		if(flags[n]==flag_marker) {
-			const float3 torquen = cross(position(n)-rotation_center_in_box, float3(F.x[n], F.y[n], F.z[n]));
-			torques[t].x += (double)torquen.x;
-			torques[t].y += (double)torquen.y;
-			torques[t].z += (double)torquen.z;
-		}
-	});
-	for(uint t=0u; t<threads; t++) torque += torques[t];
-	return float3((float)torque.x, (float)torque.y, (float)torque.z);
+float3 LBM::object_torque(const float3& rotation_center, const uchar flag_marker) { // add up torque around specified rotation center for all cells flagged with flag_marker
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->enqueue_object_torque(rotation_center, flag_marker);
+	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->finish_queue();
+	float3 object_torque = float3(0.0f, 0.0f, 0.0f);
+	for(uint d=0u; d<get_D(); d++) object_torque += float3(lbm_domain[d]->object_sum.x[0], lbm_domain[d]->object_sum.y[0], lbm_domain[d]->object_sum.z[0]);
+	return object_torque;
 }
 #endif // FORCE_FIELD
 

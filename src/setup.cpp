@@ -171,9 +171,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	double E1=1000.0, E2=1000.0;
 	while(true) { // main simulation loop
 		lbm.run(dt);
-		lbm.calculate_force_on_boundaries();
-		lbm.F.read_from_device();
-		const float3 force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
+		const float3 force = lbm.object_force(TYPE_S|TYPE_X);
 		const double F_theo = units.F_Stokes(rho, u, nu, R);
 		const double F_sim = (double)length(force);
 		const double E0 = fabs(F_sim-F_theo)/F_theo;
@@ -739,8 +737,10 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		if(lbm.flags[n]!=TYPE_S) lbm.u.y[n] = lbm_u;
 		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==Nz-1u) lbm.flags[n] = TYPE_E;
 	}); // ####################################################################### run simulation, export images and data ##########################################################################
-	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_Q_CRITERION;
-	lbm.graphics.set_camera_centered(20.0f, 30.0f, 10.0f, 1.648722f);
+	lbm.graphics.visualization_modes = VIS_FLAG_SURFACE|VIS_FIELD;
+	lbm.graphics.field_mode = 1;
+	lbm.graphics.slice_mode = 1;
+	//lbm.graphics.set_camera_centered(20.0f, 30.0f, 10.0f, 1.648722f);
 	lbm.run(0u, lbm_T); // initialize simulation
 #if defined(FP16S)
 	const string path = get_exe_path()+"FP16S/"+to_string(memory)+"MB/";
@@ -751,19 +751,16 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 #endif // FP32
 	//lbm.write_status(path);
 	//write_file(path+"Cd.dat", "# t\tCd\n");
+	const float3 lbm_com = lbm.object_center_of_mass(TYPE_S|TYPE_X);
+	print_info("com = "+to_string(lbm_com.x, 2u)+", "+to_string(lbm_com.y, 2u)+", "+to_string(lbm_com.z, 2u));
 	while(lbm.get_t()<=lbm_T) { // main simulation loop
-		if(lbm.graphics.next_frame(lbm_T, 5.0f)) {
-			Clock clock;
-			lbm.calculate_force_on_boundaries();
-			lbm.F.read_from_device();
-			const float3 lbm_force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
-			const float Cd = units.si_F(lbm_force.y)/(0.5f*si_rho*sq(si_u)*si_A); // expect Cd to be too large by a factor 1.3-2.0x; need wall model
-			println("\r"+to_string(Cd, 3u)+" "+to_string(clock.stop(), 3u)+"                                                                               ");
-			//write_line(path+"Cd.dat", to_string(lbm.get_t())+"\t"+to_string(Cd, 3u)+"\n");
-#if defined(GRAPHICS) && !defined(INTERACTIVE_GRAPHICS)
-			//lbm.graphics.write_frame(path+"images/");
-#endif // GRAPHICS && !INTERACTIVE_GRAPHICS
-		}
+		Clock clock;
+		const float3 lbm_force = lbm.object_force(TYPE_S|TYPE_X);
+		//const float3 lbm_torque = lbm.object_torque(lbm_com, TYPE_S|TYPE_X);
+		//print_info("F="+to_string(lbm_force.x, 2u)+","+to_string(lbm_force.y, 2u)+","+to_string(lbm_force.z, 2u)+", T="+to_string(lbm_torque.x, 2u)+","+to_string(lbm_torque.y, 2u)+","+to_string(lbm_torque.z, 2u)+", t="+to_string(clock.stop(), 3u));
+		const float Cd = units.si_F(lbm_force.y)/(0.5f*si_rho*sq(si_u)*si_A); // expect Cd to be too large by a factor 1.3-2.0x; need wall model
+		print_info("Cd = "+to_string(Cd, 3u)+", t = "+to_string(clock.stop(), 3u));
+		//write_line(path+"Cd.dat", to_string(lbm.get_t())+"\t"+to_string(Cd, 3u)+"\n");
 		lbm.run(1u, lbm_T);
 	}
 	//lbm.write_status(path);

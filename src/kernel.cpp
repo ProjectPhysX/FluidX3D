@@ -14,13 +14,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(float angle(const float3 v1, const float3 v2) {
 	return acos(dot(v1, v2)/(length(v1)*length(v2)));
 }
-)+R(float fast_rsqrt(const float x) { // slightly fastwer approximation
+)+R(float fast_rsqrt(const float x) { // slightly faster approximation
 	return as_float(0x5F37642F-(as_int(x)>>1));
 }
-)+R(float fast_asin(const float x) { // slightly fastwer approximation
+)+R(float fast_asin(const float x) { // slightly faster approximation
 	return x*fma(0.5702f, sq(sq(sq(x))), 1.0f); // 0.5707964f = (pi-2)/2
 }
-)+R(float fast_acos(const float x) { // slightly fastwer approximation
+)+R(float fast_acos(const float x) { // slightly faster approximation
 	return fma(fma(-0.5702f, sq(sq(sq(x))), -1.0f), x, 1.5712963f); // 0.5707964f = (pi-2)/2
 }
 )+R(void swap(float* x, float* y) {
@@ -52,22 +52,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float x1=p.x, y1=p.y, z1=p.z, x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
 	return (x0*y0*z0)*v[0]+(x1*y0*z0)*v[1]+(x1*y0*z1)*v[2]+(x0*y0*z1)*v[3]+(x0*y1*z0)*v[4]+(x1*y1*z0)*v[5]+(x1*y1*z1)*v[6]+(x0*y1*z1)*v[7]; // perform trilinear interpolation
 }
-//bool workgroup_any(const bool condition) { // returns true if any thread within the workgroup enters true
-//	volatile local uint workgroup_condition; // does not work on AMD GPUs (error: non-kernel function variable cannot be declared in local address space)
-//	workgroup_condition = 0u;
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	atomic_or(&workgroup_condition, (uint)condition);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	return (bool)workgroup_condition;
-//}
-//bool workgroup_all(const bool condition) { // returns true if all threads within the workgroup enter true
-//	volatile local uint workgroup_condition; // does not work on AMD GPUs (error: non-kernel function variable cannot be declared in local address space)
-//	workgroup_condition = 1u;
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	atomic_and(&workgroup_condition, (uint)condition);
-//	barrier(CLK_LOCAL_MEM_FENCE);
-//	return (bool)workgroup_condition;
-//}
 
 
 
@@ -1916,9 +1900,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 } // update_fields()
 
 )+"#ifdef FORCE_FIELD"+R(
-)+R(kernel void calculate_force_on_boundaries(const global fpxx* fi, const global uchar* flags, const ulong t, global float* F) { // calculate force from the fluid on solid boundaries from fi directly
+)+R(kernel void update_force_field(const global fpxx* fi, const global uchar* flags, const ulong t, global float* F) { // calculate force from the fluid on solid boundaries from fi directly
 	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
-	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute calculate_force_on_boundaries() on halo
+	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute update_force_field() on halo
 	if((flags[n]&TYPE_BO)!=TYPE_S) return; // only continue for solid boundary cells
 	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
@@ -1929,7 +1913,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	F[                 n] = 2.0f*fx*Fb; // 2 times because fi are reflected on solid boundary cells (bounced-back)
 	F[    def_N+(ulong)n] = 2.0f*fy*Fb;
 	F[2ul*def_N+(ulong)n] = 2.0f*fz*Fb;
-} // calculate_force_on_boundaries()
+} // update_force_field()
 )+R(kernel void reset_force_field(global float* F) { // reset force field
 	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
 	if(n>=(uxx)def_N) return; // execute reset_force_field() also on halo
@@ -1937,11 +1921,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	F[    def_N+(ulong)n] = 0.0f;
 	F[2ul*def_N+(ulong)n] = 0.0f;
 } // reset_force_field()
-)+"#endif"+R( // FORCE_FIELD
-
-)+"#ifdef PARTICLES"+R(
-)+"#ifdef FORCE_FIELD"+R(
-void atomic_add_f(volatile global float* addr, const float val) {
+)+R(void atomic_add_f(volatile global float* addr, const float val) {
 )+"#if cl_nv_compute_capability>=20"+R( // use hardware-supported atomic addition on Nvidia GPUs with inline PTX assembly
 	float ret;)+"asm volatile(\"atom.global.add.f32\t%0,[%1],%2;\":\"=f\"(ret):\"l\"(addr),\"f\"(val):\"memory\");"+R(
 )+"#elif defined(__opencl_c_ext_fp32_global_atomic_add)"+R( // use hardware-supported atomic addition on some Intel GPUs
@@ -1952,6 +1932,68 @@ void atomic_add_f(volatile global float* addr, const float val) {
 	float old = val; while((old=atomic_xchg(addr, atomic_xchg(addr, 0.0f)+old))!=0.0f);
 )+"#endif"+R(
 }
+)+R(kernel void object_center_of_mass(const global uchar* flags, const uchar flag_marker, volatile global float* object_sum) {
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	const uint lid = get_local_id(0); // local memory reduction of cl_workgroup_size:1
+	local float3 cache[cl_workgroup_size];
+	local uint cells[cl_workgroup_size];
+	cache[lid] = n<(uxx)def_N&&flags[n]==flag_marker ? position(coordinates(n)) : (float3)(0.0f, 0.0f, 0.0f);
+	cells[lid] = (uint)(n<(uxx)def_N&&flags[n]==flag_marker);
+	barrier(CLK_GLOBAL_MEM_FENCE);
+	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
+		if(lid%(2u*s)==0u) {
+			cache[lid] += cache[lid+s];
+			cells[lid] += cells[lid+s];
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}
+	const uint local_cells = cells[0];
+	if(lid==0u&&local_cells>0u) { // global memory reduction with atomic addition of local_sum
+		const float3 local_sum = cache[0];
+		atomic_add_f(&object_sum[0], local_sum.x);
+		atomic_add_f(&object_sum[1], local_sum.y);
+		atomic_add_f(&object_sum[2], local_sum.z);
+		atomic_add((volatile global uint*)&object_sum[3], local_cells);
+	}
+} // object_center_of_mass()
+)+R(kernel void object_force(const global float* F, const global uchar* flags, const uchar flag_marker, volatile global float* object_sum) {
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	const uint lid = get_local_id(0); // local memory reduction of cl_workgroup_size:1
+	local float3 cache[cl_workgroup_size];
+	cache[lid] = n<(uxx)def_N&&flags[n]==flag_marker ? load3(n, F) : (float3)(0.0f, 0.0f, 0.0f);
+	barrier(CLK_GLOBAL_MEM_FENCE);
+	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
+		if(lid%(2u*s)==0u) cache[lid] += cache[lid+s];
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}
+	if(lid==0u) { // global memory reduction with atomic addition of local_sum
+		const float3 local_sum = cache[0];
+		if(local_sum.x!=0.0f) atomic_add_f(&object_sum[0], local_sum.x);
+		if(local_sum.y!=0.0f) atomic_add_f(&object_sum[1], local_sum.y);
+		if(local_sum.z!=0.0f) atomic_add_f(&object_sum[2], local_sum.z);
+	}
+} // object_force()
+)+R(kernel void object_torque(const global float* F, const global uchar* flags, const uchar flag_marker, const float cx, const float cy, const float cz, volatile global float* object_sum) {
+	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+	const uint lid = get_local_id(0); // local memory reduction of cl_workgroup_size:1
+	local float3 cache[cl_workgroup_size];
+	cache[lid] = n<(uxx)def_N&&flags[n]==flag_marker ? cross(position(coordinates(n))-(float3)(cx, cy, cz), load3(n, F)) : (float3)(0.0f, 0.0f, 0.0f);
+	barrier(CLK_GLOBAL_MEM_FENCE);
+	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
+		if(lid%(2u*s)==0u) cache[lid] += cache[lid+s];
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}
+	if(lid==0u) { // global memory reduction with atomic addition of local_sum
+		const float3 local_sum = cache[0];
+		if(local_sum.x!=0.0f) atomic_add_f(&object_sum[0], local_sum.x);
+		if(local_sum.y!=0.0f) atomic_add_f(&object_sum[1], local_sum.y);
+		if(local_sum.z!=0.0f) atomic_add_f(&object_sum[2], local_sum.z);
+	}
+} // object_torque()
+)+"#endif"+R( // FORCE_FIELD
+
+)+"#ifdef PARTICLES"+R(
+)+"#ifdef FORCE_FIELD"+R(
 )+R(void spread_force(volatile global float* F, const float3 p, const float3 Fn) {
 	const float xa=p.x-0.5f+1.5f*(float)def_Nx, ya=p.y-0.5f+1.5f*(float)def_Ny, za=p.z-0.5f+1.5f*(float)def_Nz; // subtract lattice offsets
 	const uint xb=(uint)xa, yb=(uint)ya, zb=(uint)za; // integer casting to find bottom left corner
@@ -2545,14 +2587,14 @@ void atomic_add_f(volatile global float* addr, const float val) {
 				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
 				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
 					const float un = length(load3(n, u));
-					const float weight = sq(un)+sq(un-0.5f/def_scale_u);
+					const float weight = fmin(un, fabs(un-0.5f/def_scale_u));
 					sum = fma(weight, un, sum);
 					traversed_cells_weighted += weight;
 				}
 				traversed_cells++;
 			}
 			color = colorscale_rainbow(def_scale_u*sum/traversed_cells_weighted);
-			traversed_cells_weighted *= sq(def_scale_u);
+			traversed_cells_weighted *= 2.0f*def_scale_u;
 			break;
 		case 1: // coloring by density
 			while(traversed_cells<Nx+Ny+Nz) { // limit number of traversed cells to space diagonal
@@ -2562,14 +2604,14 @@ void atomic_add_f(volatile global float* addr, const float val) {
 				const uxx n = index((uint3)((uint)clamp(xyz.x, 0, (int)Nx-1), (uint)clamp(xyz.y, 0, (int)Ny-1), (uint)clamp(xyz.z, 0, (int)Nz-1)));
 				if(!(flags[n]&(TYPE_S|TYPE_E|TYPE_G))) {
 					const float rhon = rho[n];
-					const float weight = sq(rhon-1.0f);
+					const float weight = fabs(rhon-1.0f);
 					sum = fma(weight, rhon, sum);
 					traversed_cells_weighted += weight;
 				}
 				traversed_cells++;
 			}
 			color = colorscale_twocolor(0.5f+def_scale_rho*(sum/traversed_cells_weighted-1.0f));
-			traversed_cells_weighted *= sq(def_scale_rho);
+			traversed_cells_weighted *= def_scale_rho;
 			break;
 )+"#ifdef TEMPERATURE"+R(
 		case 2: // coloring by temperature

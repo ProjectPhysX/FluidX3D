@@ -213,6 +213,12 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - added workaround for compiler bug in Intel CPU Runtime for OpenCL that causes Q-criterion isosurface rendering corruption
   - fixed TFlops estimate for Intel Battlemage GPUs
   - fixed wrong device name reporting for AMD GPUs
+- [v3.2](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.2) (09.03.2025) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.1...v3.2) (fast force/torque summation)
+  - implemented GPU-accelerated force/torque summation (~20x faster than CPU-multithreaded implementation before)
+  - simplified calculating object force/torque in setups
+  - improved coloring in `VIS_FIELD`/`ray_grid_traverse_sum()`
+  - updated OpenCL-Wrapper now compiles OpenCL C code with `-cl-std=CL3.0` if available
+  - fixed compiling on macOS with new OpenCL headers
 
 </details>
 

@@ -386,29 +386,22 @@
 
 ### Lift/Drag Forces
 - Enable (uncomment) the [`FORCE_FIELD`](src/defines.hpp) extension. This extension allows computing boundary forces on every solid cell (`TYPE_S`) individually, as well as placing an individual volume force on every fluid cell (not used here).
-- In the [`main_setup()`](src/setup.cpp) function's main simulation loop, alternatingly call:
+- In the [`main_setup()`](src/setup.cpp) function, voxelize the mesh with a unique flag combination, such as `(TYPE_S|TYPE_X)` or `(TYPE_S|TYPE_Y)` or `(TYPE_S|TYPE_X|TYPE_Y)`, to distinguish it from all other `(TYPE_S)` cells that might be needed to define other geometry, and compute its center of mass:
   ```c
-  lbm.run(lbm_dt); // run lbm_dt LBM time steps
-  lbm.calculate_force_on_boundaries(); // compute boundary forces on GPU on all solid cells (TYPE_S)
+  lbm.voxelize_mesh_on_device(mesh, TYPE_S|TYPE_X); // voxelize mesh with unique flag combination
+  const float3 lbm_com = lbm.object_center_of_mass(TYPE_S|TYPE_X); // object center of mass in LBM unit coordinates
   ```
-  The latter computes the boundary forces on the GPU into the `lbm.F` field in VRAM.
-- To copy `lbm.F` from GPU VRAM to CPU RAM, call:
+- To sum over all the individual boundary cells that belong to the object, in the [`main_setup()`](src/setup.cpp) function's main simulation loop call:
   ```c
-  lbm.F.read_from_device();
+  const float3 lbm_force = lbm.object_force(TYPE_S|TYPE_X); // force on object
+  const float3 lbm_torque = lbm.object_torque(lbm_com, TYPE_S|TYPE_X); // torque on object around lbm_com rotation point
   ```
-  You can then access the boundary forces at each individual cell with:
+  These functions sum over all cells marked `(TYPE_S|TYPE_X)` that belong to the object. The summation happens GPU-accelerated in VRAM, and only the result is copied to CPU RAM.
+- You may also access the force field on individual grid cells. Note that copying the entire `lbm.F` force field from GPU VRAM to CPU RAM is slow:
   ```c
-  float lbm_force_x_n = lbm.F.x[lbm.index(x, y, z)];
+  lbm.F.read_from_device(); // copy entire force field from GPU VRAM to CPU RAM (slow)
+  lbm_force_x_n = lbm.F.x[lbm.index(x, y, z)]; // access force at one particular grid cell with integer coordinates x, y, z
   ```
-- To sum over all the individual boundary cells that belong to the body, to get the total force on the body, first voxelize the body with
-  ```c
-  lbm.voxelize_mesh_on_device(mesh, TYPE_S|TYPE_X);
-  ```
-  with the additional `TYPE_X` flagging, and then call
-  ```c
-  const float3 lbm_force = lbm.calculate_force_on_object(TYPE_S|TYPE_X);
-  ```
-  to sum over all cells marked `TYPE_S|TYPE_X` that belong to the body. You can also use `TYPE_Y` for this.
 - Finally, [convert from LBM to SI units](#unit-conversion) with
   ```c
   const float si_force_x = units.si_F(lbm_force.x);

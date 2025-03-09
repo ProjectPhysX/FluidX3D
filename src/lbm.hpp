@@ -36,10 +36,14 @@ private:
 	Kernel kernel_stream_collide; // main LBM kernel
 	Kernel kernel_update_fields; // reads DDFs and updates (rho, u, T) in device memory
 	Memory<fpxx> fi; // LBM density distribution functions (DDFs); only exist in device memory
-	ulong t_last_update_fields = 0ull; // optimization to not call kernel_update_fields multiple times if (rho, u, T) are already up-to-date
+	ulong t_last_update_fields = max_ulong; // optimization to not call kernel_update_fields multiple times if (rho, u, T) are already up-to-date
 #ifdef FORCE_FIELD
-	Kernel kernel_calculate_force_on_boundaries; // calculate forces from fluid on TYPE_S cells
+	Kernel kernel_update_force_field; // calculate forces from fluid on TYPE_S cells
 	Kernel kernel_reset_force_field; // reset force field (also on TYPE_S cells)
+	Kernel kernel_object_center_of_mass; // calculate center of mass of all cells flagged with flag_marker
+	Kernel kernel_object_force; // add up force for all cells flagged with flag_marker
+	Kernel kernel_object_torque; // add up torque around specified rotation_center for all cells flagged with flag_marker
+	ulong t_last_force_field = max_ulong; // optimization to not call kernel_update_force_field multiple times if F is already up-to-date
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
 	Kernel kernel_update_moving_boundaries; // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
@@ -68,6 +72,7 @@ public:
 	Memory<uchar> flags; // flags of every cell
 #ifdef FORCE_FIELD
 	Memory<float> F; // individual force for every cell
+	Memory<float> object_sum; // sum of individual cell data for an object
 #endif // FORCE_FIELD
 #ifdef SURFACE
 	Memory<float> phi; // fill level of every cell
@@ -98,7 +103,10 @@ public:
 	void enqueue_surface_3();
 #endif // SURFACE
 #ifdef FORCE_FIELD
-	void enqueue_calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S cells
+	void enqueue_update_force_field(); // calculate forces from fluid on TYPE_S cells
+	void enqueue_object_center_of_mass(const uchar flag_marker=TYPE_S); // calculate center of mass of all cells flagged with flag_marker
+	void enqueue_object_force(const uchar flag_marker=TYPE_S); // add up force for all cells flagged with flag_marker
+	void enqueue_object_torque(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all cells flagged with flag_marker
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
 	void enqueue_update_moving_boundaries(); // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
@@ -167,7 +175,7 @@ public:
 		Kernel kernel_graphics_particles;
 #endif // PARTICLES
 
-		ulong t_last_rendered_frame = 0ull; // optimization to not call draw_frame() multiple times if camera_parameters and LBM time step are unchanged
+		ulong t_last_rendered_frame = max_ulong; // optimization to not call draw_frame() multiple times if camera_parameters and LBM time step are unchanged
 		bool update_camera(); // update camera_parameters and return if they are changed from their previous state
 
 	public:
@@ -417,10 +425,10 @@ public:
 	void update_fields(); // update fields (rho, u, T) manually
 	void reset(); // reset simulation (takes effect in following run() call)
 #ifdef FORCE_FIELD
-	void calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S cells
-	float3 calculate_object_center_of_mass(const uchar flag_marker=TYPE_S); // calculate center of mass of all cells flagged with flag_marker
-	float3 calculate_force_on_object(const uchar flag_marker=TYPE_S); // add up force for all cells flagged with flag_marker
-	float3 calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all cells flagged with flag_marker
+	void update_force_field(); // calculate forces from fluid on TYPE_S cells
+	float3 object_center_of_mass(const uchar flag_marker=TYPE_S); // calculate center of mass of all cells flagged with flag_marker
+	float3 object_force(const uchar flag_marker=TYPE_S); // add up force for all cells flagged with flag_marker
+	float3 object_torque(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all cells flagged with flag_marker
 #endif // FORCE_FIELD
 #ifdef MOVING_BOUNDARIES
 	void update_moving_boundaries(); // mark/unmark cells next to TYPE_S cells with velocity!=0 with TYPE_MS
