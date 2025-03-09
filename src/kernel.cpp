@@ -1937,8 +1937,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint lid = get_local_id(0); // local memory reduction of cl_workgroup_size:1
 	local float3 cache[cl_workgroup_size];
 	local uint cells[cl_workgroup_size];
-	cache[lid] = n<(uxx)def_N&&flags[n]==flag_marker ? position(coordinates(n)) : (float3)(0.0f, 0.0f, 0.0f);
-	cells[lid] = (uint)(n<(uxx)def_N&&flags[n]==flag_marker);
+	const uint is_part_of_object = (uint)(n<(uxx)def_N&&flags[n]==flag_marker);
+	cache[lid] = is_part_of_object ? position(coordinates(n)) : (float3)(0.0f, 0.0f, 0.0f);
+	cells[lid] = is_part_of_object;
 	barrier(CLK_GLOBAL_MEM_FENCE);
 	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
 		if(lid%(2u*s)==0u) {
