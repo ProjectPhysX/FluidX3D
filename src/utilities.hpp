@@ -13,13 +13,13 @@
 #pragma warning(disable:6386)
 #include <cmath>
 #include <vector>
+#include <string>
 #ifdef UTILITIES_REGEX
 #include <regex> // contains <string>, <vector>, <algorithm> and others
-#else // UTILITIES_REGEX
-#include <string>
 #endif // UTILITIES_REGEX
 #include <iostream>
-#include <thread> // contains <chrono>
+#include <chrono>
+#include <thread>
 #include <functional> // for parallel_for(...)
 #undef min
 #undef max
