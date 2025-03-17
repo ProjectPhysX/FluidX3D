@@ -137,9 +137,13 @@ struct Device_Info {
 		uint max_opencl_c_version = 0u; // device OpenCL C version; cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>().substr(9, 3) is unreliable as it will report 1.2 if 3.0 is available but not 2.X
 		for(auto& v : cl_device.getInfo<CL_DEVICE_OPENCL_C_ALL_VERSIONS>()) max_opencl_c_version = max(max_opencl_c_version, 10u*(uint)CL_VERSION_MAJOR(v.version)+CL_VERSION_MINOR(v.version));
 		if(max_opencl_c_version>=10u) opencl_c_version = to_string(max_opencl_c_version/10u)+"."+to_string(max_opencl_c_version%10u);
-		const auto idpap = cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR>();
+		is_dp4a_capable = (uint)contains(cl_device.getInfo<CL_DEVICE_EXTENSIONS>(), "cl_khr_integer_dot_product");
+		int dp4a_error = 0;
+		is_dp4a_capable = is_dp4a_capable&&(uint)(cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR>(&dp4a_error)==3);
+		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0;
+		const auto idpap = cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR>(&dp4a_error);
 		const cl_bool* idpap_bits = (cl_bool*)&idpap; // on some unsupported devices, values are random, so only claim is_dp4a_capable if all bits are set correctly
-		is_dp4a_capable = (uint)(cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_CAPABILITIES_KHR>()==3&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1);
+		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
 			const bool amd_128_cores_per_dualcu = contains(to_lower(name), "gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
 			const bool amd_256_cores_per_dualcu = contains(to_lower(name), "gfx11"); // identify RDNA3 GPUs where dual CUs are reported
