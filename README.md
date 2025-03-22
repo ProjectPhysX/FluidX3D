@@ -532,11 +532,11 @@ section MI60
 section Radeon VII
 	7778 :crit, 0, 7778
 section GPU Max 1100
-	6209 :done, 0, 6209
+	6303 :done, 0, 6303
 section GH200 94GB GPU
 	34689 : 0, 34689
 section H100 NVL
-	32613 : 0, 32613
+	32922 : 0, 32922
 section H100 SXM5 80GB HBM3
 	29561 : 0, 29561
 section H100 PCIe 80GB HBM2e
@@ -575,6 +575,7 @@ section K80 (1 GPU)
 	1642 : 0, 1642
 section K20c
 	1507 : 0, 1507
+
 section RX 7900 XTX
 	7716 :crit, 0, 7716
 section PRO W7900
@@ -703,6 +704,8 @@ section RTX 3060
 	4070 : 0, 4070
 section RTX 3060M
 	4012 : 0, 4012
+section A2
+	2051 : 0, 2051
 section RTX 3050M Ti
 	2341 : 0, 2341
 section RTX 3050M
@@ -785,6 +788,7 @@ section NVS 290
 	9 : 0, 9
 section Arise 1020
 	6 :active, 0, 6
+
 section M2 Ultra (76-CU, 192GB)
 	8769 :active, 0, 8769
 section M2 Max (38-CU, 32GB)
@@ -797,10 +801,12 @@ section M1 Pro (16-CU, 16GB)
 	2329 :active, 0, 2329
 section M1 (8-CU, 16GB)
 	759 :active, 0, 759
+section Radeon 8060S (Max+ 395)
+	2563 :crit, 0, 2563
+section Radeon 780M (Z1 Extreme)
+	860 :crit, 0, 860
 section Radeon Graphics (7800X3D)
 	498 :crit, 0, 498
-section 780M (Z1 Extreme)
-	860 :crit, 0, 860
 section Vega 8 (4750G)
 	511 :crit, 0, 511
 section Vega 8 (3500U)
@@ -827,12 +833,17 @@ section Orange Pi 5 Mali-G610 MP4
 	232 :active, 0, 232
 section Samsung Mali-G72 MP18
 	230 :active, 0, 230
+
 section 2x EPYC 9754
 	5179 :crit, 0, 5179
 section 2x EPYC 9654
 	1814 :crit, 0, 1814
 section 2x EPYC 9554
 	2552 :crit, 0, 2552
+section 1x EPYC 9124
+	772 :crit, 0, 772
+section 2x EPYC 7713
+	1418 :crit, 0, 1418
 section 2x EPYC 7352
 	739 :crit, 0, 739
 section 2x EPYC 7313
@@ -845,10 +856,16 @@ section 2x 6979P
 	8135 :done, 0, 8135
 section 2x Platinum 8592+
 	3135 :done, 0, 3135
+section 2x Gold 6548N
+	1811 :done, 0, 1811
 section 2x CPU Max 9480
 	2037 :done, 0, 2037
 section 2x Platinum 8480+
 	2162 :done, 0, 2162
+section 2x Platinum 8470
+	2068 :done, 0, 2068
+section 2x Gold 6438Y+
+	1945 :done, 0, 1945
 section 2x Platinum 8380
 	1410 :done, 0, 1410
 section 2x Platinum 8358
@@ -879,6 +896,8 @@ section TR 3970X
 	463 :crit, 0, 463
 section TR 1950X
 	273 :crit, 0, 273
+section Ryzen 7900X3D
+	521 :crit, 0, 521
 section Ryzen 7800X3D
 	363 :crit, 0, 363
 section Ryzen 5700X3D
@@ -938,9 +957,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Instinct&nbsp;MI100                      |              46.14 |          32 |         1228 |             5093 (63%) |              8133 (51%) |              8542 (54%) |
 | 🔴&nbsp;Instinct&nbsp;MI60                       |              14.75 |          32 |         1024 |             3570 (53%) |              5047 (38%) |              5111 (38%) |
 | 🔴&nbsp;Radeon&nbsp;VII                          |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
-| 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
+| 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3769 (47%) |              6303 (39%) |              3520 (22%) |
 | 🟢&nbsp;GH200&nbsp;94GB&nbsp;GPU                 |              66.91 |          94 |         4000 |       20595&nbsp;(79%) |        34689&nbsp;(67%) |        19407&nbsp;(37%) |
-| 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20018&nbsp;(78%) |        32613&nbsp;(64%) |        17605&nbsp;(34%) |
+| 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20303&nbsp;(79%) |        32922&nbsp;(64%) |        18424&nbsp;(36%) |
 | 🟢&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3       |              66.91 |          80 |         3350 |       17602&nbsp;(80%) |        29561&nbsp;(68%) |        20227&nbsp;(46%) |
 | 🟢&nbsp;H100&nbsp;PCIe&nbsp;80GB&nbsp;HBM2e      |              51.01 |          80 |         2000 |       11128&nbsp;(85%) |        20624&nbsp;(79%) |        13862&nbsp;(53%) |
 | 🟢&nbsp;A100&nbsp;SXM4&nbsp;80GB                 |              19.49 |          80 |         2039 |       10228&nbsp;(77%) |        18448&nbsp;(70%) |        11197&nbsp;(42%) |
@@ -1025,6 +1044,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;RTX&nbsp;A5000M                          |              16.59 |          16 |          448 |             2228 (76%) |              4461 (77%) |              3662 (63%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060               |              13.17 |          12 |          360 |             2108 (90%) |              4070 (87%) |              3566 (76%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3060M              |              10.94 |           6 |          336 |             2019 (92%) |              4012 (92%) |              3572 (82%) |
+| 🟢&nbsp;A2                                       |               4.53 |          15 |          200 |             1031 (79%) |              2051 (79%) |              1199 (46%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050M&nbsp;Ti      |               7.60 |           4 |          192 |             1181 (94%) |              2341 (94%) |              2253 (90%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050M              |               7.13 |           4 |          192 |             1180 (94%) |              2339 (94%) |              2016 (81%) |
 | 🟢&nbsp;Titan&nbsp;RTX                           |              16.31 |          24 |          672 |             3471 (79%) |              7456 (85%) |              7554 (87%) |
@@ -1073,6 +1093,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | ⚪&nbsp;M1&nbsp;Max&nbsp;GPU&nbsp;24CU&nbsp;32GB |               6.14 |          22 |          400 |             2369 (91%) |              4496 (87%) |              2777 (53%) |
 | ⚪&nbsp;M1&nbsp;Pro&nbsp;GPU&nbsp;16CU&nbsp;16GB |               4.10 |          11 |          200 |             1204 (92%) |              2329 (90%) |              1855 (71%) |
 | ⚪&nbsp;M1&nbsp;GPU&nbsp;8CU&nbsp;16GB           |               2.05 |          11 |           68 |              384 (86%) |               758 (85%) |               759 (86%) |
+| 🔴&nbsp;Radeon&nbsp;8060S&nbsp;Graphics&nbsp;(Max+&nbsp;395)) | 29.70 |          15 |          256 |             1231 (74%) |              2541 (76%) |              2563 (77%) |
 | 🔴&nbsp;Radeon&nbsp;780M&nbsp;(Z1&nbsp;Extreme)  |               8.29 |           8 |          102 |              443 (66%) |               860 (65%) |               820 (62%) |
 | 🔴&nbsp;Radeon&nbsp;Graphics&nbsp;(7800X3D)      |               0.56 |          12 |          102 |              338 (51%) |               498 (37%) |               283 (21%) |
 | 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(4750G)     |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |
@@ -1092,15 +1113,19 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754                   |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             1381 (23%) |              1814 (15%) |              1801 (15%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9554                   |              30.72 |         384 |          922 |             2552 (42%) |              2127 (18%) |              2144 (18%) |
+| 🔴&nbsp;1x&nbsp;EPYC&nbsp;9124                   |               3.69 |         128 |          307 |              772 (38%) |               579 (15%) |               586 (15%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7713                   |               8.19 |         512 |          410 |             1298 (48%) |               492 ( 9%) |              1418 (27%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7352                   |               3.53 |         512 |          410 |              739 (28%) |               106 ( 2%) |               412 ( 8%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7313                   |               3.07 |         128 |          410 |              498 (19%) |               367 ( 7%) |               418 ( 8%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7302                   |               3.07 |         128 |          410 |              784 (29%) |               336 ( 6%) |               411 ( 8%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;6980P                  |              98.30 |        6144 |         1690 |             7875 (71%) |              5112 (23%) |              5610 (26%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;6979P                  |              92.16 |        3072 |         1690 |             8135 (74%) |              4175 (19%) |              4622 (21%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8592+    |              31.13 |        1024 |          717 |             3135 (67%) |              2359 (25%) |              2466 (26%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6548N        |              22.94 |        2048 |          666 |             1811 (42%) |              1388 (16%) |              1425 (16%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480 |              27.24 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+    |              28.67 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8470     |              25.29 |        2048 |          614 |             1865 (46%) |              1909 (24%) |              2068 (26%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6438Y+       |              16.38 |        1024 |          614 |             1945 (48%) |              1219 (15%) |              1257 (16%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380     |              23.55 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |              21.30 |         256 |          410 |             1285 (48%) |              1007 (19%) |              1120 (21%) |
 | 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8256     |               3.89 |        1536 |          282 |              396 (22%) |               158 ( 4%) |               175 ( 5%) |
@@ -1116,6 +1141,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Threadripper&nbsp;PRO&nbsp;7995WX        |              15.36 |         256 |          333 |             1134 (52%) |              1697 (39%) |              1715 (40%) |
 | 🔴&nbsp;Threadripper&nbsp;3970X                  |               3.79 |         128 |          102 |              376 (56%) |               103 ( 8%) |               463 (35%) |
 | 🔴&nbsp;Threadripper&nbsp;1950X                  |               0.87 |         128 |           85 |              273 (49%) |                43 ( 4%) |               151 (14%) |
+| 🔴&nbsp;Ryzen&nbsp;9&nbsp;7900X3D                |               1.69 |         128 |           83 |              278 (51%) |               521 (48%) |               462 (43%) |
 | 🔴&nbsp;Ryzen&nbsp;7&nbsp;7800X3D                |               1.08 |          32 |          102 |              296 (44%) |               361 (27%) |               363 (27%) |
 | 🔴&nbsp;Ryzen&nbsp;7&nbsp;5700X3D                |               0.87 |          32 |           51 |              229 (68%) |               135 (20%) |               173 (26%) |
 | 🔴&nbsp;FX-6100                                  |               0.16 |          16 |           26 |               11 ( 7%) |                11 ( 3%) |                22 ( 7%) |
@@ -1234,6 +1260,13 @@ section 2x DC GPU Max 1100
 section 1x DC GPU Max 1100
 	6209 :done, 0, 6209
 
+section 4x H100 NVL
+	82122 : 0, 82122
+section 2x H100 NVL
+	49958 : 0, 49958
+section 1x H100 NVL
+	32922 : 0, 32922
+
 section 4x H100 SXM5 80GB HBM3
 	78462 : 0, 78462
 section 2x H100 SXM5 80GB HBM3
@@ -1283,6 +1316,11 @@ section 1x Tesla K80 (2 GPU)
 section 1x Tesla K80 (1 GPU)
 	1642 : 0, 1642
 
+section 2x L40S
+	13640 : 0, 13640
+section 1x L40S
+	7669 : 0, 7669
+
 section 2x L40
 	14164 : 0, 14164
 section 1x L40
@@ -1313,6 +1351,10 @@ section 1x GeForce RTX 2080 Ti
 
 section 1x A770 + 1x Titan Xp
 	8380 :done, 0, 8380
+section 2x Arc A770
+	8745 :done, 0, 8745
+section 1x Arc A770
+	4568 :done, 0, 4568
 ```
 
 <details><summary>Multi-GPU Benchmark Table</summary>
@@ -1353,6 +1395,10 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
 | 🔵&nbsp;1x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
 |                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;4x&nbsp;H100&nbsp;NVL                                   |             241.28 |         376 |        15752 |      44284&nbsp;(2.2x) |            82122 (2.5x) |            53855 (2.9x) |
+| 🟢&nbsp;2x&nbsp;H100&nbsp;NVL                                   |             120.64 |         188 |         7876 |      29050&nbsp;(1.4x) |            49958 (1.5x) |            30586 (1.7x) |
+| 🟢&nbsp;1x&nbsp;H100&nbsp;NVL                                   |              60.32 |          94 |         3938 |       20303&nbsp;(79%) |             32922 (64%) |             18424 (36%) |
+|                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;4x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |             267.63 |         320 |        13400 |      46442&nbsp;(2.7x) |            78462 (2.8x) |            60490 (3.0x) |
 | 🟢&nbsp;2x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |             133.82 |         160 |         6700 |      26838&nbsp;(1.6x) |            46189 (1.6x) |            34147 (1.7x) |
 | 🟢&nbsp;1x&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3              |              66.91 |          80 |         3350 |       17262&nbsp;(79%) |             28522 (66%) |             20065 (46%) |
@@ -1381,6 +1427,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(2&nbsp;GPU)                |               8.22 |          24 |          480 |            2086 (2.3x) |             3448 (2.1x) |             2174 (2.3x) |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)                |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 |                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;2x&nbsp;L40S                                            |             183.22 |          96 |         1728 |            6888 (1.8x) |            13099 (1.8x) |            13640 (1.8x) |
+| 🟢&nbsp;1x&nbsp;L40S                                            |              91.61 |          48 |          864 |             3824 (68%) |              7463 (67%) |              7669 (68%) |
+|                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;2x&nbsp;L40                                             |             181.04 |          96 |         1728 |            7137 (1.8x) |            13547 (1.7x) |            14164 (1.8x) |
 | 🟢&nbsp;1x&nbsp;L40                                             |              90.52 |          48 |          864 |             3870 (69%) |              7778 (69%) |              7945 (71%) |
 |                                                                 |                    |             |              |                        |                         |                         |
@@ -1398,6 +1447,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔵&nbsp;1x&nbsp;A770&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;Titan&nbsp;Xp  |              24.30 |          24 |         1095 |            4717 (1.7x) |             8380 (1.7x) |             8026 (1.6x) |
+| 🔵&nbsp;2x&nbsp;Arc&nbsp;A770                                   |              39.32 |          32 |         1120 |            4954 (1.9x) |             8745 (1.9x) |             8329 (1.8x) |
+| 🔵&nbsp;1x&nbsp;Arc&nbsp;A770                                   |              19.66 |          16 |          560 |             2663 (73&) |              4568 (63%) |              4519 (62%) |
 
 </details>
 
