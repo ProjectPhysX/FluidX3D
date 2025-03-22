@@ -16,7 +16,7 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 		//LBM lbm(512u, 512u, 512u, 1.0f);
 
 		//const uint memory = 1488u; // memory occupation in MB (for multi-GPU benchmarks: make this close to as large as the GPU's VRAM capacity)
-		//const uint3 lbm_N = resolution(float3(1.0f, 1.0f, 1.0f), memory); // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+		//const uint3 lbm_N = (resolution(float3(1.0f, 1.0f, 1.0f), memory)/4u)*4u; // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 		//LBM lbm(1u*lbm_N.x, 1u*lbm_N.y, 1u*lbm_N.z, 1u, 1u, 1u, 1.0f); // 1 GPU
 		//LBM lbm(2u*lbm_N.x, 1u*lbm_N.y, 1u*lbm_N.z, 2u, 1u, 1u, 1.0f); // 2 GPUs
 		//LBM lbm(2u*lbm_N.x, 2u*lbm_N.y, 1u*lbm_N.z, 2u, 2u, 1u, 1.0f); // 4 GPUs

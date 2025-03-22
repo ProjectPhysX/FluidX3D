@@ -529,6 +529,8 @@ section MI100
 	8542 :crit, 0, 8542
 section MI60
 	5111 :crit, 0, 5111
+section MI50 32GB
+	8477 :crit, 0, 8477
 section Radeon VII
 	7778 :crit, 0, 7778
 section GPU Max 1100
@@ -956,6 +958,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Instinct&nbsp;MI210                      |              45.26 |          64 |         1638 |             6517 (61%) |              9547 (45%) |              8829 (41%) |
 | 🔴&nbsp;Instinct&nbsp;MI100                      |              46.14 |          32 |         1228 |             5093 (63%) |              8133 (51%) |              8542 (54%) |
 | 🔴&nbsp;Instinct&nbsp;MI60                       |              14.75 |          32 |         1024 |             3570 (53%) |              5047 (38%) |              5111 (38%) |
+| 🔴&nbsp;Instinct&nbsp;MI50&nbsp;32GB             |              13.25 |          32 |         1024 |             4446 (66%) |              8477 (64%) |              4406 (33%) |
 | 🔴&nbsp;Radeon&nbsp;VII                          |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
 | 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3769 (47%) |              6303 (39%) |              3520 (22%) |
 | 🟢&nbsp;GH200&nbsp;94GB&nbsp;GPU                 |              66.91 |          94 |         4000 |       20595&nbsp;(79%) |        34689&nbsp;(67%) |        19407&nbsp;(37%) |
@@ -1244,6 +1247,15 @@ section 2x Instinct MI210
 section 1x Instinct MI210
 	8757 :crit, 0, 8757
 
+section 3x  MI50 + 1x A100 40GB
+	22759 :active,crit, 0, 22759
+section 3x Instinct MI50 32GB
+	21693 :crit, 0, 21693
+section 2x Instinct MI50 32GB
+	14484 :crit, 0, 14484
+section 1x Instinct MI50 32GB
+	8477 :crit, 0, 8477
+
 section 8x Radeon VII
 	30826 :crit, 0, 30826
 section 4x Radeon VII
@@ -1350,7 +1362,7 @@ section 1x GeForce RTX 2080 Ti
 	6853 : 0, 6853
 
 section 1x A770 + 1x Titan Xp
-	8380 :done, 0, 8380
+	8380 :active,done, 0, 8380
 section 2x Arc A770
 	8745 :done, 0, 8745
 section 1x Arc A770
@@ -1385,6 +1397,11 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI210                             |             181.04 |         256 |         6554 |           17075 (2.6x) |            31408 (3.6x) |            30643 (3.5x) |
 | 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI210                             |              90.52 |         128 |         3277 |            9624 (1.5x) |            15909 (1.8x) |            16156 (1.8x) |
 | 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI210                             |              45.26 |          64 |         1638 |             6454 (60%) |              8757 (41%) |              8751 (41%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;3x&nbsp;MI50&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;A100&nbsp;40GB |              52.99 |         128 |         4096 |      13159&nbsp;(3.0x) |       22759&nbsp;(2.7x) |       11953&nbsp;(2.7x) |
+| 🔴&nbsp;3x&nbsp;Instinct&nbsp;MI50&nbsp;32GB                    |              39.74 |          96 |         3072 |      11709&nbsp;(2.6x) |       21693&nbsp;(2.6x) |             9969 (2.3x) |
+| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI50&nbsp;32GB                    |              26.50 |          64 |         2048 |            7803 (1.8x) |       14484&nbsp;(1.7x) |             6647 (1.5x) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI50&nbsp;32GB                    |              13.25 |          32 |         1024 |             4446 (66%) |              8477 (64%) |              4406 (33%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;8x&nbsp;Radeon&nbsp;VII                                 |             110.64 |         128 |         8192 |      21946&nbsp;(4.5x) |            30826 (4.0x) |            24572 (4.7x) |
 | 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                 |              55.32 |          64 |         4096 |      12911&nbsp;(2.6x) |            24273 (3.1x) |            17080 (3.2x) |
