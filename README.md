@@ -1347,6 +1347,11 @@ section 2x RTX A6000
 section 1x RTX A6000
 	8814 : 0, 8814
 
+section 2x A2
+	3539 : 0, 3539
+section 1x A2
+	2051 : 0, 2051
+
 section 2x Quadro RTX 8000 Pa.
 	10214 : 0, 10214
 section 1x Quadro RTX 8000 Pa.
@@ -1454,6 +1459,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;4x&nbsp;RTX&nbsp;A6000                                  |             160.00 |         192 |         3072 |      14314&nbsp;(3.2x) |            27915 (3.2x) |            27227 (3.2x) |
 | 🟢&nbsp;2x&nbsp;RTX&nbsp;A6000                                  |              80.00 |          96 |         1536 |            8041 (1.8x) |            15026 (1.7x) |            14795 (1.7x) |
 | 🟢&nbsp;1x&nbsp;RTX&nbsp;A6000                                  |              40.00 |          48 |          768 |             4421 (88%) |              8814 (88%) |              8533 (86%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;2x&nbsp;A2                                              |               9.06 |          30 |          400 |            1927 (1.9x) |             3539 (1.7x) |             2232 (1.9x) |
+| 🟢&nbsp;1x&nbsp;A2                                              |               4.53 |          15 |          200 |             1031 (79%) |              2051 (79%) |              1199 (46%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;2x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              29.86 |          96 |         1248 |            4767 (1.8x) |             9607 (1.8x) |            10214 (1.8x) |
 | 🟢&nbsp;1x&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Pa.              |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
