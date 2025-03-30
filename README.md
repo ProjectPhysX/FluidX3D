@@ -578,12 +578,18 @@ section K80 (1 GPU)
 section K20c
 	1507 : 0, 1507
 
+section RX 9070 XT
+	6688 :crit, 0, 6688
+section RX 9070
+	6019 :crit, 0, 6019
 section RX 7900 XTX
 	7716 :crit, 0, 7716
 section PRO W7900
 	5939 :crit, 0, 5939
 section RX 7900 XT
 	5986 :crit, 0, 5986
+section RX 7800 XT
+	3105 :crit, 0, 3105
 section PRO W7800
 	4426 :crit, 0, 4426
 section RX 7900 GRE
@@ -983,9 +989,12 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)         |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 | 🟢&nbsp;Tesla&nbsp;K20c                          |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
 |                                                  |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;9070&nbsp;XT         |              48.66 |          16 |          640 |             3089 (74%) |              6688 (80%) |              6090 (73%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;9070                 |              36.13 |          16 |          640 |             3007 (72%) |              5746 (69%) |              6019 (72%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XTX        |              61.44 |          24 |          960 |             3665 (58%) |              7644 (61%) |              7716 (62%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7900               |              61.30 |          48 |          864 |             3107 (55%) |              5939 (53%) |              5780 (52%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XT         |              51.61 |          20 |          800 |             3013 (58%) |              5856 (56%) |              5986 (58%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;7800&nbsp;XT         |              37.32 |          16 |          624 |             1704 (42%) |              3105 (38%) |              3061 (38%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7800               |              45.20 |          32 |          576 |             1872 (50%) |              4426 (59%) |              4145 (55%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;GRE        |              42.03 |          16 |          576 |             1996 (53%) |              4570 (61%) |              4463 (60%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7700               |              28.30 |          16 |          576 |             1547 (41%) |              2943 (39%) |              2899 (39%) |
@@ -1366,12 +1375,15 @@ section 2x GeForce RTX 2080 Ti
 section 1x GeForce RTX 2080 Ti
 	6853 : 0, 6853
 
-section 1x A770 + 1x Titan Xp
-	8380 :active,done, 0, 8380
 section 2x Arc A770
 	8745 :done, 0, 8745
 section 1x Arc A770
 	4568 :done, 0, 4568
+
+section 1x A100 + 1x P100 + 2x A2 + 3x MI50 + 1x A770
+	17296 :active,done, 0, 17296
+section 1x A770 + 1x Titan Xp
+	8380 :active,done, 0, 8380
 ```
 
 <details><summary>Multi-GPU Benchmark Table</summary>
@@ -1403,7 +1415,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI210                             |              90.52 |         128 |         3277 |            9624 (1.5x) |            15909 (1.8x) |            16156 (1.8x) |
 | 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI210                             |              45.26 |          64 |         1638 |             6454 (60%) |              8757 (41%) |              8751 (41%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;3x&nbsp;MI50&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;A100&nbsp;40GB |              52.99 |         128 |         4096 |      13159&nbsp;(3.0x) |       22759&nbsp;(2.7x) |       11953&nbsp;(2.7x) |
+| 🔴&nbsp;3x&nbsp;MI50&nbsp;32GB + 🟢&nbsp;1x&nbsp;A100&nbsp;40GB |              52.99 |         128 |         4096 |      13159&nbsp;(3.0x) |       22759&nbsp;(2.7x) |       11953&nbsp;(2.7x) |
 | 🔴&nbsp;3x&nbsp;Instinct&nbsp;MI50&nbsp;32GB                    |              39.74 |          96 |         3072 |      11709&nbsp;(2.6x) |       21693&nbsp;(2.6x) |             9969 (2.3x) |
 | 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI50&nbsp;32GB                    |              26.50 |          64 |         2048 |            7803 (1.8x) |       14484&nbsp;(1.7x) |             6647 (1.5x) |
 | 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI50&nbsp;32GB                    |              13.25 |          32 |         1024 |             4446 (66%) |              8477 (64%) |              4406 (33%) |
@@ -1471,9 +1483,11 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;2x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
 | 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔵&nbsp;1x&nbsp;A770&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;Titan&nbsp;Xp  |              24.30 |          24 |         1095 |            4717 (1.7x) |             8380 (1.7x) |             8026 (1.6x) |
 | 🔵&nbsp;2x&nbsp;Arc&nbsp;A770                                   |              39.32 |          32 |         1120 |            4954 (1.9x) |             8745 (1.9x) |             8329 (1.8x) |
 | 🔵&nbsp;1x&nbsp;Arc&nbsp;A770                                   |              19.66 |          16 |          560 |             2663 (73&) |              4568 (63%) |              4519 (62%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;A100&nbsp;40GB + 🟢&nbsp;1x&nbsp;P100&nbsp;16GB + 🟢&nbsp;2x&nbsp;A2 + 🔴&nbsp;3x&nbsp;MI50&nbsp;32GB + 🔵&nbsp;1x&nbsp;A770&nbsp;16GB | 54.36 | 180 | 2400 | 9903 (63%) | 17296 (55%) | 12041 (39%) |
+| 🔵&nbsp;1x&nbsp;A770&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;Titan&nbsp;Xp  |              24.30 |          24 |         1095 |             4717 (66%) |              8380 (59%) |              8026 (56%) |
 
 </details>
 

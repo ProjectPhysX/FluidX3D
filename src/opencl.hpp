@@ -146,7 +146,7 @@ struct Device_Info {
 		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
 			const bool amd_128_cores_per_dualcu = contains(to_lower(name), "gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
-			const bool amd_256_cores_per_dualcu = contains(to_lower(name), "gfx11"); // identify RDNA3 GPUs where dual CUs are reported
+			const bool amd_256_cores_per_dualcu = contains_any(to_lower(name), {"gfx11", "gfx12"}); // identify RDNA3/RDNA4 GPUs where dual CUs are reported
 			cores_per_cu = is_gpu ? (amd_256_cores_per_dualcu ? 256.0f : amd_128_cores_per_dualcu ? 128.0f : 64.0f) : 0.5f; // 64 cores/CU (GCN, CDNA), 128 cores/dualCU (RDNA, RDNA2), 256 cores/dualCU (RDNA3), 1/2 core/CU (CPUs)
 			if(is_gpu) name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>()); // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
