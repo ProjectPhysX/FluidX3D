@@ -11,6 +11,7 @@
 
 #pragma warning(disable:26451)
 #pragma warning(disable:6386)
+#pragma warning(disable:6001)
 #include <cmath>
 #include <vector>
 #include <string>
@@ -3431,7 +3432,7 @@ inline void print_image(const Image* image, const uint textwidth=0u, const uint 
 		int ltc = get_console_color(image_rescaled->color(0u, y   ));
 		int lbc = get_console_color(image_rescaled->color(0u, y+1u));
 		string segment = s;
-		for(uint x=1; x<newwidth; x++) {
+		for(uint x=1u; x<newwidth; x++) {
 			const int tc = get_console_color(image_rescaled->color(x, y   ));
 			const int bc = get_console_color(image_rescaled->color(x, y+1u));
 			if(tc==ltc&&bc==lbc) { // still the same color
@@ -3466,6 +3467,93 @@ inline void print_image(const Image* image, const uint textwidth=0u, const uint 
 	}
 	print(r);
 #endif // Windows/Linux
+}
+inline void print_video(const Image* image, const uint textwidth=0u, const uint textheight=0u) { // optimized for video (only draws pixels that differ from last frame)
+	static Image* video_lastframe = nullptr;
+	static Image* image_rescaled = nullptr;
+	uint newwidth=(uint)(CONSOLE_WIDTH), newheight=(uint)(CONSOLE_WIDTH)*9u/16u;
+	if(textwidth==0u&&textheight==0u) {
+		uint fontwidth=8u, fontheight=16u;
+		get_console_size(newwidth, newheight);
+		get_console_font_size(fontwidth, fontheight);
+		newwidth--;
+		newheight = newwidth*image->height()*2u*fontwidth/(image->width()*fontheight);
+	} else {
+		newwidth = textwidth;
+		newheight = 2u*textheight;
+	}
+	image_rescaled = rescale(image, newwidth, newheight, image_rescaled); // do resolution downsampling
+	for(uint y=0u; y<newheight-1u; y+=2u) { // do color subsampling
+		for(uint x=0u; x<newwidth; x++) {
+			image_rescaled->set_color(x, y/2u, (get_console_color(image_rescaled->color(x, y))<<4)|get_console_color(image_rescaled->color(x, y+1u)));
+		}
+	}
+	bool video_lastframe_is_new = false;
+	if(video_lastframe==nullptr||video_lastframe->width()!=newwidth||video_lastframe->height()!=newheight) {
+		delete video_lastframe;
+		video_lastframe = new Image(newwidth, newheight);
+		video_lastframe_is_new = true;
+		clear_console();
+	}
+	uint changed_pixels = 0u; // reuse video_lastframe as list of all changed pixels
+	for(uint i=0u; i<newwidth*newheight/2u; i++) {
+		if(video_lastframe_is_new||image_rescaled->color(i)!=video_lastframe->color(i)) video_lastframe->set_color(changed_pixels++, (int)i);
+	}
+	if(changed_pixels>0u) { // at least one pixel has changed
+#if defined(_WIN32)
+		const string s = string("")+(char)223; // trick to double vertical resolution: use graphic character
+		const uint n = (uint)video_lastframe->color(0); // do first entry manually
+		uint lx=n%newwidth, ly=n/newwidth;
+		const int colors = image_rescaled->color(lx, ly);
+		int ltc=(colors>>4)&0xF, lbc=colors&0xF;
+		set_console_cursor(lx, ly);
+		string segment = s; // reset segment
+		for(uint i=1u; i<changed_pixels; i++) {
+			const uint n = (uint)video_lastframe->color(i); // get index of changed pixel
+			const uint x=n%newwidth, y=n/newwidth; // get coordinates of changed pixel
+			const int colors = image_rescaled->color(x, y); // get color of changed pixel
+			const int tc=(colors>>4)&0xF, bc=colors&0xF;
+			if(tc!=ltc||bc!=lbc||x!=lx+1u||y!=ly) { // color has changed or cursor has moved
+				print_no_reset(segment, ltc, lbc); // print old segment, then change color
+				segment = ""; // reset segment
+				ltc = tc;
+				lbc = bc;
+			}
+			if(x!=lx+1u||y!=ly) { // cursor has moved
+				set_console_cursor(x, y); // set new cursor position
+			}
+			segment += s;
+			lx = x;
+			ly = y;
+		}
+		print(segment, ltc, lbc); // print last segment, then reset color
+#else // Linux
+		const string s = "\u2580"; // trick to double vertical resolution: use graphic character
+		string r = ""; // append color changes to a string, print string in the end (much faster)
+		uint lx=max_uint, ly=max_uint;
+		int ltc=-1, lbc=-1;
+		for(uint i=0u; i<changed_pixels; i++) {
+			const uint n = (uint)video_lastframe->color(i); // get index of changed pixel
+			const uint x=n%newwidth, y=n/newwidth; // get coordinates of changed pixel
+			const int colors = image_rescaled->color(x, y); // get color of changed pixel
+			const int tc=(colors>>4)&0xF, bc=colors&0xF;
+			if(x!=lx+1u||y!=ly) { // cursor has moved
+				r += "\033["+to_string(y+1u)+";"+to_string(x+1u)+"f";
+			}
+			if(tc!=ltc||bc!=lbc||x!=lx+1u||y!=ly) { // color has changed or cursor has moved
+				r += get_print_color(tc, bc); // print old segment, then change color
+				ltc = tc;
+				lbc = bc;
+			}
+			r += s;
+			lx = x;
+			ly = y;
+		}
+		print(r+"\033[0m"); // reset color
+#endif // Windows/Linux
+	}
+	set_console_cursor(0u, newheight/2u);
+	std::swap(image_rescaled, video_lastframe); // swap currentframe and lastframe
 }
 inline void print_image_bw(const Image* image, const uint textwidth=0u, const uint textheight=0u) { // black and white mode
 	static Image* image_rescaled = nullptr;
@@ -3529,21 +3617,21 @@ inline void print_image_dither(const Image* image, const uint textwidth=0u, cons
 	const string s[3] = { string("")+(char)176, string("")+(char)177, string("")+(char)178 };
 	for(uint y=0u; y<newheight; y++) {
 #ifdef UTILITIES_CONSOLE_DITHER_LOOKUP
-		const int dither = (int)dither_lookup[image_rescaled->color(0u, y)];
+		const int colors = (int)dither_lookup[image_rescaled->color(0u, y)];
 #else // UTILITIES_CONSOLE_DITHER_LOOKUP
-		const int dither = (int)get_console_color_dither(image_rescaled->color(0u, y));
+		const int colors = (int)get_console_color_dither(image_rescaled->color(0u, y));
 #endif // UTILITIES_CONSOLE_DITHER_LOOKUP
-		const int shade = dither>>8;
-		int ltc=(dither>>4)&0xF, lbc=dither&0xF;
+		const int shade = colors>>8;
+		int ltc=(colors>>4)&0xF, lbc=colors&0xF;
 		string segment = s[shade];
 		for(uint x=1u; x<newwidth; x++) {
 #ifdef UTILITIES_CONSOLE_DITHER_LOOKUP
-			const int dither = (int)dither_lookup[image_rescaled->color(x, y)];
+			const int colors = (int)dither_lookup[image_rescaled->color(x, y)];
 #else // UTILITIES_CONSOLE_DITHER_LOOKUP
-			const int dither = (int)get_console_color_dither(image_rescaled->color(x, y));
+			const int colors = (int)get_console_color_dither(image_rescaled->color(x, y));
 #endif // UTILITIES_CONSOLE_DITHER_LOOKUP
-			const int shade = dither>>8;
-			const int tc=(dither>>4)&0xF, bc=dither&0xF;
+			const int shade = colors>>8;
+			const int tc=(colors>>4)&0xF, bc=colors&0xF;
 			if(tc!=ltc||bc!=lbc) { // color has changed
 				print_no_reset(segment, ltc, lbc); // only switch color once before each segment
 				segment = ""; // reset segment
@@ -3562,12 +3650,12 @@ inline void print_image_dither(const Image* image, const uint textwidth=0u, cons
 		int ltc=-1, lbc=-1;
 		for(uint x=0u; x<newwidth; x++) {
 #ifdef UTILITIES_CONSOLE_DITHER_LOOKUP
-			const int dither = (int)dither_lookup[image_rescaled->color(x, y)];
+			const int colors = (int)dither_lookup[image_rescaled->color(x, y)];
 #else // UTILITIES_CONSOLE_DITHER_LOOKUP
-			const int dither = (int)get_console_color_dither(image_rescaled->color(x, y));
+			const int colors = (int)get_console_color_dither(image_rescaled->color(x, y));
 #endif // UTILITIES_CONSOLE_DITHER_LOOKUP
-			const int shade = dither>>8;
-			const int tc=(dither>>4)&0xF, bc=dither&0xF;
+			const int shade = colors>>8;
+			const int tc=(colors>>4)&0xF, bc=colors&0xF;
 			if(tc!=ltc||bc!=lbc) { // color has changed
 				r += get_print_color(tc, bc); // only switch color once before each segment
 				ltc = tc;
@@ -3627,17 +3715,17 @@ inline void print_video_dither(const Image* image, const uint textwidth=0u, cons
 		const string s[3] = { string("")+(char)176, string("")+(char)177, string("")+(char)178 };
 		const uint n = (uint)video_lastframe->color(0); // do first entry manually
 		uint lx=n%newwidth, ly=n/newwidth;
-		const int dither = image_rescaled->color(lx, ly);
-		const int shade = dither>>8;
-		int ltc=(dither>>4)&0xF, lbc=dither&0xF;
+		const int colors = image_rescaled->color(lx, ly);
+		const int shade = colors>>8;
+		int ltc=(colors>>4)&0xF, lbc=colors&0xF;
 		set_console_cursor(lx, ly);
 		string segment = s[shade]; // reset segment
 		for(uint i=1u; i<changed_pixels; i++) {
 			const uint n = (uint)video_lastframe->color(i); // get index of changed pixel
 			const uint x=n%newwidth, y=n/newwidth; // get coordinates of changed pixel
-			const int dither = image_rescaled->color(x, y); // get color of changed pixel
-			const int shade = dither>>8;
-			const int tc=(dither>>4)&0xF, bc=dither&0xF;
+			const int colors = image_rescaled->color(x, y); // get color of changed pixel
+			const int shade = colors>>8;
+			const int tc=(colors>>4)&0xF, bc=colors&0xF;
 			if(tc!=ltc||bc!=lbc||x!=lx+1u||y!=ly) { // color has changed or cursor has moved
 				print_no_reset(segment, ltc, lbc); // print old segment, then change color
 				segment = ""; // reset segment
@@ -3660,9 +3748,9 @@ inline void print_video_dither(const Image* image, const uint textwidth=0u, cons
 		for(uint i=0u; i<changed_pixels; i++) {
 			const uint n = (uint)video_lastframe->color(i); // get index of changed pixel
 			const uint x=n%newwidth, y=n/newwidth; // get coordinates of changed pixel
-			const int dither = image_rescaled->color(x, y); // get color of changed pixel
-			const int shade = dither>>8;
-			const int tc=(dither>>4)&0xF, bc=dither&0xF;
+			const int colors = image_rescaled->color(x, y); // get color of changed pixel
+			const int shade = colors>>8;
+			const int tc=(colors>>4)&0xF, bc=colors&0xF;
 			if(x!=lx+1u||y!=ly) { // cursor has moved
 				r += "\033["+to_string(y+1u)+";"+to_string(x+1u)+"f";
 			}

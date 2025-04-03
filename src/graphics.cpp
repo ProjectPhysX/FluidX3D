@@ -762,7 +762,7 @@ void update_frame(const double frametime) {
 	textheight = max(textheight, 1u);
 	show_console_cursor(false);
 	const Image image(camera.width, camera.height, camera.bitmap);
-	print_video_dither(&image, textwidth, textheight);
+	print_video(&image, textwidth, textheight);
 	print(alignr(textwidth, to_string(textwidth)+"x"+to_string(textheight)+" "+alignr(4, to_int(1.0/frametime))+"fps"));
 	show_console_cursor(true);
 	//camera.clear_frame(); // clear frame
@@ -787,7 +787,7 @@ int main(int argc, char* argv[]) {
 		camera.rendring_frame.lock(); // block rendering for other threads until finished
 		camera.update_state(fmax(1.0/(double)camera.fps_limit, frametime));
 		main_graphics();
-		update_frame(frametime);
+		if(camera.allow_rendering) update_frame(frametime);
 		camera.rendring_frame.unlock();
 		frametime = clock.stop();
 		sleep(1.0/(double)camera.fps_limit-frametime);
