@@ -18,7 +18,7 @@ string get_opencl_c_code() {
 }
 
 // everything below is just for syntax highlighting in the editor, this does not change any functionality
-// full catalogue: https://www.khronos.org/files/opencl-1-2-quick-reference-card.pdf
+// full catalogue: https://www.khronos.org/files/opencl30-reference-guide.pdf
 
 // general
 #define get_global_id(x) // global index, set x=0
@@ -29,8 +29,9 @@ string get_opencl_c_code() {
 #define get_group_id(x) // group ID, set x=0
 #define get_global_offset(x) // global offset, set x=0
 #define get_work_dim // number of dimensions in use
-#define __attribute__(x)
-#define always_inline // for inlining functions
+#define __attribute__(x) // compiler attribute qualifiers
+#define always_inline // compiler attribute qualifier for inlining functions
+#define opencl_unroll_hint // compiler attribute qualifier for loop unrolling
 #define barrier(x) // barrier for local work group, x is CLK_LOCAL_MEM_FENCE or CLK_GLOBAL_MEM_FENCE
 #define mem_fence(x) // orders loads/stores, x is CLK_LOCAL_MEM_FENCE or CLK_GLOBAL_MEM_FENCE
 #define read_mem_fence(x) // orders loads, x is CLK_LOCAL_MEM_FENCE or CLK_GLOBAL_MEM_FENCE
