@@ -71,9 +71,15 @@ uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per c
 	return bandwidth_bytes_per_cell;
 }
 uint3 resolution(const float3 box_aspect_ratio, const uint memory) { // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+#ifndef D2Q9
 	float memory_required = (box_aspect_ratio.x*box_aspect_ratio.y*box_aspect_ratio.z)*(float)bytes_per_cell_device()/1048576.0f; // in MB
 	float scaling = cbrt((float)memory/memory_required);
 	return uint3(to_uint(scaling*box_aspect_ratio.x), to_uint(scaling*box_aspect_ratio.y), to_uint(scaling*box_aspect_ratio.z));
+#else // D2Q9
+	float memory_required = (box_aspect_ratio.x*box_aspect_ratio.y)*(float)bytes_per_cell_device()/1048576.0f; // in MB
+	float scaling = sqrt((float)memory/memory_required);
+	return uint3(to_uint(scaling*box_aspect_ratio.x), to_uint(scaling*box_aspect_ratio.y), 1u);
+#endif // D2Q9
 }
 
 string default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
