@@ -1041,7 +1041,7 @@ void LBM::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, const floa
 		});
 	}
 #ifdef MOVING_BOUNDARIES
-	if(flag==TYPE_S&&(length(linear_velocity)>0.0f||length(rotational_velocity)>0.0f)) update_moving_boundaries();
+	if((flag&(TYPE_S|TYPE_E))==TYPE_S&&(length(linear_velocity)>0.0f||length(rotational_velocity)>0.0f)) update_moving_boundaries();
 #endif // MOVING_BOUNDARIES
 	if(!initialized) {
 		flags.read_from_device();
