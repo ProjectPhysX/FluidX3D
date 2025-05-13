@@ -640,6 +640,10 @@ section RX 580 2048SP 8GB
 	1622 :crit, 0, 1622
 section RX 480 8GB
 	1908 :crit, 0, 1908
+section R9 Fury X
+	2880 :crit, 0, 2880
+section R9 Nano
+	2761 :crit, 0, 2761
 section R9 390X
 	2217 :crit, 0, 2217
 section R9 290X
@@ -648,6 +652,8 @@ section R9 290
 	1647 :crit, 0, 1647
 section HD 7970
 	1563 :crit, 0, 1563
+section HD 7870
+	868 :crit, 0, 868
 section HD 7850
 	635 :crit, 0, 635
 section Arc B580 LE
@@ -796,6 +802,8 @@ section GTX 1050M Ti
 	1224 : 0, 1224
 section P1000
 	839 : 0, 839
+section GTX TITAN X
+	2665 : 0, 2665
 section GTX 980 Ti
 	2703 : 0, 2703
 section GTX 980
@@ -884,11 +892,11 @@ section 2x EPYC 7313
 	498 :crit, 0, 498
 section 2x EPYC 7302
 	784 :crit, 0, 784
-section 2x 6980P
+section 2x Xeon 6980P
 	7875 :done, 0, 7875
-section 2x 6979P
+section 2x Xeon 6979P
 	8135 :done, 0, 8135
-section 2x 6960P
+section 2x Xeon 6960P
 	5477 :done, 0, 5477
 section 2x Platinum 8592+
 	3135 :done, 0, 3135
@@ -1048,10 +1056,13 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;2048SP&nbsp;8GB |           4.94 |           8 |          224 |              868 (59%) |              1622 (56%) |              1240 (43%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;480&nbsp;8GB         |               5.83 |           8 |          256 |             1104 (66%) |              1908 (57%) |              1550 (47%) |
+| 🔴&nbsp;Radeon&nbsp;R9&nbsp;Fury&nbsp;X          |               8.60 |           4 |          512 |             1628 (49%) |              2880 (43%) |              2507 (38%) |
+| 🔴&nbsp;Radeon&nbsp;R9&nbsp;Nano                 |               8.19 |           4 |          512 |             1575 (47%) |              2761 (42%) |              2224 (33%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;390X                 |               5.91 |           8 |          384 |             1733 (69%) |              2217 (44%) |              1722 (35%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;290X                 |               5.63 |           4 |          320 |             1245 (60%) |              1699 (41%) |              1387 (33%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;290                  |               4.85 |           4 |          320 |             1136 (54%) |              1647 (40%) |              1272 (31%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7970                 |               3.79 |           3 |          264 |              193 (11%) |              1270 (37%) |              1563 (46%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;7870                 |               2.56 |           2 |          154 |              105 (10%) |               716 (36%) |               868 (44%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2598 (87%) |              4443 (75%) |              4979 (84%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2663 (73%) |              4568 (63%) |              4519 (62%) |
@@ -1126,6 +1137,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1060M              |               4.44 |           6 |          192 |              983 (78%) |              1882 (75%) |              1803 (72%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1050M Ti           |               2.49 |           4 |          112 |              631 (86%) |              1224 (84%) |              1115 (77%) |
 | 🟢&nbsp;Quadro&nbsp;P1000                        |               1.89 |           4 |           82 |              426 (79%) |               839 (79%) |               778 (73%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;TITAN&nbsp;X       |               6.61 |          12 |          336 |             1506 (69%) |              2665 (61%) |              2518 (58%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;980&nbsp;Ti        |               6.05 |           6 |          336 |             1509 (69%) |              2703 (62%) |              2381 (55%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;980                |               4.98 |           4 |          224 |             1018 (70%) |              1965 (68%) |              1872 (64%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;970                |               4.17 |           4 |          224 |              980 (67%) |              1721 (59%) |              1623 (56%) |
