@@ -299,25 +299,33 @@ public:
 				if(name=="F"  ) unit_conversion_factor = (T)units.si_F  (1.0f);
 				if(name=="T"  ) unit_conversion_factor = (T)units.si_T  (1.0f);
 			}
+			const string filename = create_file_extension(path, ".vtk");
 			const float3 origin = spacing*float3(0.5f-0.5f*(float)Nx, 0.5f-0.5f*(float)Ny, 0.5f-0.5f*(float)Nz);
 			const string header =
-				"# vtk DataFile Version 3.0\nData\nBINARY\nDATASET STRUCTURED_POINTS\n"
+				"# vtk DataFile Version 3.0\nFluidX3D "+filename.substr(filename.rfind('/')+1)+"\nBINARY\nDATASET STRUCTURED_POINTS\n"
 				"DIMENSIONS "+to_string(Nx)+" "+to_string(Ny)+" "+to_string(Nz)+"\n"
 				"ORIGIN "+to_string(origin.x)+" "+to_string(origin.y)+" "+to_string(origin.z)+"\n"
 				"SPACING "+to_string(spacing)+" "+to_string(spacing)+" "+to_string(spacing)+"\n"
-				"POINT_DATA "+to_string((ulong)Nx*(ulong)Ny*(ulong)Nz)+"\nSCALARS data "+vtk_type()+" "+to_string(dimensions())+"\nLOOKUP_TABLE default\n"
+				"POINT_DATA "+to_string((ulong)Nx*(ulong)Ny*(ulong)Nz)+"\n"
+				"SCALARS data "+vtk_type()+" "+to_string(dimensions())+"\nLOOKUP_TABLE default\n"
 			;
-			T* data = new T[range()];
-			parallel_for(length(), [&](ulong i) {
-				for(uint d=0u; d<dimensions(); d++) {
-					data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes((T)(unit_conversion_factor*reference(i, d))); // SoA <- AoS
-				}
-			});
-			const string filename = create_file_extension(path, ".vtk");
+			const uint chunk_size_MB = 4u*thread::hardware_concurrency(); // in MB; convert and write data in chunks, to reduce memory footprint and time for large memory allocation
+			const ulong chunk_elements = (1048576ull*(ulong)chunk_size_MB)/((ulong)dimensions()*sizeof(T));
+			const ulong chunks=length()/chunk_elements, chunk_remainder=length()%chunk_elements;
+			T* data = new T[chunk_elements*(ulong)dimensions()];
 			create_folder(filename);
 			std::ofstream file(filename, std::ios::out|std::ios::binary);
 			file.write(header.c_str(), header.length()); // write non-binary file header
-			file.write((char*)data, capacity()); // write binary data
+			for(ulong c=0u; c<chunks+1ull; c++) { // iterate over all full chunks + last chunk_remainder chunk
+				const ulong N = c<chunks ? chunk_elements : chunk_remainder;
+				if(N==0ull) break; // chunk_remainder may be 0, then skip last iteration
+				parallel_for(N, [&](ulong i) {
+					for(uint d=0u; d<dimensions(); d++) { // LBM to SI units, LittleEndian to BigEndian, AoS to SoA
+						data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes((T)(unit_conversion_factor*reference(c*chunk_elements+i, d)));
+					}
+				});
+				file.write((char*)data, N*(ulong)dimensions()*sizeof(T)); // write binary data
+			}
 			file.close();
 			delete[] data;
 			info.allow_printing.lock();

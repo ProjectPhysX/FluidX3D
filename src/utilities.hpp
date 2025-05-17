@@ -40,10 +40,10 @@ typedef uint64_t ulong;
 #define min_short ((short)-32768)
 #define max_short ((short)32767)
 #define max_ushort ((ushort)65535)
-#define min_int -2147483648
+#define min_int ((int)-2147483648)
 #define max_int 2147483647
 #define max_uint 4294967295u
-#define min_slong -9223372036854775808ll
+#define min_slong ((slong)-9223372036854775808ll)
 #define max_slong 9223372036854775807ll
 #define max_ulong 18446744073709551615ull
 #define min_float 1.401298464E-45f

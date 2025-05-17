@@ -1053,7 +1053,8 @@ void LBM::unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // rem
 	for(uint d=0u; d<get_D(); d++) lbm_domain[d]->finish_queue();
 }
 void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path, const bool convert_to_si_units) const { // write mesh to binary .vtk file
-	const string header_1 = "# vtk DataFile Version 3.0\nData\nBINARY\nDATASET POLYDATA\nPOINTS "+to_string(3u*mesh->triangle_number)+" float\n";
+	const string filename = default_filename(path, "mesh", ".vtk", get_t());
+	const string header_1 = "# vtk DataFile Version 3.0\nFluidX3D "+filename.substr(filename.rfind('/')+1)+"\nBINARY\nDATASET POLYDATA\nPOINTS "+to_string(3u*mesh->triangle_number)+" float\n";
 	const string header_2 = "POLYGONS "+to_string(mesh->triangle_number)+" "+to_string(4u*mesh->triangle_number)+"\n";
 	float* points = new float[9u*mesh->triangle_number];
 	int* triangles = new int[4u*mesh->triangle_number];
@@ -1074,7 +1075,6 @@ void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path, const bool con
 		triangles[4u*i+2u] = reverse_bytes(3*(int)i+1); // vertex 1
 		triangles[4u*i+3u] = reverse_bytes(3*(int)i+2); // vertex 2
 	});
-	const string filename = default_filename(path, "mesh", ".vtk", get_t());
 	create_folder(filename);
 	std::ofstream file(filename, std::ios::out|std::ios::binary);
 	file.write(header_1.c_str(), header_1.length()); // write non-binary file header

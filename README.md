@@ -219,6 +219,17 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - improved coloring in `VIS_FIELD`/`ray_grid_traverse_sum()`
   - updated OpenCL-Wrapper now compiles OpenCL C code with `-cl-std=CL3.0` if available
   - fixed compiling on macOS with new OpenCL headers
+- [v3.3](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.3) (17.05.2025) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.2...v3.3) (faster .vtk export)
+  - `.vtk` export now converts and writes data in chunks, to reduce memory footprint and time for large memory allocation
+  - `.vtk` files now contain original file name as metadata in title
+  - `INTERACTIVE_GRAPHICS_ASCII` now renders in 2x vertical resolution but less colors
+  - updated OpenCL-Wrapper: more robust dp4a detection, fixed core count reporting for RDNA4 GPUs
+  - fixed `update_moving_boundaries()` kernel not being called with flags other than `TYPE_S`
+  - fixed corrupted first frame until resizing with `INTERACTIVE_GRAPHICS_ASCII`
+  - fixed `resolution()` function for D2Q9
+  - fixed missing `<chrono>` header on some compilers
+  - fixed bug in `split_regex()`
+  - fixed compiler warning with `min_int`
 
 </details>
 
@@ -748,6 +759,8 @@ section RTX 3050M Ti
 	2341 : 0, 2341
 section RTX 3050M
 	2339 : 0, 2339
+section RTX 3050 6GB
+	1898 : 0, 1898
 section Titan RTX
 	7554 : 0, 7554
 section RTX 6000
@@ -816,6 +829,8 @@ section M60 (1 GPU)
 	1571 : 0, 1571
 section GTX 960M
 	872 : 0, 872
+section GTX 780 Ti
+	2776 : 0, 2776
 section GTX 770
 	1215 : 0, 1215
 section GTX 680 4GB
@@ -1110,6 +1125,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;A2                                       |               4.53 |          15 |          200 |             1031 (79%) |              2051 (79%) |              1199 (46%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050M&nbsp;Ti      |               7.60 |           4 |          192 |             1181 (94%) |              2341 (94%) |              2253 (90%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050M              |               7.13 |           4 |          192 |             1180 (94%) |              2339 (94%) |              2016 (81%) |
+| 🟢&nbsp;GeForce&nbsp;RTX&nbsp;3050&nbsp;6GB      |               6.77 |           6 |          168 |              993 (90%) |              1898 (87%) |              1879 (86%) |
 | 🟢&nbsp;Titan&nbsp;RTX                           |              16.31 |          24 |          672 |             3471 (79%) |              7456 (85%) |              7554 (87%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;6000                |              16.31 |          24 |          672 |             3307 (75%) |              6836 (78%) |              6879 (79%) |
 | 🟢&nbsp;Quadro&nbsp;RTX&nbsp;8000&nbsp;Passive   |              14.93 |          48 |          624 |             2591 (64%) |              5408 (67%) |              5607 (69%) |
@@ -1144,6 +1160,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;Quadro&nbsp;M4000                        |               2.57 |           8 |          192 |              899 (72%) |              1519 (61%) |              1050 (42%) |
 | 🟢&nbsp;Tesla&nbsp;M60&nbsp;(1&nbsp;GPU)         |               4.82 |           8 |          160 |              853 (82%) |              1571 (76%) |              1557 (75%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;960M               |               1.51 |           4 |           80 |              442 (84%) |               872 (84%) |               627 (60%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;780&nbsp;Ti        |               5.35 |           3 |          336 |             1710 (78%) |              2776 (64%) |              1302 (30%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;770                |               3.33 |           2 |          224 |              800 (55%) |              1215 (42%) |               876 (30%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;680&nbsp;4GB       |               3.33 |           4 |          192 |              783 (62%) |              1274 (51%) |               814 (33%) |
 | 🟢&nbsp;Quadro&nbsp;K2000                        |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
