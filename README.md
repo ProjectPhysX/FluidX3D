@@ -1421,7 +1421,7 @@ section 2x Tesla K40m
 section 1x Tesla K40m
 	1868 : 0, 1868
 
-section 1x Tesla K80 (2 GPU)
+section 1x Tesla K80 (2 GPUs)
 	3448 : 0, 3448
 section 1x Tesla K80 (1 GPU)
 	1642 : 0, 1642
@@ -1568,7 +1568,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;2x&nbsp;Tesla&nbsp;K40m                                 |               8.58 |          24 |          577 |            1971 (1.7x) |             3300 (1.8x) |             1801 (2.0x) |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K40m                                 |               4.29 |          12 |          288 |             1131 (60%) |              1868 (50%) |               912 (24%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(2&nbsp;GPU)                |               8.22 |          24 |          480 |            2086 (2.3x) |             3448 (2.1x) |             2174 (2.3x) |
+| 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(2&nbsp;GPUs)               |               8.22 |          24 |          480 |            2086 (2.3x) |             3448 (2.1x) |             2174 (2.3x) |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)                |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;2x&nbsp;L40S                                            |             183.22 |          96 |         1728 |            6888 (1.8x) |            13099 (1.8x) |            13640 (1.8x) |
