@@ -679,6 +679,8 @@ section Arc Pro A40
 	985 :done, 0, 985
 section Arc A380
 	1115 :done, 0, 1115
+section RTX PRO 6000 Blackwell
+	20841 : 0, 20841
 section RTX 5090
 	19141 : 0, 19141
 section RTX 5080
@@ -835,6 +837,8 @@ section GTX 770
 	1215 : 0, 1215
 section GTX 680 4GB
 	1274 : 0, 1274
+section GTX 660
+	1146 : 0, 1146
 section K2000
 	444 : 0, 444
 section GT 630 (OEM)
@@ -1085,6 +1089,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;Arc&nbsp;A580                            |              12.29 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |
 | 🔵&nbsp;Arc&nbsp;Pro&nbsp;A40                    |               5.02 |           6 |          192 |              594 (47%) |               985 (40%) |               927 (37%) |
 | 🔵&nbsp;Arc&nbsp;A380                            |               4.20 |           6 |          186 |              622 (51%) |              1097 (45%) |              1115 (46%) |
+| 🟢&nbsp;RTX&nbsp;PRO&nbsp;6000&nbsp;Blackwell    |             125.95 |          96 |         1792 |            10349 (88%) |             20511 (88%) |             20841 (90%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;5090               |             104.88 |          32 |         1792 |             9522 (81%) |             18459 (79%) |             19141 (82%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;5080               |              56.34 |          16 |          960 |             5174 (82%) |             10252 (82%) |             10304 (83%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;5070               |              30.84 |          12 |          672 |             3658 (83%) |              7238 (83%) |              7107 (81%) |
@@ -1163,6 +1168,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;780&nbsp;Ti        |               5.35 |           3 |          336 |             1710 (78%) |              2776 (64%) |              1302 (30%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;770                |               3.33 |           2 |          224 |              800 (55%) |              1215 (42%) |               876 (30%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;680&nbsp;4GB       |               3.33 |           4 |          192 |              783 (62%) |              1274 (51%) |               814 (33%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;660                |               1.98 |           2 |          144 |              505 (54%) |              1146 (61%) |               489 (26%) |
 | 🟢&nbsp;Quadro&nbsp;K2000                        |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)      |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |         1/4 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
