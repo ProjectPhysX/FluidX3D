@@ -843,6 +843,12 @@ section K2000
 	444 : 0, 444
 section GT 630 (OEM)
 	185 : 0, 185
+section GTX 580
+	1481 : 0, 1481
+section GTX 560 Ti
+	895 : 0, 895
+section GTX 480
+	1264 : 0, 1264
 section NVS 290
 	9 : 0, 9
 section Arise 1020
@@ -1171,6 +1177,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;660                |               1.98 |           2 |          144 |              505 (54%) |              1146 (61%) |               489 (26%) |
 | 🟢&nbsp;Quadro&nbsp;K2000                        |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)      |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;580                |               1.58 |         1.5 |          192 |             1028 (82%) |              1481 (59%) |               599 (24%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;560&nbsp;Ti        |               1.26 |           1 |          128 |              661 (79%) |               895 (54%) |               415 (25%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;480                |               1.35 |         1.5 |          177 |              908 (78%) |              1264 (55%) |               509 (22%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |         1/4 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
 | 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
@@ -1351,6 +1360,17 @@ section 2x Radeon VII
 section 1x Radeon VII
 	7778 :crit, 0, 7778
 
+section 1x Radeon Pro Duo (2 GPUs)
+	3310 :crit, 0, 3310
+section 1x R9 295X2 (2 GPUs)
+	2428 :crit, 0, 2428
+section 1x HD 7990 (2 GPUs)
+	2314 :crit, 0, 2314
+section 1x HD 6990 (2 GPUs)
+	344 :crit, 0, 344
+section 1x HD 5970 (2 GPUs)
+	360 :crit, 0, 360
+
 section 4x GPU Max 1100
 	22777 :done, 0, 22777
 section 2x GPU Max 1100
@@ -1481,6 +1501,9 @@ section 2x GeForce RTX 2080 Ti
 section 1x GeForce RTX 2080 Ti
 	6853 : 0, 6853
 
+section 1x GTX 690 (2 GPUs)
+	920 : 0, 920
+
 section 2x Arc A770
 	8745 :done, 0, 8745
 section 1x Arc A770
@@ -1530,6 +1553,12 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;4x&nbsp;Radeon&nbsp;VII                                 |              55.32 |          64 |         4096 |      12911&nbsp;(2.6x) |            24273 (3.1x) |            17080 (3.2x) |
 | 🔴&nbsp;2x&nbsp;Radeon&nbsp;VII                                 |              27.66 |          32 |         2048 |            8113 (1.7x) |            15591 (2.0x) |            10352 (2.0x) |
 | 🔴&nbsp;1x&nbsp;Radeon&nbsp;VII                                 |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;1x&nbsp;Radeon&nbsp;Pro&nbsp;Duo (2&nbsp;GPUs)          |              16.38 |           8 |         1024 |             1945 (29%) |              3310 (25%) |              2879 (22%) |
+| 🔴&nbsp;1x&nbsp;R9&nbsp;295X2&nbsp;(2&nbsp;GPUs)                |              11.47 |           8 |          640 |             1727 (41%) |              2428 (29%) |              1989 (24%) |
+| 🔴&nbsp;1x&nbsp;HD&nbsp;7990&nbsp;(2&nbsp;GPUs)                 |               8.19 |           6 |          576 |             1552 (41%) |              1996 (27%) |              2314 (31%) |
+| 🔴&nbsp;1x&nbsp;HD&nbsp;6990&nbsp;(2&nbsp;GPUs)                 |               5.41 |           4 |          320 |              344 (16%) |               214 ( 5%) |               255 ( 6%) |
+| 🔴&nbsp;1x&nbsp;HD&nbsp;5970&nbsp;(2&nbsp;GPUs)                 |               3.76 |           2 |          256 |              360 (22%) |               181 ( 5%) |               224 ( 7%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔵&nbsp;4x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              88.88 |         192 |         4915 |           12162 (3.5x) |            22777 (3.7x) |            11759 (3.6x) |
 | 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
@@ -1604,6 +1633,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;4x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              53.80 |          44 |         2464 |            9117 (2.9x) |            18415 (2.7x) |            18598 (2.7x) |
 | 🟢&nbsp;2x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              26.90 |          22 |         1232 |            5085 (1.6x) |            10770 (1.6x) |            10922 (1.6x) |
 | 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;1x&nbsp;GTX&nbsp;690&nbsp;(2&nbsp;GPUs)                 |               6.26 |           4 |          385 |              587 (23%) |               920 (18%) |               535 (11%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔵&nbsp;2x&nbsp;Arc&nbsp;A770                                   |              39.32 |          32 |         1120 |            4954 (1.9x) |             8745 (1.9x) |             8329 (1.8x) |
 | 🔵&nbsp;1x&nbsp;Arc&nbsp;A770                                   |              19.66 |          16 |          560 |             2663 (73&) |              4568 (63%) |              4519 (62%) |
