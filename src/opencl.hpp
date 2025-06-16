@@ -34,7 +34,7 @@ string("'-----------------------------------------------------------------------
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 mkdir -p ~/amdgpu
-wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.3.4/ubuntu/noble/amdgpu-install_6.3.60304-1_all.deb
+wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.4.1/ubuntu/noble/amdgpu-install_6.4.60401-1_all.deb
 sudo apt install -y ~/amdgpu/amdgpu-install*.deb
 sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
 sudo usermod -a -G render,video $(whoami)
@@ -132,6 +132,7 @@ struct Device_Info {
 		is_gpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_GPU;
 		uses_ram = is_cpu||cl_device.getInfo<CL_DEVICE_HOST_UNIFIED_MEMORY>(); // CPUs or iGPUs
 		const int vendor_id = (int)cl_device.getInfo<CL_DEVICE_VENDOR_ID>(); // AMD=0x1002, Intel=0x8086, Nvidia=0x10DE, Apple=0x1027F00
+		uint ipc = is_gpu ? 2u : 32u; // IPC (instructions per cycle) is 2 for most GPUs and 32 for most modern CPUs
 		float cores_per_cu = 1.0f;
 #if !defined(__APPLE__) // macOS only supports OpenCL 1.2, OpenCL extensions are missing before OpenCL 3.0
 		uint max_opencl_c_version = 0u; // device OpenCL C version; cl_device.getInfo<CL_DEVICE_OPENCL_C_VERSION>().substr(9, 3) is unreliable as it will report 1.2 if 3.0 is available but not 2.X
@@ -145,9 +146,11 @@ struct Device_Info {
 		const cl_bool* idpap_bits = (cl_bool*)&idpap; // on some unsupported devices, values are random, so only claim is_dp4a_capable if all bits are set correctly
 		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
-			const bool amd_128_cores_per_dualcu = contains(to_lower(name), "gfx10"); // identify RDNA/RDNA2 GPUs where dual CUs are reported
-			const bool amd_256_cores_per_dualcu = contains_any(to_lower(name), {"gfx11", "gfx12"}); // identify RDNA3/RDNA4 GPUs where dual CUs are reported
-			cores_per_cu = is_gpu ? (amd_256_cores_per_dualcu ? 256.0f : amd_128_cores_per_dualcu ? 128.0f : 64.0f) : 0.5f; // 64 cores/CU (GCN, CDNA), 128 cores/dualCU (RDNA, RDNA2), 256 cores/dualCU (RDNA3), 1/2 core/CU (CPUs)
+			const bool amd_dual_cu = is_gpu&&contains_any(to_lower(name), {"gfx10", "gfx11", "gfx12"}); // identify RDNA/RDNA2/RDNA3/RDNA4 GPUs where dual CUs are reported
+			const bool amd_dual_issuing = is_gpu&&contains_any(to_lower(name), {"gfx11", "gfx12"}); // identify RDNA3/RDNA4 GPUs where cores can dual-issue float2
+			if(amd_dual_cu) compute_units *= 2u; // some AMD GPUs wrongly report the number of dual CUs as the number of CUs
+			if(amd_dual_issuing) ipc = 4u; // some AMD GPUs support dual-issuging of float2 vector type, doubling IPC for float2 type
+			cores_per_cu = is_gpu ? 64.0f : 0.5f; // 64 cores/CU (GPUs), 1/2 core/CU (CPUs)
 			if(is_gpu) name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>()); // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
 			const bool intel_16_cores_per_cu = contains_any(to_lower(name), {"gpu max", "140v", "130v", "b580", "b570"}); // identify PVC/Xe2 GPUs
@@ -180,7 +183,6 @@ struct Device_Info {
 			cores_per_cu = is_gpu ? 8.0f : 1.0f; // ARM GPUs usually have 8 cores/CU, ARM CPUs have 1 core/CU
 			patch_legacy_gpu_fma = true; // enable for all ARM GPUs
 		}
-		const uint ipc = is_gpu ? 2u : 32u; // IPC (instructions per cycle) is 2 for GPUs and 32 for most modern CPUs
 		cores = to_uint((float)compute_units*cores_per_cu); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 		tflops = 1E-6f*(float)cores*(float)ipc*(float)clock_frequency; // estimated device floating point performance in TeraFLOPs/s
 	}
