@@ -611,6 +611,8 @@ section RX 7900 GRE
 	4570 :crit, 0, 4570
 section PRO W7700
 	2943 :crit, 0, 2943
+section RX 7700 XT
+	2828 :crit, 0, 2828
 section RX 7600
 	2561 :crit, 0, 2561
 section PRO W7600
@@ -667,6 +669,8 @@ section HD 7870
 	868 :crit, 0, 868
 section HD 7850
 	635 :crit, 0, 635
+section HD 5870
+	257 :crit, 0, 257
 section Arc B580 LE
 	4979 :done, 0, 4979
 section Arc A770 LE
@@ -1061,6 +1065,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7800               |              45.20 |          32 |          576 |             1872 (50%) |              4426 (59%) |              4145 (55%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;GRE        |              42.03 |          16 |          576 |             1996 (53%) |              4570 (61%) |              4463 (60%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7700               |              28.30 |          16 |          576 |             1547 (41%) |              2943 (39%) |              2899 (39%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;7700&nbsp;XT         |              30.77 |          12 |          432 |             1405 (50%) |              2702 (48%) |              2828 (50%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7600                 |              21.75 |           8 |          288 |             1250 (66%) |              2561 (68%) |              2512 (67%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7600               |              20.00 |           8 |          288 |             1179 (63%) |              2263 (61%) |              2287 (61%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W7500               |              12.20 |           8 |          172 |              856 (76%) |              1630 (73%) |              1682 (75%) |
@@ -1089,6 +1094,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7970                 |               3.79 |           3 |          264 |              193 (11%) |              1270 (37%) |              1563 (46%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7870                 |               2.56 |           2 |          154 |              105 (10%) |               716 (36%) |               868 (44%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;5870                 |               2.72 |           1 |          154 |              257 (26%) |               111 ( 6%) |               141 ( 7%) |
 | 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2598 (87%) |              4443 (75%) |              4979 (84%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2663 (73%) |              4568 (63%) |              4519 (62%) |
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                    |              17.20 |           8 |          512 |             2555 (76%) |              4314 (65%) |              4047 (61%) |
@@ -1510,7 +1516,9 @@ section 1x Arc A770
 	4568 :done, 0, 4568
 
 section 1x A100 + 1x P100 + 2x A2 + 3x MI50 + 1x A770
-	17296 :active,done, 0, 17296
+	17296 :active,crit, 0, 17296
+section 1x 7700 XT + 1x B580 + 1x Titan Xp
+	8358 :active,crit, 0, 8358
 section 1x A770 + 1x Titan Xp
 	8380 :active,done, 0, 8380
 ```
@@ -1640,6 +1648,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;1x&nbsp;Arc&nbsp;A770                                   |              19.66 |          16 |          560 |             2663 (73&) |              4568 (63%) |              4519 (62%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;1x&nbsp;A100&nbsp;40GB + 🟢&nbsp;1x&nbsp;P100&nbsp;16GB + 🟢&nbsp;2x&nbsp;A2 + 🔴&nbsp;3x&nbsp;MI50&nbsp;32GB + 🔵&nbsp;1x&nbsp;A770&nbsp;16GB | 54.36 | 180 | 2400 | 9903 (63%) | 17296 (55%) | 12041 (39%) |
+| 🔴&nbsp;1x&nbsp;7700&nbsp;XT + 🔵&nbsp;1x&nbsp;B580 + 🟢&nbsp;1x&nbsp;Titan&nbsp;Xp | 36.45 |    36 |         1296 |             3979 (47%) |              8003 (48%) |              8358 (39%) |
 | 🔵&nbsp;1x&nbsp;A770&nbsp;+&nbsp;🟢&nbsp;1x&nbsp;Titan&nbsp;Xp  |              24.30 |          24 |         1095 |             4717 (66%) |              8380 (59%) |              8026 (56%) |
 
 </details>
