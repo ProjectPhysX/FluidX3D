@@ -853,6 +853,8 @@ section GTX 560 Ti
 	895 : 0, 895
 section GTX 480
 	1264 : 0, 1264
+section GTX 280
+	462 : 0, 462
 section NVS 290
 	9 : 0, 9
 section Arise 1020
@@ -1186,6 +1188,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;580                |               1.58 |         1.5 |          192 |             1028 (82%) |              1481 (59%) |               599 (24%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;560&nbsp;Ti        |               1.26 |           1 |          128 |              661 (79%) |               895 (54%) |               415 (25%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;480                |               1.35 |         1.5 |          177 |              908 (78%) |              1264 (55%) |               509 (22%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;280                |               0.62 |           1 |          142 |              409 (44%) |               462 (25%) |               209 (11%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |         1/4 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
 | 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
