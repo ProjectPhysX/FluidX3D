@@ -2286,14 +2286,14 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}
 
-	for(int i=1; i<(int)intersections; i++) { // insertion-sort distances
+	for(uint i=1u; i<min(intersections, 64u); i++) { // insertion-sort distances
 		ushort t = distances[i];
-		int j = i-1;
-		while(distances[j]>t&&j>=0) {
-			distances[j+1] = distances[j];
+		uint j = i;
+		while(j>0u&&distances[j-1u]>t) {
+			distances[j] = distances[j-1u];
 			j--;
 		}
-		distances[j+1] = t;
+		distances[j] = t;
 	}
 	bool inside = (intersections%2u)&&(intersections_check%2u);
 	const bool set_u = sq(ux)+sq(uy)+sq(uz)+sq(rx)+sq(ry)+sq(rz)>0.0f;
