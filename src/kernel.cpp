@@ -1578,23 +1578,17 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // VOLUME_FORCE
 	}
 
-)+"#ifndef EQUILIBRIUM_BOUNDARIES"+R(
 )+"#ifdef UPDATE_FIELDS"+R(
-	rho[               n] = rhon; // update density field
-	u[                 n] = uxn; // update velocity field
-	u[    def_N+(ulong)n] = uyn;
-	u[2ul*def_N+(ulong)n] = uzn;
-)+"#endif"+R( // UPDATE_FIELDS
-)+"#else"+R( // EQUILIBRIUM_BOUNDARIES
-)+"#ifdef UPDATE_FIELDS"+R(
-	if(flagsn_bo!=TYPE_E) { // only update fields for non-TYPE_E cells
+)+"#ifdef EQUILIBRIUM_BOUNDARIES"+R(
+	if(flagsn_bo!=TYPE_E) // only update fields for non-TYPE_E cells
+)+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
+	{
 		rho[               n] = rhon; // update density field
 		u[                 n] = uxn; // update velocity field
 		u[    def_N+(ulong)n] = uyn;
 		u[2ul*def_N+(ulong)n] = uzn;
 	}
 )+"#endif"+R( // UPDATE_FIELDS
-)+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
 
 	float feq[def_velocity_set]; // equilibrium DDFs
 	calculate_f_eq(rhon, uxn, uyn, uzn, feq); // calculate equilibrium DDFs

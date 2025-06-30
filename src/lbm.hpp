@@ -383,7 +383,7 @@ public:
 		inline const T operator()(const ulong i, const uint dimension) const { return reference(i, dimension); } // array of structures
 		inline void read_from_device() {
 #ifndef UPDATE_FIELDS
-			for(uint domain=0u; domain<D; domain++) lbm->lbm_domain[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
+			if(lbm->initialized) for(uint domain=0u; domain<D; domain++) lbm->lbm_domain[domain]->enqueue_update_fields(); // only if simulation has already been initialized: make sure data in device memory is up-to-date
 #endif // UPDATE_FIELDS
 			for(uint domain=0u; domain<D; domain++) buffers[domain]->enqueue_read_from_device();
 			for(uint domain=0u; domain<D; domain++) buffers[domain]->finish_queue();
