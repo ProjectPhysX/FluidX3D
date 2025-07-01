@@ -671,6 +671,8 @@ section HD 7850
 	635 :crit, 0, 635
 section HD 5870
 	257 :crit, 0, 257
+section FirePro V5800
+	108 :crit, 0, 108
 section Arc B580 LE
 	4979 :done, 0, 4979
 section Arc A770 LE
@@ -855,6 +857,10 @@ section GTX 480
 	1264 : 0, 1264
 section GTX 280
 	462 : 0, 462
+section GTX 260
+	421 : 0, 421
+section FX 5800
+	296 : 0, 296
 section NVS 290
 	9 : 0, 9
 section Arise 1020
@@ -1097,6 +1103,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7870                 |               2.56 |           2 |          154 |              105 (10%) |               716 (36%) |               868 (44%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5870                 |               2.72 |           1 |          154 |              257 (26%) |               111 ( 6%) |               141 ( 7%) |
+| 🔴&nbsp;FirePro&nbsp;V5800                       |               1.10 |           1 |           64 |              108 (26%) |                52 ( 6%) |                66 ( 8%) |
 | 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2598 (87%) |              4443 (75%) |              4979 (84%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2663 (73%) |              4568 (63%) |              4519 (62%) |
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                    |              17.20 |           8 |          512 |             2555 (76%) |              4314 (65%) |              4047 (61%) |
@@ -1189,7 +1196,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;560&nbsp;Ti        |               1.26 |           1 |          128 |              661 (79%) |               895 (54%) |               415 (25%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;480                |               1.35 |         1.5 |          177 |              908 (78%) |              1264 (55%) |               509 (22%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;280                |               0.62 |           1 |          142 |              409 (44%) |               462 (25%) |               209 (11%) |
-| 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |         1/4 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;260                |               0.48 |         0.9 |          111 |              345 (47%) |               421 (29%) |               160 (11%) |
+| 🟢&nbsp;Quadro&nbsp;FX&nbsp;5800                 |               0.62 |           4 |          102 |              296 (44%) |               268 (20%) |               211 (16%) |
+| 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |        0.25 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
 | 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
 | ⚪&nbsp;M2&nbsp;Ultra&nbsp;GPU&nbsp;76CU&nbsp;192GB |           19.46 |         147 |          800 |             4629 (89%) |              8769 (84%) |              7972 (77%) |
