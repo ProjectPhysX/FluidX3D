@@ -60,7 +60,7 @@ sudo shutdown -r now
 | CPU Option 1: Intel CPU Runtime for OpenCL (works for both AMD/Intel CPUs)  |
 '-----------------------------------------------------------------------------'
 export OCLV="oclcpuexp-2025.19.3.0.17_230222_rel"
-export TBBV="oneapi-tbb-2022.1.0"
+export TBBV="oneapi-tbb-2022.2.0"
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d

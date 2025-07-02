@@ -61,7 +61,7 @@
   - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=%22oneAPI+DPC%2B%2B+Compiler+dependencies%22) and [oneTBB](https://github.com/uxlfoundation/oneTBB/releases) with:
     ```bash
     export OCLV="oclcpuexp-2025.19.3.0.17_230222_rel"
-    export TBBV="oneapi-tbb-2022.1.0"
+    export TBBV="oneapi-tbb-2022.2.0"
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
     sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
