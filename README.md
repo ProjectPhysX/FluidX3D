@@ -2,8 +2,8 @@
 
 The fastest and most memory efficient lattice Boltzmann CFD software, running on all GPUs and CPUs via [OpenCL](https://github.com/ProjectPhysX/OpenCL-Wrapper "OpenCL-Wrapper"). Free for non-commercial use.
 
-<a href="https://youtu.be/-MkRBeQkLk8"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/oC6U1M0Fsug"><img src="https://img.youtube.com/vi/oC6U1M0Fsug/maxresdefault.jpg" width="50%"></img></a><br>
-<a href="https://youtu.be/XOfXHgP4jnQ"><img src="https://img.youtube.com/vi/XOfXHgP4jnQ/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/K5eKxzklXDA"><img src="https://img.youtube.com/vi/K5eKxzklXDA/maxresdefault.jpg" width="50%"></img></a>
+<a href="https://youtu.be/-MkRBeQkLk8"><img src="https://img.youtube.com/vi/o3TPN142HxM/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/1z5-ddsmAag"><img src="https://img.youtube.com/vi/1z5-ddsmAag/maxresdefault.jpg" width="50%"></img></a><br>
+<a href="https://youtu.be/2BPP1oWzvi0"><img src="https://img.youtube.com/vi/2BPP1oWzvi0/maxresdefault.jpg" width="50%"></img></a><a href="https://youtu.be/K5eKxzklXDA"><img src="https://img.youtube.com/vi/K5eKxzklXDA/maxresdefault.jpg" width="50%"></img></a>
 (click on images to show videos on YouTube)
 
 <details><summary>Update History</summary>
@@ -230,6 +230,12 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed missing `<chrono>` header on some compilers
   - fixed bug in `split_regex()`
   - fixed compiler warning with `min_int`
+- [v3.4](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.4) (02.07.2025) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.3...v3.4) (bug fixes)
+  - updated OpenCL driver install versions
+  - minor refactoring in `stream_collide()`
+  - fixed bug in insertion-sort in `voxelize_mesh()` kernel causing crash on AMD GPUs
+  - fixed bug in `voxelize_mesh_on_device()` host code causing initialization corruption on AMD GPUs
+  - fixed dual CU and IPC reporting on AMD RDNA 1-4 GPUs
 
 </details>
 
