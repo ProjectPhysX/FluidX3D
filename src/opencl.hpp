@@ -59,13 +59,13 @@ sudo shutdown -r now
 )"+string("\033[96m")+R"(.-----------------------------------------------------------------------------.
 | CPU Option 1: Intel CPU Runtime for OpenCL (works for both AMD/Intel CPUs)  |
 '-----------------------------------------------------------------------------'
-export OCLV="oclcpuexp-2025.19.3.0.17_230222_rel"
+export OCLV="oclcpuexp-2025.20.6.0.04_224945_rel"
 export TBBV="oneapi-tbb-2022.2.0"
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
-sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2025-WW13/${OCLV}.tar.gz
-sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2022.1.0/${TBBV}-lin.tgz
+sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2025-WW27/${OCLV}.tar.gz
+sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2022.2.0/${TBBV}-lin.tgz
 sudo tar -zxvf ~/cpurt/${OCLV}.tar.gz -C /opt/intel/${OCLV}
 sudo tar -zxvf ~/cpurt/${TBBV}-lin.tgz -C /opt/intel
 echo /opt/intel/${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
