@@ -141,6 +141,8 @@
 - To select a specific GPU, enter `./make.sh 0` to compile+run, or `bin/FluidX3D 0` to run on device `0`. You can also select multiple GPUs with `bin/FluidX3D 0 1 3 6` if the setup is [configured as multi-GPU](#the-lbm-class).
 - Operating system (Linux/macOS/Android) and X11 support (required for [`INTERACTIVE_GRAPHICS`](src/defines.hpp)) are detected automatically. In case problems arise, you can still manually select [`target=...`](make.sh#L13) in [`make.sh`](make.sh#L13).
 - On macOS and Android, [`INTERACTIVE_GRAPHICS`](src/defines.hpp) mode is not supported, as no X11 is available. You can still use [`INTERACTIVE_GRAPHICS_ASCII`](src/defines.hpp) though, or [render video](#video-rendering) to the hard drive with regular [`GRAPHICS`](src/defines.hpp) mode.
+- On ARM based Linux systems (e.g. Raspberry Pi, Orange Pi, etc.) you may need to install OpenCL development tools to install the libOpenCL.so and headers for your system. You can use `sudo apt install opencl-headers ocl-icd-opencl-dev -y` command to install the libOpenCL dev tools. Then you may need to copy your libOpenCL.so file into the `FluidX3D/src/OpenCL/lib/` folder.
+
 
 <br>
 
