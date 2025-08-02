@@ -326,12 +326,12 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
       </details>
   - large cost saving: comparison of maximum single-GPU grid resolution for D3Q19 LBM
 
-    | GPU&nbsp;VRAM&nbsp;capacity      | 1&nbsp;GB | 2&nbsp;GB | 3&nbsp;GB | 4&nbsp;GB | 6&nbsp;GB | 8&nbsp;GB | 10&nbsp;GB | 11&nbsp;GB | 12&nbsp;GB | 16&nbsp;GB | 20&nbsp;GB | 24&nbsp;GB | 32&nbsp;GB | 40&nbsp;GB | 48&nbsp;GB | 64&nbsp;GB | 80&nbsp;GB | 94&nbsp;GB | 128&nbsp;GB | 192&nbsp;GB | 256&nbsp;GB |
-    | :------------------------------- | --------: | --------: | --------: | --------: | --------: | --------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ----------: | ----------: | ----------: |
-    | approximate&nbsp;GPU&nbsp;price  | $25<br>GT&nbsp;210 | $25<br>GTX&nbsp;950 | $12<br>GTX&nbsp;1060 | $50<br>GT&nbsp;730 | $35<br>GTX&nbsp;1060 | $70<br>RX&nbsp;470 | $500<br>RTX&nbsp;3080 | $240<br>GTX&nbsp;1080&nbsp;Ti | $75<br>Tesla&nbsp;M40 | $75<br>Instinct&nbsp;MI25 | $900<br>RX&nbsp;7900&nbsp;XT | $205<br>Tesla&nbsp;P40 | $600<br>Instinct&nbsp;MI60 | $5500<br>A100 | $2400<br>RTX&nbsp;8000 | $10k<br>Instinct&nbsp;MI210 | $11k<br>A100 | >$40k<br>H100&nbsp;NVL | ?<br>GPU&nbsp;Max&nbsp;1550 | ~$10k<br>MI300X | - |
-    | traditional&nbsp;LBM&nbsp;(FP64) |      144³ |      182³ |      208³ |      230³ |      262³ |      288³ |       312³ |       322³ |       330³ |       364³ |       392³ |       418³ |       460³ |       494³ |       526³ |       578³ |       624³ |       658³ |        730³ |        836³ |        920³ |
-    | FluidX3D&nbsp;(FP32/FP32)        |      224³ |      282³ |      322³ |      354³ |      406³ |      448³ |       482³ |       498³ |       512³ |       564³ |       608³ |       646³ |       710³ |       766³ |       814³ |       896³ |       966³ |      1018³ |       1130³ |       1292³ |       1422³ |
-    | FluidX3D&nbsp;(FP32/FP16)        |      266³ |      336³ |      384³ |      424³ |      484³ |      534³ |       574³ |       594³ |       610³ |       672³ |       724³ |       770³ |       848³ |       912³ |       970³ |      1068³ |      1150³ |      1214³ |       1346³ |       1540³ |       1624³ |
+    | GPU&nbsp;VRAM&nbsp;capacity      | 1&nbsp;GB | 2&nbsp;GB | 3&nbsp;GB | 4&nbsp;GB | 6&nbsp;GB | 8&nbsp;GB | 10&nbsp;GB | 11&nbsp;GB | 12&nbsp;GB | 16&nbsp;GB | 20&nbsp;GB | 24&nbsp;GB | 32&nbsp;GB | 40&nbsp;GB | 48&nbsp;GB | 64&nbsp;GB | 80&nbsp;GB | 94&nbsp;GB | 128&nbsp;GB | 180&nbsp;GB | 192&nbsp;GB | 256&nbsp;GB | 288&nbsp;GB | 6&nbsp;TB |
+    | :------------------------------- | --------: | --------: | --------: | --------: | --------: | --------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ---------: | ----------: | ----------: | ----------: | ----------: | ----------: | --------: |
+    | approximate&nbsp;GPU&nbsp;price  | $25<br>GT&nbsp;210 | $25<br>GTX&nbsp;950 | $12<br>GTX&nbsp;1060 | $50<br>GT&nbsp;730 | $35<br>GTX&nbsp;1060 | $70<br>RX&nbsp;470 | $500<br>RTX&nbsp;3080 | $240<br>GTX&nbsp;1080&nbsp;Ti | $75<br>Tesla&nbsp;M40 | $75<br>Instinct&nbsp;MI25 | $900<br>RX&nbsp;7900&nbsp;XT | $205<br>Tesla&nbsp;P40 | $600<br>Instinct&nbsp;MI60 | $5500<br>A100 | $2400<br>RTX&nbsp;8000 | $10k<br>Instinct&nbsp;MI210 | $11k<br>A100 | >$40k<br>H100&nbsp;NVL | ?<br>GPU&nbsp;Max&nbsp;1550 | ~$80k<br>B200 | ~$15k<br>MI300X | ~$25k<br>MI325X | ~$25k<br>MI350X | ~$80k<br>2x&nbsp;Xeon&nbsp;6960P |
+    | traditional&nbsp;LBM&nbsp;(FP64) |      144³ |      182³ |      208³ |      230³ |      262³ |      288³ |       312³ |       322³ |       330³ |       364³ |       392³ |       418³ |       460³ |       494³ |       526³ |       578³ |       624³ |       658³ |        730³ |        818³ |        836³ |        920³ |        956³ |     2654³ |
+    | FluidX3D&nbsp;(FP32/FP32)        |      224³ |      282³ |      322³ |      354³ |      406³ |      448³ |       482³ |       498³ |       512³ |       564³ |       608³ |       646³ |       710³ |       766³ |       814³ |       896³ |       966³ |      1018³ |       1130³ |       1266³ |       1292³ |       1422³ |       1480³ |     4106³ |
+    | FluidX3D&nbsp;(FP32/FP16)        |      266³ |      336³ |      384³ |      424³ |      484³ |      534³ |       574³ |       594³ |       610³ |       672³ |       724³ |       770³ |       848³ |       912³ |       970³ |      1068³ |      1150³ |      1214³ |       1346³ |       1508³ |       1540³ |       1696³ |       1764³ |     4892³ |
 
   </details>
 - <details><summary><a name="multi-gpu"></a>cross-vendor multi-GPU support on a single computer/server</summary>
@@ -659,6 +659,8 @@ section RX 580 2048SP 8GB
 	1622 :crit, 0, 1622
 section RX 480 8GB
 	1908 :crit, 0, 1908
+section Pro WX 5100
+	1604 :crit, 0, 1604
 section R9 Fury X
 	2880 :crit, 0, 2880
 section R9 Nano
@@ -677,6 +679,8 @@ section HD 7850
 	635 :crit, 0, 635
 section HD 5870
 	257 :crit, 0, 257
+section HD 5770
+	132 :crit, 0, 132
 section FirePro V5800
 	108 :crit, 0, 108
 section Arc B580 LE
@@ -849,8 +853,12 @@ section GTX 770
 	1215 : 0, 1215
 section GTX 680 4GB
 	1274 : 0, 1274
+section GTX 670
+	1220 : 0, 1220
 section GTX 660
 	1146 : 0, 1146
+section GTX 660 OEM
+	990 : 0, 990
 section K2000
 	444 : 0, 444
 section GT 630 (OEM)
@@ -1100,6 +1108,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;4GB         |               6.50 |           4 |          256 |              946 (57%) |              1848 (56%) |              1577 (47%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;580&nbsp;2048SP&nbsp;8GB |           4.94 |           8 |          224 |              868 (59%) |              1622 (56%) |              1240 (43%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;480&nbsp;8GB         |               5.83 |           8 |          256 |             1104 (66%) |              1908 (57%) |              1550 (47%) |
+| 🔴&nbsp;Radeon&nbsp;Pro&nbsp;WX&nbsp;5100        |               3.89 |           8 |          160 |              951 (91%) |              1604 (77%) |               927 (45%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;Fury&nbsp;X          |               8.60 |           4 |          512 |             1628 (49%) |              2880 (43%) |              2507 (38%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;Nano                 |               8.19 |           4 |          512 |             1575 (47%) |              2761 (42%) |              2224 (33%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;390X                 |               5.91 |           8 |          384 |             1733 (69%) |              2217 (44%) |              1722 (35%) |
@@ -1109,6 +1118,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7870                 |               2.56 |           2 |          154 |              105 (10%) |               716 (36%) |               868 (44%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5870                 |               2.72 |           1 |          154 |              257 (26%) |               111 ( 6%) |               141 ( 7%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;5770                 |               1.36 |           1 |           77 |              132 (26%) |                63 ( 6%) |                82 ( 8%) |
 | 🔴&nbsp;FirePro&nbsp;V5800                       |               1.10 |           1 |           64 |              108 (26%) |                52 ( 6%) |                66 ( 8%) |
 | 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2598 (87%) |              4443 (75%) |              4979 (84%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2663 (73%) |              4568 (63%) |              4519 (62%) |
@@ -1195,7 +1205,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;780&nbsp;Ti        |               5.35 |           3 |          336 |             1710 (78%) |              2776 (64%) |              1302 (30%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;770                |               3.33 |           2 |          224 |              800 (55%) |              1215 (42%) |               876 (30%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;680&nbsp;4GB       |               3.33 |           4 |          192 |              783 (62%) |              1274 (51%) |               814 (33%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;670                |               2.81 |           2 |          192 |              747 (59%) |              1220 (49%) |               731 (29%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;660                |               1.98 |           2 |          144 |              505 (54%) |              1146 (61%) |               489 (26%) |
+| 🟢&nbsp;GeForce&nbsp;GTX&nbsp;660&nbsp;OEM       |               2.05 |         1.5 |          134 |              556 (63%) |               990 (57%) |               530 (30%) |
 | 🟢&nbsp;Quadro&nbsp;K2000                        |               0.73 |           2 |           64 |              312 (75%) |               444 (53%) |               171 (21%) |
 | 🟢&nbsp;GeForce&nbsp;GT&nbsp;630&nbsp;(OEM)      |               0.46 |           2 |           29 |              151 (81%) |               185 (50%) |                78 (21%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;580                |               1.58 |         1.5 |          192 |             1028 (82%) |              1481 (59%) |               599 (24%) |
