@@ -181,6 +181,7 @@ struct Device_Info {
 			cores_per_cu = 0.5f; // CPUs typically have 1/2 cores/CU due to SMT/hyperthreading
 		} else if(contains(to_lower(vendor), "arm")) { // ARM
 			cores_per_cu = is_gpu ? 8.0f : 1.0f; // ARM GPUs usually have 8 cores/CU, ARM CPUs have 1 core/CU
+			uses_ram = false; // CL_MEM_USE_HOST_PTR is broken on ARM iGPUs, so disable zero-copy there
 			patch_legacy_gpu_fma = true; // enable for all ARM GPUs
 		}
 		cores = to_uint((float)compute_units*cores_per_cu); // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
