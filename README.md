@@ -684,7 +684,9 @@ section HD 5770
 section FirePro V5800
 	108 :crit, 0, 108
 section Arc B580 LE
-	4979 :done, 0, 4979
+	5153 :done, 0, 5153
+section Arc B570
+	4186 :done, 0, 4186
 section Arc A770 LE
 	4568 :done, 0, 4568
 section Arc A750 LE
@@ -1120,7 +1122,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5870                 |               2.72 |           1 |          154 |              257 (26%) |               111 ( 6%) |               141 ( 7%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5770                 |               1.36 |           1 |           77 |              132 (26%) |                63 ( 6%) |                82 ( 8%) |
 | 🔴&nbsp;FirePro&nbsp;V5800                       |               1.10 |           1 |           64 |              108 (26%) |                52 ( 6%) |                66 ( 8%) |
-| 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2598 (87%) |              4443 (75%) |              4979 (84%) |
+| 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2549 (86%) |              5153 (87%) |              4879 (82%) |
+| 🔵&nbsp;Arc&nbsp;B570                            |              12.67 |          10 |          380 |             2078 (84%) |              4186 (85%) |              4158 (84%) |
 | 🔵&nbsp;Arc&nbsp;A770&nbsp;LE                    |              19.66 |          16 |          560 |             2663 (73%) |              4568 (63%) |              4519 (62%) |
 | 🔵&nbsp;Arc&nbsp;A750&nbsp;LE                    |              17.20 |           8 |          512 |             2555 (76%) |              4314 (65%) |              4047 (61%) |
 | 🔵&nbsp;Arc&nbsp;A580                            |              12.29 |           8 |          512 |             2534 (76%) |              3889 (58%) |              3488 (52%) |

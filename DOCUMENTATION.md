@@ -25,7 +25,7 @@
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
     mkdir -p ~/amdgpu
-    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.4.1/ubuntu/noble/amdgpu-install_6.4.60401-1_all.deb
+    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.4.2.1/ubuntu/noble/amdgpu-install_6.4.60402-1_all.deb
     sudo apt install -y ~/amdgpu/amdgpu-install*.deb
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
     sudo usermod -a -G render,video $(whoami)
@@ -51,7 +51,7 @@
   - Download and install [Nvidia GPU Drivers](https://www.nvidia.com/Download/index.aspx), which contain the OpenCL Runtime, with:
     ```bash
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-570
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-580
     sudo shutdown -r now
     ```
 

@@ -34,7 +34,7 @@ string("'-----------------------------------------------------------------------
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 mkdir -p ~/amdgpu
-wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.4.1/ubuntu/noble/amdgpu-install_6.4.60401-1_all.deb
+wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.4.2.1/ubuntu/noble/amdgpu-install_6.4.60402-1_all.deb
 sudo apt install -y ~/amdgpu/amdgpu-install*.deb
 sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
 sudo usermod -a -G render,video $(whoami)
@@ -53,7 +53,7 @@ sudo shutdown -r now
 | Nvidia GPU Drivers, which contain the OpenCL Runtime                        |
 '-----------------------------------------------------------------------------'
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-570
+sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev nvidia-driver-580
 sudo shutdown -r now
 
 )"+string("\033[96m")+R"(.-----------------------------------------------------------------------------.
@@ -157,9 +157,9 @@ struct Device_Info {
 			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc), Intel CPUs (with HT) have 1/2 core/CU
 			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
 #if defined(_WIN32)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L958
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L965
 #elif defined(__linux__)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1521
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1559
 #endif // Linux
 			}
 			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&memory>4096u); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
