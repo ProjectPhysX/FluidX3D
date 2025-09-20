@@ -231,24 +231,68 @@
   });
   ```
   Within this loop, you can set the density, velocity and flags of each cell individually by assigning values to `lbm.rho[n]`, `lbm.u.x[n]`, `lbm.u.y[n]`, `lbm.u.z[n]` and `lbm.flags[n]`. The `n` here is the linearized 3D grid index, corresponding to an (`x`|`y`|`z`) position via the function `lbm.coordinates(n, x, y, z)`.
-- For example, to set solid walls at the left and right sides of the simulation box, write
-  ```c
-  if(y==0u||y==Ny-1u) lbm.flags[n] = TYPE_S;
-  ```
-  within the loop.
-- All box sides where no solid (`TYPE_S`) or other boundary type are set will remain periodic boundaries.
-- Primitive geometry, such as spheres, ellipsoids, cubes, cuboids, cylinders, codes, pipes, triangles, inclined planes, or toruses can be set with the functions from [`shapes.hpp`](src/shapes.hpp). Example to insert a cylinder:
-  ```c
-  if(cylinder(x, y, z, lbm.center(), float3(axis_x, axis_z, axis_z), radius) lbm.flags[n] = TYPE_S;
-  ```
-- The non-moving no-slip mid-grid bounce-back boundaries (`TYPE_S`) are always available without further extensions. "No-slip bounce-back" refers to the property that the flow velocity directly at the boundary is 0 (no-slip condition). "Mid-grid" refers to the boundary being located exactly in the middle between the boundary cells and adjacent fluid cells.
-- For inflow/outflow boundaries, you need to enable (uncomment) the [`EQUILIBRIUM_BOUNDARIES`](src/defines.hpp) extension. Then, for the specific inflow/outflow cells, set the flag `lbm.flags[n] = TYPE_E` and on the same cell specify either a density `lbm.rho[n]` unequal to `1` or a velocity `lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]` unequal to `0`, or a combination of both. `TYPE_E` cells enforce the specified density/velocity value and absorb any incoming shockwaves.
-- For moving solid boundaries, you need to enable (uncomment) the [`MOVING_BOUNDARIES`](src/defines.hpp) extension. Then, for the specific solid cells, set the flag `lbm.flags[n] = TYPE_S` and on the same cell specify a velocity `lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]` unequal to `0`. `TYPE_S` cells reflect any incoming shockwaves.
-- If strict mass conservation is required (for example flow through a linear pipe), use periodic boundaries (i.e. don't set any boundary type on the cells at these simulation box sides), and drive the flow with a volume force (equivalent to a pressure gradient). Therefore you need to enable (uncomment) the [`VOLUME_FORCE`](src/defines.hpp) extension, and in the [LBM constuctor](#the-lbm-class) set the force per volume (`fx`|`fy`|`fz`):
-  ```c
-  LBM lbm(Nx, Ny, Nz, nu, fx, fy, fz);
-  ```
-  These force per volume values should not exceed `0.001` in magnitude.
+  - For example, to set solid boundaries on all sides of the simulation box, within the initialization loop, write:
+    ```c
+    if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) {
+    	lbm.flags[n] = TYPE_S;
+    }
+    ```
+  - For primitive geometry, such as spheres, ellipsoids, cubes, cuboids, cylinders, codes, pipes, triangles, inclined planes, or toruses can be set with the functions from [`shapes.hpp`](src/shapes.hpp). Example to insert a cylinder:
+    ```c
+    if(cylinder(x, y, z, lbm.center(), float3(axis_x, axis_z, axis_z), radius) {
+    	lbm.flags[n] = TYPE_S;
+    }
+    ```
+- Available Boundary Conditions
+  - Periodic Boundaries
+    - All box sides where no solid (`TYPE_S`) or other boundary type are set will remain periodic boundaries.
+    - If strict mass conservation is required (for example flow through a linear pipe), use periodic boundaries (i.e. don't set any boundary type on the cells at these simulation box sides), and drive the flow with a volume force (equivalent to a pressure gradient). For this you need to enable (uncomment) the [`VOLUME_FORCE`](src/defines.hpp) extension, and in the [LBM constuctor](#the-lbm-class) set the force per volume (`fx`|`fy`|`fz`):
+      ```c
+      LBM lbm(Nx, Ny, Nz, nu, fx, fy, fz);
+      ```
+      These force per volume values should not exceed `0.001` in magnitude.
+  - Solid Boundaries (`TYPE_S`)
+    - Always available without further extensions.
+    - Solid boundaries function as solid non-moving objects, and are implemented as non-moving no-slip mid-grid bounce-back boundaries.
+      - "non-moving" - velocity of the boundary is 0
+      - "no-slip bounce-back" - flow velocity directly at the boundary is 0 (no-slip condition)
+      - "mid-grid" - boundary is located exactly in the middle between the boundary cells and adjacent fluid cells
+    - Usage:
+      ```c
+      if(<condition defining the geometry>) {
+      	lbm.flags[n] = TYPE_S;
+      }
+      ```
+  - Equilibrium Boundaries (`TYPE_E` with specified density and/or velocity)
+    - You need to enable (uncomment) the [`EQUILIBRIUM_BOUNDARIES`](src/defines.hpp) extension.
+    - Equilibrium boundaries function as inflow/outflow boundaries. `lbm.flags[n] = TYPE_E` cells enforce the density `lbm.rho[n]` and/or velocity `lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]` specified during initialization and absorb any incoming shockwaves. If no density/velocity values are specified, they will enforce the default values (`rho=1`, `u=0`).
+    - Usage: For the specific inflow/outflow cells, set the flag `lbm.flags[n] = TYPE_E` and on the same cells specify either a density `lbm.rho[n]` unequal to `1` or a velocity `lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]` unequal to `0`, or a combination of both.
+      ```c
+      if(<condition defining the geometry>) {
+      	lbm.flags[n] = TYPE_E;
+      	lbm.rho[n] = <...>; // TYPE_E cells will retain this fixed density
+      	lbm.u.x[n] = <...>; // TYPE_E cells will retain this fixed velocity
+      	lbm.u.y[n] = <...>; // TYPE_E cells will retain this fixed velocity
+      	lbm.u.z[n] = <...>; // TYPE_E cells will retain this fixed velocity
+      }
+      ```
+  - Moving Solid Boundaries (`TYPE_S` with non-zero velocity)
+    - You need to enable (uncomment) the [`MOVING_BOUNDARIES`](src/defines.hpp) extension.
+    - Moving solid boundaries can function as solid moving objects, or they can function as inflow/outflow with fixed flow rate (similar to a hydraulic piston). They reflect any incoming shockwaves.
+    - Moving solid boundaries are implemented as moving no-slip mid-grid bounce-back boundaries.
+      - "moving" - velocity of the boundary is the specified non-zero value (Dirichlet boundary condition for velocity).
+      - "no-slip bounce-back" - flow velocity directly at the boundary is equal to the non-zero boundary velocity (no-slip condition)
+      - "mid-grid" - boundary is located exactly in the middle between the boundary cells and adjacent fluid cells
+    - Usage: For the specific moving solid cells, set the flag `lbm.flags[n] = TYPE_S` and on the same cells specify a velocity `lbm.u.x[n]`/`lbm.u.y[n]`/`lbm.u.z[n]` unequal to `0`.
+      ```c
+      if(<condition defining the geometry>) {
+      	lbm.flags[n] = TYPE_S;
+      	lbm.u.x[n] = <...>; // TYPE_S cells will retain this fixed velocity
+      	lbm.u.y[n] = <...>; // TYPE_S cells will retain this fixed velocity
+      	lbm.u.z[n] = <...>; // TYPE_S cells will retain this fixed velocity
+      }
+      ```
+    - You can also use moving solid boundaries as inflow with fixed flow rate with the [`SURFACE`](#surface-extension) extension. Here, in addition to specifying the velocity in `TYPE_S` cells, you need to initialize the layer of cells next to the `TYPE_S` cells with `TYPE_F` flag.
 
 ### Running the Simulation
 - Call `lbm.run()` (without input parameter, it's infinite time steps) to initialize and execute the setup, or `lbm.run(time_steps)` to execute only a specific number of time steps.
@@ -407,7 +451,7 @@
   const float si_force_x = units.si_F(lbm_force.x);
   ```
   after having done [unit conversion](#unit-conversion) with `units.set_m_kg_s(...)`.
-- See the "Ahmed body" setup for an example. Note that in the highly turbulent regime, computed body forces are too large by up to a factor 2, because even large resolution is not enough to fully capture the turbulent boundary layer. A wall function is needed, I'll scan literature on it.
+- See the "[Ahmed body](src/setup.cpp)" sample setup for an example. Note that in the highly turbulent regime, computed body forces are too large by up to a factor 2, because even large resolution is not enough to fully capture the turbulent boundary layer. A wall function is still needed.
 
 <br>
 
@@ -423,7 +467,8 @@ By now you're already familiar with the [additional boundary types](#initial-and
   ```
   The interface layer will be automatically initialized during initialization with `lbm.run(0u)`.
 - Addidionally to the 3 flags, each cell also gets assigned a fill level `lbm.phi[n]`: `1` for fluid cells (`TYPE_F`), `]0,1[` for interface cells (`TYPE_I`), and `0` for gas cells (`TYPE_G`). You can set this fill level at initialization, additionally to the cell flag. Do not forget to set the cell flag. If `lbm.phi[n]` is not set manually, it will automatically be initialized such that all fluid cells get `phi=1`, all interface cells get `phi=0.5`, and all gas clls get `phi=0` assigned.
-- For a simple example, see the "[dam break](src/setup.cpp)" setup. A more advanced sample setup for free surfaces is the "[raindrop impact](src/setup.cpp)".
+- For fluid inflow boundary conditions, use [Moving Solid Boundaries](#initial-and-boundary-conditions), and additionally in the adjacent cells to the `TYPE_S` cells with non-zero velocity, set the `TYPE_F` flag.
+- See the "[hydraulic jump](src/setup.cpp)" or the "[raindrop impact](src/setup.cpp)" sample setups.
 
 ### [`TEMPERATURE`](src/defines.hpp) Extension
 - With the [`TEMPERATURE`](src/defines.hpp) extension, FluidX3D can model thermal convection flows. This extension automatically also enables the [`VOLUME_FORCE`](src/defines.hpp) extension.
