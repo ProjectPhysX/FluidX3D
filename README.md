@@ -63,7 +63,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - made flag wireframe / solid surface visualization kernels toggleable with key <kbd>1</kbd>
   - added surface pressure visualization (key <kbd>1</kbd> when `FORCE_FIELD` is enabled and `lbm.calculate_force_on_boundaries();` is called)
   - added binary `.vtk` export function for meshes with `lbm.write_mesh_to_vtk(Mesh* mesh);`
-  - added `time_step_multiplicator` for `integrate_particles()` function in PARTICLES extension
+  - added `time_step_multiplicator` for `integrate_particles()` function in `PARTICLES` extension
   - made correction of wrong memory reporting on Intel Arc more robust
   - fixed bug in `write_file()` template functions
   - reverted back to separate `cl::Context` for each OpenCL device, as the shared Context otherwise would allocate extra VRAM on all other unused Nvidia GPUs
@@ -236,6 +236,14 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in insertion-sort in `voxelize_mesh()` kernel causing crash on AMD GPUs
   - fixed bug in `voxelize_mesh_on_device()` host code causing initialization corruption on AMD GPUs
   - fixed dual CU and IPC reporting on AMD RDNA 1-4 GPUs
+- [v3.5](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.5) (01.10.2025) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.4...v3.5) (multi-GPU particles)
+  - `PARTICLES` extension now also works with multi-GPU
+  - faster force spreading if volume force is axis-aligned
+  - added more documentation for boundary conditions
+  - updated FAQs
+  - improved "hydraulic jump" sample setup
+  - updated GPU driver install instructions
+  - disabled zero-copy on ARM iGPUs because `CL_MEM_USE_HOST_PTR` is broken there
 
 </details>
 
@@ -447,7 +455,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
     - optional [FP16S or FP16C compression](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats) for thermal DDFs with [DDF-shifting](https://www.researchgate.net/publication/362275548_Accuracy_and_performance_of_the_lattice_Boltzmann_method_with_64-bit_32-bit_and_customized_16-bit_number_formats)
   - Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
     <p align="center"><i>&Pi;<sub>&alpha;&beta;</sub></i> = &Sigma;<sub><i>i</i></sub> <i>e<sub>i&alpha;</sub></i> <i>e<sub>i&beta;</sub></i> (<i>f<sub>i</sub></i>   - <i>f<sub>i</sub></i><sup>eq-shifted</sup>)<br><br>Q = &Sigma;<sub><i>&alpha;&beta;</i></sub>   <i>&Pi;<sub>&alpha;&beta;</sub></i><sup>2</sup><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;______________________<br>&tau; = &frac12; (&tau;<sub>0</sub> + &radic; &tau;<sub>0</sub><sup>2</sup> + <sup>(16&radic;2)</sup>&#8725;<sub>(<i>3&pi;</i><sup>2</sup>)</sub> <sup>&radic;Q</sup>&#8725;<sub><i>&rho;</i></sub> )</p>
-  - particles with immersed-boundary method (either passive or 2-way-coupled, single-GPU only)
+  - particles with immersed-boundary method (either passive or 2-way-coupled)
 
   </details>
 
@@ -474,7 +482,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 
 ## Solving the Compatibility Problem
 
-- FluidX3D is written in OpenCL 1.2, so it runs on all hardware from all vendors (Nvidia, AMD, Intel, ...):
+- FluidX3D is written in OpenCL, so it runs on all hardware from all vendors (Nvidia, AMD, Intel, ...):
   - world's fastest datacenter GPUs: B200, MI300X, H200, H100 (NVL), A100, MI200, MI100, V100(S), GPU Max 1100, ...
   - gaming GPUs (desktop/laptop): Nvidia GeForce, AMD Radeon, Intel Arc
   - professional/workstation GPUs: Nvidia Quadro, AMD Radeon Pro / FirePro, Intel Arc Pro
@@ -1710,7 +1718,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 
 - <details><summary>Does FluidX3D support adaptive mesh refinement?</summary><br>No, not yet. Grid cell size is the same everywhere in the simulation box.<br><br></details>
 
-- <details><summary>Can FluidX3D model both water and air at the same time?</summary><br>No. FluidX3D can model either water or air, but not both at the same time. For free surface simulations with the <a href="https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md#surface-extension">`SURFACE` extension</a>, I went with a <a href="https://doi.org/10.3390/computation10060092">volume-of-fluid</a>/<a href="https://doi.org/10.3390/computation10020021">PLIC</a> modeling approach as that provides a sharp water-air interface, so individual droplets can be resolved as small as 3 grid cells in diameter. However this model ignores the gas phase completely, and only models the fluid phase with LBM as well as the surface tension. An alternative I had explored years ago was the <a href="http://dx.doi.org/10.1016/j.jcp.2022.111753">phase-field models</a> (simplest of them is Shan-Chen model) - they model both fluid and gas phases, but struggle with the 1:1000 density contrast of air:water, and the modeled interface is diffuse over ~5 grid cells. So the smallest resolved droplets are ~10 grid cells in diameter, meaning for the same resolution you need ~37x the memory footprint - infeasible on GPUs. Coming back to VoF model, it is possible to <a href="http://dx.doi.org/10.1186/s43591-023-00053-7">extend it with a model for the gas phase</a>, but one has to manually track bubble split/merge events, which makes this approach very painful in implementation and poorly performing on the hardware.<br><br></details>
+- <details><summary>Can FluidX3D model both water and air at the same time?</summary><br>No. FluidX3D can model either water or air, but not both at the same time. For free surface simulations with the <a href="https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md#surface-extension">SURFACE extension</a>, I went with a <a href="https://doi.org/10.3390/computation10060092">volume-of-fluid</a>/<a href="https://doi.org/10.3390/computation10020021">PLIC</a> modeling approach as that provides a sharp water-air interface, so individual droplets can be resolved as small as 3 grid cells in diameter. However this model ignores the gas phase completely, and only models the fluid phase with LBM as well as the surface tension. An alternative I had explored years ago was the <a href="http://dx.doi.org/10.1016/j.jcp.2022.111753">phase-field models</a> (simplest of them is Shan-Chen model) - they model both fluid and gas phases, but struggle with the 1:1000 density contrast of air:water, and the modeled interface is diffuse over ~5 grid cells. So the smallest resolved droplets are ~10 grid cells in diameter, meaning for the same resolution you need ~37x the memory footprint - infeasible on GPUs. Coming back to VoF model, it is possible to <a href="http://dx.doi.org/10.1186/s43591-023-00053-7">extend it with a model for the gas phase</a>, but one has to manually track bubble split/merge events, which makes this approach very painful in implementation and poorly performing on the hardware.<br><br></details>
 
 - <details><summary>Can FluidX3D compute lift/drag forces?</summary><br>Yes. See <a href="https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md#liftdrag-forces">the relevant section in the FluidX3D Documentation</a>!<br><br></details>
 

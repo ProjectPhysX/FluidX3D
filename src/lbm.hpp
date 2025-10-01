@@ -15,7 +15,7 @@ string default_filename(const string& path, const string& name, const string& ex
 string default_filename(const string& name, const string& extension, const ulong t); // generate a default filename with timestamp at exe_path/export/
 
 #pragma warning(disable:26812)
-enum enum_transfer_field { fi, rho_u_flags, flags, phi_massex_flags, gi, T, enum_transfer_field_length };
+enum enum_transfer_field { fi, rho_u_flags, flags, F, phi_massex_flags, gi, T, enum_transfer_field_length };
 
 class LBM_Domain {
 private:
@@ -221,6 +221,9 @@ private:
 	void communicate_fi();
 	void communicate_rho_u_flags();
 	void communicate_flags();
+#ifdef FORCE_FIELD
+	void communicate_F();
+#endif // FORCE_FIELD
 #ifdef SURFACE
 	void communicate_phi_massex_flags();
 #endif // SURFACE
@@ -228,6 +231,9 @@ private:
 	void communicate_gi();
 	void communicate_T();
 #endif // TEMPERATURE
+#ifdef PARTICLES
+	void communicate_particles();
+#endif // PARTICLES
 
 public:
 	template<typename T> class Memory_Container { // does not hold any data itsef, just links to LBM_Domain data

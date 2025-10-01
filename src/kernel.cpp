@@ -839,9 +839,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 }
 )+R(float3 mirror_position(const float3 p) { // mirror position into periodic boundaries
 	float3 r;
-	r.x = sign(p.x)*(fmod(fabs(p.x)+0.5f*(float)def_Nx, (float)def_Nx)-0.5f*(float)def_Nx);
-	r.y = sign(p.y)*(fmod(fabs(p.y)+0.5f*(float)def_Ny, (float)def_Ny)-0.5f*(float)def_Ny);
-	r.z = sign(p.z)*(fmod(fabs(p.z)+0.5f*(float)def_Nz, (float)def_Nz)-0.5f*(float)def_Nz);
+	r.x = sign(p.x)*(fmod(fabs(p.x)+0.5f*(float)def_GNx, (float)def_GNx)-0.5f*(float)def_GNx);
+	r.y = sign(p.y)*(fmod(fabs(p.y)+0.5f*(float)def_GNy, (float)def_GNy)-0.5f*(float)def_GNy);
+	r.z = sign(p.z)*(fmod(fabs(p.z)+0.5f*(float)def_GNz, (float)def_GNz)-0.5f*(float)def_GNz);
 	return r;
 }
 )+R(float3 mirror_distance(const float3 d) { // mirror distance vector into periodic boundaries
@@ -1998,9 +1998,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const uint x=(xb+i)%def_Nx, y=(yb+j)%def_Ny, z=(zb+k)%def_Nz; // calculate corner lattice positions
 		const uxx n = (uxx)x+(uxx)(y+z*def_Ny)*(uxx)def_Nx; // calculate lattice linear index
 		const float d = (1.0f-fabs(x1-(float)i))*(1.0f-fabs(y1-(float)j))*(1.0f-fabs(z1-(float)k)); // force spreading
-		atomic_add_f(&F[                 n], Fn.x*d); // F[                 n] += Fn.x*d;
-		atomic_add_f(&F[    def_N+(ulong)n], Fn.y*d); // F[    def_N+(ulong)n] += Fn.y*d;
-		atomic_add_f(&F[2ul*def_N+(ulong)n], Fn.z*d); // F[2ul*def_N+(ulong)n] += Fn.z*d;
+		const float3 Fnd = Fn*d;
+		if(Fnd.x!=0.0f) atomic_add_f(&F[                 n], Fnd.x); // F[                 n] += Fnd.x;
+		if(Fnd.y!=0.0f) atomic_add_f(&F[    def_N+(ulong)n], Fnd.y); // F[    def_N+(ulong)n] += Fnd.y;
+		if(Fnd.z!=0.0f) atomic_add_f(&F[2ul*def_N+(ulong)n], Fnd.z); // F[2ul*def_N+(ulong)n] += Fnd.z;
 	}
 } // spread_force()
 )+"#endif"+R( // FORCE_FIELD
@@ -2023,7 +2024,18 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float particle_radius = 0.5f; // has to be between 0.0f and 0.5f, default: 0.5f (hydrodynamic radius)
 	return boundary_distance-0.5f<particle_radius ? normalize(boundary_force) : (float3)(0.0f, 0.0f, 0.0f);
 } // particle_boundary_force()
-
+)+R(bool position_is_in_domain_including_halo(const float3 p) {
+	const float hNx = 0.5f*(float)(def_Nx-(def_Dx>1u)); // subtract half of halo still
+	const float hNy = 0.5f*(float)(def_Ny-(def_Dy>1u));
+	const float hNz = 0.5f*(float)(def_Nz-(def_Dz>1u));
+	return p.x>=-hNx&&p.x<hNx&&p.y>=-hNy&&p.y<hNy&&p.z>=-hNz&&p.z<hNz;
+}
+)+R(bool position_is_in_domain_excluding_halo(const float3 p) {
+	const float hNx = 0.5f*(float)(def_Nx-2u*(def_Dx>1u)); // subtract full halo
+	const float hNy = 0.5f*(float)(def_Ny-2u*(def_Dy>1u));
+	const float hNz = 0.5f*(float)(def_Nz-2u*(def_Dz>1u));
+	return p.x>=-hNx&&p.x<hNx&&p.y>=-hNy&&p.y<hNy&&p.z>=-hNz&&p.z<hNz;
+}
 )+R(kernel void integrate_particles)+"("+R(global float* particles, const global float* u, const global uchar* flags, const float time_step_multiplicator // ) {
 )+"#ifdef FORCE_FIELD"+R(
 	, volatile global float* F, const float fx, const float fy, const float fz
@@ -2031,21 +2043,32 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+") {"+R( // integrate_particles()
 	const uxx n = get_global_id(0); // index of membrane points
 	if(n>=(uxx)def_particles_N) return;
-	const float3 p0 = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]); // cache particle position
+	float3 p = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]); // cache particle position
+	p = mirror_position(p); // mirror into global simulation box
+	p -= (float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z); // subtract domain offset, then treat point in local domain
+	if(def_Dx*def_Dy*def_Dz>1u&&!position_is_in_domain_including_halo(p)) {
+		p.x = as_float(0xFFFFFFFFu); // invalidate x-coordinate for all particles outside of the local domain (including halo)
+	} else {
 )+"#ifdef FORCE_FIELD"+R(
-	if(def_particles_rho!=1.0f) {
-		const float drho = def_particles_rho-1.0f; // density difference leads to particle buoyancy
-		float3 Fn = (float3)(fx*drho, fy*drho, fz*drho); // F = F_p+F_f = (m_p-m_f)*g = (rho_p-rho_f)*g*V
-		spread_force(F, p0, Fn); // do force spreading
-	}
+		if(def_particles_rho!=1.0f) { // apply volume force for all particles in local domain (including halo)
+			const float drho = def_particles_rho-1.0f; // density difference leads to particle buoyancy
+			float3 Fn = (float3)(fx*drho, fy*drho, fz*drho); // F = F_p+F_f = (m_p-m_f)*g = (rho_p-rho_f)*g*V
+			spread_force(F, p, Fn); // do force spreading
+		}
 )+"#endif"+R( // FORCE_FIELD
-	const float3 p0_mirrored = mirror_position(p0);
-	float3 un = interpolate_u(p0_mirrored, u); // trilinear interpolation of velocity at point p
-	un = (un+length(un)*particle_boundary_force(p0_mirrored, flags))*time_step_multiplicator;
-	const float3 p = mirror_position(p0+un); // advect particles
-	particles[                           n] = p.x;
-	particles[    def_particles_N+(ulong)n] = p.y;
-	particles[2ul*def_particles_N+(ulong)n] = p.z;
+		if(def_Dx*def_Dy*def_Dz>1u&&!position_is_in_domain_excluding_halo(p)) { // skip remaining ghost particles in halo
+			p.x = as_float(0xFFFFFFFFu); // invalidate x-coordinate for all particles outside of the local domain
+		} else { // advect only particles in local domain (excluding halo)
+			float3 un = interpolate_u(p, u); // trilinear interpolation of velocity at point p
+			un = (un+length(un)*particle_boundary_force(p, flags))*time_step_multiplicator;
+			p += un; // advect particles
+			p += (float3)(def_domain_offset_x, def_domain_offset_y, def_domain_offset_z); // add domain offset, back to global domain
+			p = mirror_position(p); // mirror advected position again into global simulation box
+			particles[    def_particles_N+(ulong)n] = p.y; // store y/z-coordinates only for particles in domain
+			particles[2ul*def_particles_N+(ulong)n] = p.z;
+		}
+	}
+	particles[n] = p.x; // always store x-coordinate (invalidated or particles in domain)
 } // integrate_particles()
 )+"#endif"+R( // PARTICLES
 
@@ -2174,6 +2197,31 @@ string opencl_c_container() { return R( // ########################## begin of O
 	flags[index_insert_p(a, direction)] = transfer_buffer_p[a];
 	flags[index_insert_m(a, direction)] = transfer_buffer_m[a];
 }
+
+)+"#ifdef FORCE_FIELD"+R(
+)+R(void extract_F(const uint a, const uint A, const uxx n, global float* transfer_buffer, const global float* F) {
+	transfer_buffer[     a] = F[                 n];
+	transfer_buffer[   A+a] = F[    def_N+(ulong)n];
+	transfer_buffer[2u*A+a] = F[2ul*def_N+(ulong)n];
+}
+)+R(void insert_F(const uint a, const uint A, const uxx n, const global float* transfer_buffer, global float* F) {
+	F[                 n] = transfer_buffer[     a];
+	F[    def_N+(ulong)n] = transfer_buffer[   A+a];
+	F[2ul*def_N+(ulong)n] = transfer_buffer[2u*A+a];
+}
+)+R(kernel void transfer_extract_F(const uint direction, const ulong t, global float* transfer_buffer_p, global float* transfer_buffer_m, const global float* F) {
+	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
+	extract_F(a, A, index_extract_p(a, direction), transfer_buffer_p, F);
+	extract_F(a, A, index_extract_m(a, direction), transfer_buffer_m, F);
+}
+)+R(kernel void transfer__insert_F(const uint direction, const ulong t, const global float* transfer_buffer_p, const global float* transfer_buffer_m, global float* F) {
+	const uint a=get_global_id(0), A=get_area(direction); // a = domain area index for each side, A = area of the domain boundary
+	if(a>=A) return; // area might not be a multiple of cl_workgroup_size, so return here to avoid writing in unallocated memory space
+	insert_F(a, A, index_insert_p(a, direction), transfer_buffer_p, F);
+	insert_F(a, A, index_insert_m(a, direction), transfer_buffer_m, F);
+}
+)+"#endif"+R( // FORCE_FIELD
 
 )+"#ifdef SURFACE"+R(
 )+R(void extract_phi_massex_flags(const uint a, const uint A, const uxx n, global char* transfer_buffer, const global float* phi, const global float* massex, const global uchar* flags) {
@@ -2966,10 +3014,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(kernel void graphics_particles(const global float* camera, global int* bitmap, global int* zbuffer, const global float* particles) {
 	const uxx n = get_global_id(0);
 	if(n>=(uxx)def_particles_N) return;
+	const float3 p = (float3)(particles[n]-def_domain_offset_x, particles[def_particles_N+(ulong)n]-def_domain_offset_y, particles[2ul*def_particles_N+(ulong)n]-def_domain_offset_z);
+	if(def_Dx*def_Dy*def_Dz>1u&&!position_is_in_domain_excluding_halo(p)) return;
 	float camera_cache[15]; // cache parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const int c = COLOR_P; // coloring scheme
-	const float3 p = (float3)(particles[n], particles[def_particles_N+(ulong)n], particles[2ul*def_particles_N+(ulong)n]);
 	draw_point(p, c, camera_cache, bitmap, zbuffer);
 	//draw_circle(p, 0.5f, c, camera_cache, bitmap, zbuffer);
 }
