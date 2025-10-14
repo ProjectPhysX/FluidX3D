@@ -544,6 +544,8 @@ axisFormat %s
 	}
 }%%
 
+section MI355X
+	54494 :crit, 0, 54494
 section MI300X
 	41327 :crit, 0, 41327
 section MI250 (1 GCD)
@@ -1056,7 +1058,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | Device                                           | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :----------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
 |                                                  |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;Instinct&nbsp;MI300X                     |             163.40 |         192 |         5300 |       22867&nbsp;(66%) |        41327&nbsp;(60%) |        31670&nbsp;(46%) |
+| 🔴&nbsp;Instinct&nbsp;MI355X                     |             157.29 |         288 |         8000 |       30380&nbsp;(58%) |        54494&nbsp;(52%) |        40157&nbsp;(39%) |
+| 🔴&nbsp;Instinct&nbsp;MI300X                     |             163.43 |         192 |         5300 |       22867&nbsp;(66%) |        41327&nbsp;(60%) |        31670&nbsp;(46%) |
 | 🔴&nbsp;Instinct&nbsp;MI250&nbsp;(1&nbsp;GCD)    |              45.26 |          64 |         1638 |             5638 (53%) |              9030 (42%) |              8506 (40%) |
 | 🔴&nbsp;Instinct&nbsp;MI210                      |              45.26 |          64 |         1638 |             6517 (61%) |              9547 (45%) |              8829 (41%) |
 | 🔴&nbsp;Instinct&nbsp;MI100                      |              46.14 |          32 |         1228 |             5093 (63%) |              8133 (51%) |              8542 (54%) |
@@ -1348,6 +1351,10 @@ axisFormat %s
 	}
 }%%
 
+section 8x MI355X
+	362344 :crit, 0, 362344
+section 1x MI355X
+	54494 :crit, 0, 54494
 
 section 8x MI300X
 	204924 :crit, 0, 204924
@@ -1571,10 +1578,13 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | Device                                                          | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :-------------------------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;8x&nbsp;Instinct&nbsp;MI300X                            |            1307.20 |        1536 |        42400 |     152835&nbsp;(6.7x) |      192297&nbsp;(4.7x) |      204924&nbsp;(6.5x) |
-| 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI300X                            |             653.60 |         768 |        21200 |      83678&nbsp;(3.7x) |      103200&nbsp;(2.5x) |      109546&nbsp;(3.5x) |
-| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI300X                            |             326.80 |         384 |        10600 |      46673&nbsp;(2.0x) |       61053&nbsp;(1.5x) |       57391&nbsp;(1.8x) |
-| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI300X                            |             163.40 |         192 |         5300 |       22867&nbsp;(66%) |        41327&nbsp;(60%) |        31670&nbsp;(46%) |
+| 🔴&nbsp;8x&nbsp;Instinct&nbsp;MI355X                            |            1258.29 |        2304 |        64000 |     188742&nbsp;(6.2x) |      362344&nbsp;(6.6x) |      292495&nbsp;(7.3x) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI355X                            |             157.29 |         288 |         8000 |       30380&nbsp;(58%) |        54494&nbsp;(52%) |        40157&nbsp;(39%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;8x&nbsp;Instinct&nbsp;MI300X                            |            1307.44 |        1536 |        42400 |     152835&nbsp;(6.7x) |      192297&nbsp;(4.7x) |      204924&nbsp;(6.5x) |
+| 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI300X                            |             653.72 |         768 |        21200 |      83678&nbsp;(3.7x) |      103200&nbsp;(2.5x) |      109546&nbsp;(3.5x) |
+| 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI300X                            |             326.86 |         384 |        10600 |      46673&nbsp;(2.0x) |       61053&nbsp;(1.5x) |       57391&nbsp;(1.8x) |
+| 🔴&nbsp;1x&nbsp;Instinct&nbsp;MI300X                            |             163.43 |         192 |         5300 |       22867&nbsp;(66%) |        41327&nbsp;(60%) |        31670&nbsp;(46%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;4x&nbsp;Instinct&nbsp;MI250&nbsp;(8&nbsp;GCD)           |             362.08 |         512 |        13107 |      27350&nbsp;(4.9x) |            52258 (5.8x) |            53521 (6.3x) |
 | 🔴&nbsp;2x&nbsp;Instinct&nbsp;MI250&nbsp;(4&nbsp;GCD)           |             181.04 |         256 |         6554 |      16925&nbsp;(3.0x) |            29163 (3.2x) |            29627 (3.5x) |
