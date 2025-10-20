@@ -147,19 +147,19 @@ struct Device_Info {
 		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
 			const bool amd_dual_cu = is_gpu&&contains_any(to_lower(name), {"gfx10", "gfx11", "gfx12"}); // identify RDNA/RDNA2/RDNA3/RDNA4 GPUs where dual CUs are reported
-			const bool amd_dual_issuing = is_gpu&&contains_any(to_lower(name), {"gfx11", "gfx12"}); // identify RDNA3/RDNA4 GPUs where cores can dual-issue float2
+			const bool amd_ipc_4 = is_gpu&&contains_any(to_lower(name), {"gfx11", "gfx12", "gfx942", "gfx950"}); // identify RDNA3/RDNA4 GPUs (can dual-issue float2) and CDNA3/CDNA4 GPUs (ipc=4 for scalar float)
 			if(amd_dual_cu) compute_units *= 2u; // some AMD GPUs wrongly report the number of dual CUs as the number of CUs
-			if(amd_dual_issuing) ipc = 4u; // some AMD GPUs support dual-issuging of float2 vector type, doubling IPC for float2 type
+			if(amd_ipc_4) ipc = 4u; // some AMD GPUs support dual-issuging of float2 vector type, or have ipc=4 for scalar float
 			cores_per_cu = is_gpu ? 64.0f : 0.5f; // 64 cores/CU (GPUs), 1/2 core/CU (CPUs)
 			if(is_gpu) name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>()); // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
-			const bool intel_16_cores_per_cu = contains_any(to_lower(name), {"gpu max", "140v", "130v", "b580", "b570"}); // identify PVC/Xe2 GPUs
+			const bool intel_16_cores_per_cu = contains_any(to_lower(name), {"gpu max", "140v", "130v", "b580", "b570", "b60", "b50"}); // identify PVC/Xe2 GPUs
 			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc), Intel CPUs (with HT) have 1/2 core/CU
 			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
 #if defined(_WIN32)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L965
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L969
 #elif defined(__linux__)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1559
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1545
 #endif // Linux
 			}
 			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&memory>4096u); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
