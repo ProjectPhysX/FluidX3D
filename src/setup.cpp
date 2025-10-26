@@ -567,8 +567,8 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	rotor->scale(scale);
 	stator->translate(lbm.center()-stator->get_bounding_box_center()-float3(0.0f, 0.2f*stator->get_max_size(), 0.0f)); // move stator and rotor to simulation box center
 	rotor->translate(lbm.center()-rotor->get_bounding_box_center()-float3(0.0f, 0.41f*stator->get_max_size(), 0.0f));
-	stator->set_center(stator->get_bounding_box_center()); // set center of meshes to their bounding box center
-	rotor->set_center(rotor->get_bounding_box_center());
+	stator->set_center(stator->get_center_of_mass()); // set rotation center of mesh to its center of mass
+	rotor->set_center(rotor->get_center_of_mass());
 	const float lbm_radius=0.5f*rotor->get_max_size(), omega=lbm_u/lbm_radius, domega=omega*(float)lbm_dt;
 	lbm.voxelize_mesh_on_device(stator, TYPE_S, center);
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
@@ -793,8 +793,8 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	const float3 offset = lbm.center()-plane->get_bounding_box_center(); // move plane and rotor to simulation box center
 	plane->translate(offset);
 	rotor->translate(offset);
-	plane->set_center(plane->get_bounding_box_center()); // set center of meshes to their bounding box center
-	rotor->set_center(rotor->get_bounding_box_center());
+	plane->set_center(plane->get_center_of_mass()); // set rotation center of mesh to its center of mass
+	rotor->set_center(rotor->get_center_of_mass());
 	const float lbm_radius=0.5f*rotor->get_max_size(), omega=-lbm_u/lbm_radius, domega=omega*(float)lbm_dt;
 	lbm.voxelize_mesh_on_device(plane);
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); parallel_for(lbm.get_N(), [&](ulong n) { uint x=0u, y=0u, z=0u; lbm.coordinates(n, x, y, z);
@@ -848,9 +848,9 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	body->translate(offset);
 	main->translate(offset);
 	back->translate(offset);
-	body->set_center(body->get_bounding_box_center()); // set center of meshes to their bounding box center
-	main->set_center(main->get_bounding_box_center());
-	back->set_center(back->get_bounding_box_center());
+	body->set_center(body->get_center_of_mass()); // set rotation center of mesh to its center of mass
+	main->set_center(main->get_center_of_mass());
+	back->set_center(back->get_center_of_mass());
 	const float main_radius=0.5f*main->get_max_size(), main_omega=lbm_u/main_radius, main_domega=main_omega*(float)lbm_dt;
 	const float back_radius=0.5f*back->get_max_size(), back_omega=-lbm_u/back_radius, back_domega=back_omega*(float)lbm_dt;
 	lbm.voxelize_mesh_on_device(body);
@@ -914,9 +914,9 @@ void main_setup() { // benchmark; required extensions in defines.hpp: BENCHMARK,
 	body->translate(offset);
 	front_wheels->translate(offset);
 	back_wheels->translate(offset);
-	body->set_center(body->get_bounding_box_center()); // set center of meshes to their bounding box center
-	front_wheels->set_center(front_wheels->get_bounding_box_center());
-	back_wheels->set_center(back_wheels->get_bounding_box_center());
+	body->set_center(body->get_center_of_mass()); // set rotation center of mesh to its center of mass
+	front_wheels->set_center(front_wheels->get_center_of_mass());
+	back_wheels->set_center(back_wheels->get_center_of_mass());
 	const float lbm_radius=0.5f*back_wheels->get_min_size(), omega=lbm_u/lbm_radius;
 	lbm.voxelize_mesh_on_device(body);
 	lbm.voxelize_mesh_on_device(front_wheels, TYPE_S, front_wheels->get_center(), float3(0.0f), float3(omega, 0.0f, 0.0f)); // make wheels rotating

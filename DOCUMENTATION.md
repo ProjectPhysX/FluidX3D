@@ -301,7 +301,7 @@
 ### Loading .stl Files
 - For more complex geometries, you can load `.stl` triangle meshes and voxelize them to the Cartesian simulation grid on the GPU(s).
 - Create a `FluidX3D/stl/` folder next to the `FluidX3D/src/` folder and download the geometry from websites like [Thingiverse](https://www.thingiverse.com/), or create your own.
-- Only binary `.stl` files are supported. For conversion from other formats or for splitting composite geometries like helicopter hull and rotors, I recommend [Microsoft 3D Builder](https://apps.microsoft.com/store/detail/3d-builder/9WZDNCRFJ3T6) on Windows or [Blender](https://www.blender.org/) on Windows/Linux.
+- Only binary `.stl` files are supported. Meshes must be watertight (no holes) and all triangles must be oriented such that their normals point to the outside. For conversion from other formats or for splitting composite geometries like helicopter hull and rotors, I recommend [Microsoft 3D Builder](https://apps.microsoft.com/store/detail/3d-builder/9WZDNCRFJ3T6) on Windows or [Blender](https://www.blender.org/) on Windows/Linux.
 - Load and voxelize simple `.stl` files directly with
   ```c
   lbm.voxelize_stl(get_exe_path()+"../stl/mesh.stl", center, rotation, size);
@@ -329,6 +329,7 @@
   const uint lbm_T = 100000u; // number of LBM time steps to simulate
   const uint lbm_dt = 4u; // number of LBM time steps between each mesh revoxelization
   lbm.run(0u); // initialize simulation
+  mesh->set_center(mesh->get_center_of_mass()); // set rotation center of mesh to its center of mass
   while(lbm.get_t()<lbm_T) { // main simulation loop
   	mesh->rotate(float3x3(float3(0, 0, 1), lbm_omega*(float)lbm_dt)); // rotate the triangle mesh
   	lbm.voxelize_mesh_on_device(mesh, TYPE_S, center, float3(0.0f), float3(0.0f, 0.0f, lbm_omega)); // revoxelize the rotated triangle mesh, provide the instantaneous angular velocity vector for moving boundaries
