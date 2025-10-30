@@ -14,7 +14,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - added solid voxelization on GPU (slow algorithm)
   - added tool to print current camera position (key <kbd>G</kbd>)
   - minor bug fix (workaround for Intel iGPU driver bug with triangle rendering)
-- [v1.2](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.2) (24.10.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.1...v1.2) (force/torque compuatation)
+- [v1.2](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v1.2) (24.10.2022) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v1.1...v1.2) (force/torque computation)
   - added functions to compute force/torque on objects
   - added function to translate Mesh
   - added Stokes drag validation setup
