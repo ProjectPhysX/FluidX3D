@@ -609,6 +609,8 @@ section K80 (1 GPU)
 section K20c
 	1507 : 0, 1507
 
+section AI PRO R9700
+	6395 :crit, 0, 6395
 section RX 9070 XT
 	6688 :crit, 0, 6688
 section RX 9070
@@ -693,6 +695,8 @@ section HD 5770
 	132 :crit, 0, 132
 section FirePro V5800
 	108 :crit, 0, 108
+section Arc Pro B60
+	5138 :done, 0, 5138
 section Arc B580 LE
 	5153 :done, 0, 5153
 section Arc B570
@@ -920,6 +924,8 @@ section Vega 8 (3500U)
 	288 :crit, 0, 288
 section Arc 140V GPU (16GB)
 	1282 :done, 0, 1282
+section Graphics (Ultra 9 285K)
+	691 :done, 0, 691
 section Arc Graphics (Ultra 9 185H)
 	724 :done, 0, 724
 section Iris Xe Graphics (i7-1265U)
@@ -1015,6 +1021,10 @@ section FX-6100
 	22 :crit, 0, 22
 section Athlon X2 QL-65
 	3 :crit, 0, 3
+section w9-3595X
+	1393 :done, 0, 1393
+section Ultra 9 285K
+	620 :done, 0, 620
 section Ultra 7 258V
 	287 :done, 0, 287
 section Ultra 9 185H
@@ -1093,6 +1103,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)         |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
 | 🟢&nbsp;Tesla&nbsp;K20c                          |               3.52 |           5 |          208 |              861 (63%) |              1507 (56%) |               720 (27%) |
 |                                                  |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;Radeon&nbsp;AI&nbsp;PRO&nbsp;R9700       |              47.84 |          32 |          640 |             3176 (76%) |              6198 (75%) |              6395 (77%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;9070&nbsp;XT         |              48.66 |          16 |          640 |             3089 (74%) |              6688 (80%) |              6090 (73%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;9070                 |              36.13 |          16 |          640 |             3007 (72%) |              5746 (69%) |              6019 (72%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XTX        |              61.44 |          24 |          960 |             3665 (58%) |              7644 (61%) |              7716 (62%) |
@@ -1135,6 +1146,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5870                 |               2.72 |           1 |          154 |              257 (26%) |               111 ( 6%) |               141 ( 7%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5770                 |               1.36 |           1 |           77 |              132 (26%) |                63 ( 6%) |                82 ( 8%) |
 | 🔴&nbsp;FirePro&nbsp;V5800                       |               1.10 |           1 |           64 |              108 (26%) |                52 ( 6%) |                66 ( 8%) |
+| 🔵&nbsp;Arc&nbsp;Pro&nbsp;B60                    |              12.29 |          24 |          456 |             2540 (85%) |              5138 (87%) |              4650 (79%) |
 | 🔵&nbsp;Arc&nbsp;B580&nbsp;LE                    |              14.59 |          12 |          456 |             2549 (86%) |              5153 (87%) |              4879 (82%) |
 | 🔵&nbsp;Arc&nbsp;B570                            |              12.67 |          10 |          380 |             2078 (84%) |              4186 (85%) |              4158 (84%) |
 | 🔵&nbsp;Arc&nbsp;Pro&nbsp;B50                    |              10.65 |          16 |          224 |             1274 (87%) |              2559 (88%) |              2172 (75%) |
@@ -1249,6 +1261,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(4750G)     |               2.15 |          27 |           57 |              263 (71%) |               511 (70%) |               501 (68%) |
 | 🔴&nbsp;Radeon&nbsp;Vega&nbsp;8&nbsp;(3500U)     |               1.23 |           7 |           38 |              157 (63%) |               282 (57%) |               288 (58%) |
 | 🔵&nbsp;Arc&nbsp;140V&nbsp;GPU&nbsp;(16GB)       |               3.99 |          16 |          137 |              636 (71%) |              1282 (72%) |               773 (44%) |
+| 🔵&nbsp;Graphics&nbsp;(Ultra&nbsp;9&nbsp;285K)   |               2.05 |          25 |           90 |              393 (67%) |               691 (59%) |               442 (38%) |
 | 🔵&nbsp;Arc&nbsp;Graphics&nbsp;(Ultra&nbsp;9&nbsp;185H) |        4.81 |          14 |           90 |              271 (46%) |               710 (61%) |               724 (62%) |
 | 🔵&nbsp;Iris&nbsp;Xe&nbsp;Graphics&nbsp;(i7-1265U) |             1.92 |          13 |           77 |              342 (68%) |               621 (62%) |               574 (58%) |
 | 🔵&nbsp;UHD&nbsp;Graphics&nbsp;Xe&nbsp;32EUs     |               0.74 |          25 |           51 |              128 (38%) |               245 (37%) |               216 (32%) |
@@ -1297,6 +1310,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Ryzen&nbsp;7&nbsp;5700X3D                |               0.87 |          32 |           51 |              229 (68%) |               135 (20%) |               173 (26%) |
 | 🔴&nbsp;FX-6100                                  |               0.16 |          16 |           26 |               11 ( 7%) |                11 ( 3%) |                22 ( 7%) |
 | 🔴&nbsp;Athlon&nbsp;X2&nbsp;QL-65                |               0.03 |           4 |           11 |                3 ( 4%) |                 2 ( 2%) |                 3 ( 2%) |
+| 🔵&nbsp;Xeon&nbsp;w9-3595X                       |              15.36 |         256 |          307 |             1304 (65%) |              1179 (30%) |              1393 (35%) |
+| 🔵&nbsp;Core&nbsp;Ultra&nbsp;9&nbsp;285K         |               3.76 |          48 |           90 |              340 (58%) |               376 (32%) |               620 (53%) |
 | 🔵&nbsp;Core&nbsp;Ultra&nbsp;7&nbsp;258V         |               0.56 |          32 |          137 |              287 (32%) |               123 ( 7%) |               167 ( 9%) |
 | 🔵&nbsp;Core&nbsp;Ultra&nbsp;9&nbsp;185H         |               1.79 |          16 |           90 |              317 (54%) |               267 (23%) |               288 (25%) |
 | 🔵&nbsp;Core&nbsp;i9-14900K                      |               3.74 |          32 |           96 |              443 (71%) |               453 (36%) |               490 (39%) |
@@ -1561,6 +1576,13 @@ section 1x GeForce RTX 2080 Ti
 section 1x GTX 690 (2 GPUs)
 	920 : 0, 920
 
+section 4x Arc Pro B60
+	16099 :done, 0, 16099
+section 2x Arc Pro B60
+	8829 :done, 0, 8829
+section 1x Arc Pro B60
+	5138 :done, 0, 5138
+
 section 2x Arc A770
 	8745 :done, 0, 8745
 section 1x Arc A770
@@ -1697,6 +1719,10 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;1x&nbsp;GeForce&nbsp;RTX&nbsp;2080&nbsp;Ti              |              13.45 |          11 |          616 |             3194 (79%) |              6700 (84%) |              6853 (86%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;1x&nbsp;GTX&nbsp;690&nbsp;(2&nbsp;GPUs)                 |               6.26 |           4 |          385 |              587 (23%) |               920 (18%) |               535 (11%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🔵&nbsp;4x&nbsp;Arc&nbsp;Pro&nbsp;B60                           |              49.16 |          96 |         1824 |            7981 (3.1x) |            16099 (3.1x) |            14029 (3.0x) |
+| 🔵&nbsp;2x&nbsp;Arc&nbsp;Pro&nbsp;B60                           |              24.58 |          48 |          912 |            4413 (1.7x) |             8829 (1.7x) |             7580 (1.6x) |
+| 🔵&nbsp;1x&nbsp;Arc&nbsp;Pro&nbsp;B60                           |              12.29 |          24 |          456 |             2540 (85%) |              5138 (87%) |              4650 (79%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🔵&nbsp;2x&nbsp;Arc&nbsp;A770                                   |              39.32 |          32 |         1120 |            4954 (1.9x) |             8745 (1.9x) |             8329 (1.8x) |
 | 🔵&nbsp;1x&nbsp;Arc&nbsp;A770                                   |              19.66 |          16 |          560 |             2663 (73&) |              4568 (63%) |              4519 (62%) |
