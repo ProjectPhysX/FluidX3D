@@ -2718,6 +2718,30 @@ inline string to_string(uint x) {
 inline string to_string(int x) {
 	return x>=0 ? to_string((uint)x) : "-"+to_string((uint)(-x));
 }
+inline string to_string_hex(ulong x) {
+	string r = "";
+	for(uint i=0u; i<16u; i++) {
+		const uint hex_char = (uint)(x&0xFull);
+		r = (char)(hex_char+(hex_char<10u ? 48u : 55u))+r;
+		x >>= 4u;
+	}
+	return "0x"+r;
+}
+inline string to_string_hex(slong x) {
+	return to_string_hex(*(ulong*)&x);
+}
+inline string to_string_hex(uint x) {
+	string r = "";
+	for(uint i=0u; i<8u; i++) {
+		const uint hex_char = x&0xFu;
+		r = (char)(hex_char+(hex_char<10u ? 48u : 55u))+r;
+		x >>= 4u;
+	}
+	return "0x"+r;
+}
+inline string to_string_hex(int x) {
+	return to_string_hex(*(uint*)&x);
+}
 inline string to_string(float x) { // convert float to string with full precision (<string> to_string() prints only 6 decimals)
 	string s = "";
 	if(x<0.0f) { s += "-"; x = -x; }

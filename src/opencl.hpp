@@ -130,7 +130,7 @@ struct Device_Info {
 		is_int8_capable = (uint)cl_device.getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR>();
 		is_cpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_CPU;
 		is_gpu = cl_device.getInfo<CL_DEVICE_TYPE>()==CL_DEVICE_TYPE_GPU;
-		uses_ram = is_cpu||cl_device.getInfo<CL_DEVICE_HOST_UNIFIED_MEMORY>(); // CPUs or iGPUs
+		uses_ram = is_cpu||(bool)cl_device.getInfo<CL_DEVICE_HOST_UNIFIED_MEMORY>(); // CPUs or iGPUs
 		const int vendor_id = (int)cl_device.getInfo<CL_DEVICE_VENDOR_ID>(); // AMD=0x1002, Intel=0x8086, Nvidia=0x10DE, Apple=0x1027F00
 		uint ipc = is_gpu ? 2u : 32u; // IPC (instructions per cycle) is 2 for most GPUs and 32 for most modern CPUs
 		float cores_per_cu = 1.0f;
@@ -153,8 +153,9 @@ struct Device_Info {
 			cores_per_cu = is_gpu ? 64.0f : 0.5f; // 64 cores/CU (GPUs), 1/2 core/CU (CPUs)
 			if(is_gpu) name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>()); // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
-			const bool intel_16_cores_per_cu = contains_any(to_lower(name), {"gpu max", "140v", "130v", "b580", "b570", "b60", "b50"}); // identify PVC/Xe2 GPUs
-			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC) or 8 cores/CU (integrated/Arc), Intel CPUs (with HT) have 1/2 core/CU
+			const int intel_device_id = (int)cl_device.getInfo<CL_DEVICE_ID_INTEL>(); // also see CL_DEVICE_IP_VERSION_INTEL
+			const bool intel_16_cores_per_cu = contains({ 0x0BD5, 0x0BDA, 0x64A0, 0xE20B, 0xE20C, 0xE211, 0xE212 }, intel_device_id); // GPU Max 1550, GPU Max 1100, Arc 140V/130V, Arc B580, Arc B570, Arc Pro B60, Arc Pro B50
+			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC/Xe2) or 8 cores/CU (Xe1), Intel CPUs (with HT) have 1/2 core/CU
 			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
 #if defined(_WIN32)
 				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L969
