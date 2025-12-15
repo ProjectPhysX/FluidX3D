@@ -120,10 +120,10 @@ LBM_Domain::LBM_Domain(const Device_Info& device_info, const uint Nx, const uint
 
 void LBM_Domain::allocate(Device& device) {
 	const ulong N = get_N();
-	fi = Memory<fpxx>(device, N, velocity_set, false);
-	rho = Memory<float>(device, N, 1u, true, true, 1.0f);
-	u = Memory<float>(device, N, 3u);
-	flags = Memory<uchar>(device, N);
+	fi = Memory<fpxx>(device, N, velocity_set, true, !device.info.is_shared_system_usm_capable);
+	rho = Memory<float>(device, N, 1u, true, !device.info.is_shared_system_usm_capable, 1.0f);
+	u = Memory<float>(device, N, 3u, true, !device.info.is_shared_system_usm_capable);
+	flags = Memory<uchar>(device, N, 1u, true, !device.info.is_shared_system_usm_capable);
 	kernel_initialize = Kernel(device, N, "initialize", fi, rho, u, flags);
 	kernel_stream_collide = Kernel(device, N, "stream_collide", fi, rho, u, flags, t, fx, fy, fz);
 	kernel_update_fields = Kernel(device, N, "update_fields", fi, rho, u, flags, t, fx, fy, fz);

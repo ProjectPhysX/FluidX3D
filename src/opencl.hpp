@@ -106,6 +106,7 @@ struct Device_Info {
 	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
 	bool patch_nvidia_fp16 = false; // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
 	bool patch_legacy_gpu_fma = false; // some old GPUs have terrible fma performance, so replace with a*b+c
+	bool is_shared_system_usm_capable = false;
 	inline Device_Info(const cl::Device& cl_device, const cl::Context& cl_context, const uint id) {
 		this->cl_device = cl_device; // see https://www.khronos.org/registry/OpenCL/sdk/1.2/docs/man/xhtml/clGetDeviceInfo.html
 		this->cl_context = cl_context;
@@ -145,6 +146,7 @@ struct Device_Info {
 		const auto idpap = cl_device.getInfo<CL_DEVICE_INTEGER_DOT_PRODUCT_ACCELERATION_PROPERTIES_4x8BIT_PACKED_KHR>(&dp4a_error);
 		const cl_bool* idpap_bits = (cl_bool*)&idpap; // on some unsupported devices, values are random, so only claim is_dp4a_capable if all bits are set correctly
 		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
+		is_shared_system_usm_capable = cl_device.getInfo<CL_DEVICE_SHARED_SYSTEM_MEM_CAPABILITIES_INTEL>() & CL_UNIFIED_SHARED_MEMORY_ACCESS_INTEL;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
 			const bool is_full_profile = trim(cl_device.getInfo<CL_DEVICE_PROFILE>())=="FULL_PROFILE"; // rusticl reports "EMBEDDED_PROFILE"
 			const bool amd_dual_cu = is_gpu&&is_full_profile&&contains_any(to_lower(name), {"gfx10", "gfx11", "gfx12"}); // identify RDNA/RDNA2/RDNA3/RDNA4 GPUs where dual CUs are reported
@@ -213,6 +215,7 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 	println("| Compute Units  | "+alignl(58, to_string(d.compute_units)+" at "+to_string(d.clock_frequency)+" MHz ("+to_string(d.cores)+" cores, "+to_string(d.tflops, 3)+" TFLOPs/s)")+" |");
 	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB "+(d.uses_ram ? "" : "V")+"RAM, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
 	println("| Buffer Limits  | "+alignl(58, to_string(d.max_global_buffer)+" MB global, "+to_string(d.max_constant_buffer)+" KB constant")+" |");
+	println("| SVM            | "+alignl(58, d.is_shared_system_usm_capable ? "Enabled" : "Disabled"                                      )+" |");
 	println("|----------------'------------------------------------------------------------|");
 }
 inline vector<Device_Info> get_devices(const bool print_info=true) { // returns a vector of all available OpenCL devices
@@ -339,7 +342,6 @@ private:
 	ulong N = 0ull; // buffer length
 	uint d = 1u; // buffer dimensions
 	bool host_buffer_exists = false;
-	bool device_buffer_exists = false;
 	bool external_host_buffer = false; // Memory object has been created with an externally supplied host buffer/pointer
 	bool is_zero_copy = false; // if possible (device is CPU or iGPU), and if allowed by user, use zero-copy buffer: host+device buffers are fused into one
 	T* host_buffer = nullptr; // host buffer
@@ -384,6 +386,7 @@ private:
 		}
 	}
 public:
+	bool device_buffer_exists = false;
 	T *x=nullptr, *y=nullptr, *z=nullptr, *w=nullptr; // host buffer auxiliary pointers for multi-dimensional array access (array of structures)
 	T *s0=nullptr, *s1=nullptr, *s2=nullptr, *s3=nullptr, *s4=nullptr, *s5=nullptr, *s6=nullptr, *s7=nullptr, *s8=nullptr, *s9=nullptr, *sA=nullptr, *sB=nullptr, *sC=nullptr, *sD=nullptr, *sE=nullptr, *sF=nullptr;
 	inline Memory(Device& device, const ulong N, const uint dimensions=1u, const bool allocate_host=true, const bool allocate_device=true, const T value=(T)0, const bool allow_zero_copy=true) {
@@ -623,7 +626,11 @@ private:
 		if(error!=0) print_error("OpenCL kernel \""+name+"(...)\" failed with error code "+to_string(error)+"!");
 	}
 	template<typename T> inline void link_parameter(const uint position, const Memory<T>& memory) {
-		check_for_errors(cl_kernel.setArg(position, memory.get_cl_buffer()));
+		if(memory.device_buffer_exists) {
+			check_for_errors(cl_kernel.setArg(position, memory.get_cl_buffer()));
+		} else {
+			clSetKernelArgSVMPointer(cl_kernel(), position, memory.data());
+		}
 	}
 	template<typename T> inline void link_parameter(const uint position, const T& constant) {
 		check_for_errors(cl_kernel.setArg(position, sizeof(T), (void*)&constant));
