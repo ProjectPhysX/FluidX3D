@@ -147,7 +147,8 @@ void main_physics() {
 	info.print_logo();
 	main_setup(); // execute setup
 	running = false;
-	exit(0); // make sure that the program stops
+	// Don't call exit(0) here - let main thread join and exit cleanly
+	// exit(0) causes heap corruption due to race conditions with other threads
 }
 
 #ifndef GRAPHICS
