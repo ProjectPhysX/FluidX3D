@@ -483,7 +483,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 ## Solving the Compatibility Problem
 
 - FluidX3D is written in OpenCL, so it runs on all hardware from all vendors (Nvidia, AMD, Intel, ...):
-  - world's fastest datacenter GPUs: B200, MI300X, H200, H100 (NVL), A100, MI200, MI100, V100(S), GPU Max 1100, ...
+  - world's fastest datacenter GPUs: MI355X, B200, MI300X, H200, H100 (NVL), A100, MI200, GPU Max 1100, ...
   - gaming GPUs (desktop/laptop): Nvidia GeForce, AMD Radeon, Intel Arc
   - professional/workstation GPUs: Nvidia Quadro, AMD Radeon Pro / FirePro, Intel Arc Pro
   - integrated GPUs
@@ -689,6 +689,10 @@ section HD 7870
 	868 :crit, 0, 868
 section HD 7850
 	635 :crit, 0, 635
+section HD 6970
+	211 :crit, 0, 211
+section HD 6870
+	181 :crit, 0, 181
 section HD 5870
 	257 :crit, 0, 257
 section HD 5770
@@ -827,6 +831,8 @@ section RTX 2060
 	3604 : 0, 3604
 section GTX 1660 Super
 	3551 : 0, 3551
+section CMP 30HX
+	3084 : 0, 3084
 section T4
 	2887 : 0, 2887
 section GTX 1660 Ti
@@ -1149,6 +1155,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7970                 |               3.79 |           3 |          264 |              193 (11%) |              1270 (37%) |              1563 (46%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7870                 |               2.56 |           2 |          154 |              105 (10%) |               716 (36%) |               868 (44%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;6970                 |               2.70 |           2 |          176 |              211 (18%) |               117 ( 5%) |               149 ( 7%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;6870                 |               2.02 |           1 |          134 |              181 (21%) |                94 ( 5%) |               138 ( 8%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5870                 |               2.72 |           1 |          154 |              257 (26%) |               111 ( 6%) |               141 ( 7%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;5770                 |               1.36 |           1 |           77 |              132 (26%) |                63 ( 6%) |                82 ( 8%) |
 | 🔴&nbsp;FirePro&nbsp;V5800                       |               1.10 |           1 |           64 |              108 (26%) |                52 ( 6%) |                66 ( 8%) |
@@ -1218,6 +1226,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060&nbsp;KO       |               6.74 |           6 |          336 |             1643 (75%) |              3376 (77%) |              3266 (75%) |
 | 🟢&nbsp;GeForce&nbsp;RTX&nbsp;2060               |               6.74 |           6 |          336 |             1681 (77%) |              3604 (83%) |              3571 (82%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Super    |               5.03 |           6 |          336 |             1696 (77%) |              3551 (81%) |              3040 (70%) |
+| 🟢&nbsp;CMP&nbsp;30HX                            |               5.03 |           6 |          336 |             1541 (70%) |              2954 (68%) |              3084 (71%) |
 | 🟢&nbsp;Tesla&nbsp;T4                            |               8.14 |          15 |          300 |             1356 (69%) |              2869 (74%) |              2887 (74%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660&nbsp;Ti       |               5.48 |           6 |          288 |             1467 (78%) |              3041 (81%) |              3019 (81%) |
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;1660               |               5.07 |           6 |          192 |             1016 (81%) |              1924 (77%) |              1992 (80%) |

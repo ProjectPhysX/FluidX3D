@@ -34,7 +34,7 @@ string("'-----------------------------------------------------------------------
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 mkdir -p ~/amdgpu
-wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/6.4.2.1/ubuntu/noble/amdgpu-install_6.4.60402-1_all.deb
+wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/30.20.1/ubuntu/noble/amdgpu-install_7.1.1.70101-1_all.deb
 sudo apt install -y ~/amdgpu/amdgpu-install*.deb
 sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
 sudo usermod -a -G render,video $(whoami)
@@ -59,13 +59,13 @@ sudo shutdown -r now
 )"+string("\033[96m")+R"(.-----------------------------------------------------------------------------.
 | CPU Option 1: Intel CPU Runtime for OpenCL (works for both AMD/Intel CPUs)  |
 '-----------------------------------------------------------------------------'
-export OCLV="oclcpuexp-2025.20.6.0.04_224945_rel"
-export TBBV="oneapi-tbb-2022.2.0"
+export OCLV="oclcpuexp-2025.21.10.0.10_160000_rel"
+export TBBV="oneapi-tbb-2022.3.0"
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
 sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
-sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2025-WW27/${OCLV}.tar.gz
-sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2022.2.0/${TBBV}-lin.tgz
+sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2025-WW45/${OCLV}.tar.gz
+sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2022.3.0/${TBBV}-lin.tgz
 sudo tar -zxvf ~/cpurt/${OCLV}.tar.gz -C /opt/intel/${OCLV}
 sudo tar -zxvf ~/cpurt/${TBBV}-lin.tgz -C /opt/intel
 echo /opt/intel/${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
