@@ -688,19 +688,51 @@ int main(int argc, char* argv[]) {
 	if(!x11_display) print_error("No X11 display available.");
 
 	Window x11_root_window = DefaultRootWindow(x11_display);
+
+	// Try to get monitor info using XRandR (may fail on XQuartz/macOS)
+	uint width = 0u;
+	uint height = 0u;
+	int window_offset_x = 0;
+	int window_offset_y = 0;
+	uint fps_limit = 60u; // default fallback refresh rate
+
 	XRRScreenResources* x11_screen_resources = XRRGetScreenResources(x11_display, x11_root_window);
-	XRROutputInfo* x11_output_info = XRRGetOutputInfo(x11_display, x11_screen_resources, XRRGetOutputPrimary(x11_display, x11_root_window));
-	XRRCrtcInfo* x11_crtc_info = XRRGetCrtcInfo(x11_display, x11_screen_resources, x11_output_info->crtc);
-	XRRScreenConfiguration* x11_screen_configuration = XRRGetScreenInfo(x11_display, x11_root_window);
-	const uint width  = (uint)x11_crtc_info->width; // width and height of primary monitor
-	const uint height = (uint)x11_crtc_info->height;
-	const int window_offset_x = (int)x11_crtc_info->x; // offset of primary monitor in multi-monitor coordinates
-	const int window_offset_y = (int)x11_crtc_info->y;
-	const uint fps_limit = (uint)XRRConfigCurrentRate(x11_screen_configuration);
-	XRRFreeScreenConfigInfo(x11_screen_configuration);
-	XRRFreeCrtcInfo(x11_crtc_info);
-	XRRFreeOutputInfo(x11_output_info);
-	XRRFreeScreenResources(x11_screen_resources);
+	if(x11_screen_resources) {
+		RROutput primary_output = XRRGetOutputPrimary(x11_display, x11_root_window);
+		XRROutputInfo* x11_output_info = (primary_output != None) ? XRRGetOutputInfo(x11_display, x11_screen_resources, primary_output) : nullptr;
+
+		if(x11_output_info && x11_output_info->crtc != None) {
+			XRRCrtcInfo* x11_crtc_info = XRRGetCrtcInfo(x11_display, x11_screen_resources, x11_output_info->crtc);
+			if(x11_crtc_info) {
+				width  = (uint)x11_crtc_info->width; // width and height of primary monitor
+				height = (uint)x11_crtc_info->height;
+				window_offset_x = (int)x11_crtc_info->x; // offset of primary monitor in multi-monitor coordinates
+				window_offset_y = (int)x11_crtc_info->y;
+				XRRFreeCrtcInfo(x11_crtc_info);
+			}
+			XRRFreeOutputInfo(x11_output_info);
+		}
+
+		XRRScreenConfiguration* x11_screen_configuration = XRRGetScreenInfo(x11_display, x11_root_window);
+		if(x11_screen_configuration) {
+			fps_limit = (uint)XRRConfigCurrentRate(x11_screen_configuration);
+			XRRFreeScreenConfigInfo(x11_screen_configuration);
+		}
+
+		XRRFreeScreenResources(x11_screen_resources);
+	}
+
+	// Fallback if XRandR failed (e.g., on XQuartz/macOS)
+	if(width == 0u || height == 0u) {
+		const int default_screen = DefaultScreen(x11_display);
+		width  = (uint)DisplayWidth(x11_display, default_screen);
+		height = (uint)DisplayHeight(x11_display, default_screen);
+		window_offset_x = 0;
+		window_offset_y = 0;
+#ifdef __APPLE__
+		fps_limit = 60u; // macOS/XQuartz typically runs at 60Hz
+#endif
+	}
 
 	camera = Camera(width, height, fps_limit);
 
