@@ -514,570 +514,579 @@ In consequence, the arithmetic intensity of this implementation is 2.37 (FP32/FP
 If your GPU/CPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
 
 ```mermaid
+---
+config:
+    themeVariables: {
+        sectionBkgColor: "#99999999",
+        altSectionBkgColor: "#00000000",
+        titleColor: "#AFAFAF",
+        textColor: "#AFAFAF",
+        taskTextColor: "black",
+        taskBorderColor: "#487E3A"
+    }
+    themeCSS: >
+        [id$="AMD"] { fill: #ED1C24; stroke: #ED1C24 }
+        [id$="Intel"] { fill: #00C7FD; stroke: #00C7FD }
+        [id$="Nvidia"] { fill: #76B900; stroke: #76B900 }
+        [id$="Apple"] { fill: #EFEFEF; stroke: #EFEFEF }
+        [id$="ARM"] { fill: #886CE4; stroke: #886CE4 }
+        [id$="Glenfly"] { fill: #FFF100; stroke: #FFF100 }
+        [id$="AMDCPU"] { fill: #00000000; stroke: #ED1C24 }
+        [id$="IntelCPU"] { fill: #00000000; stroke: #00C7FD }
+        [id$="NvidiaCPU"] { fill: #00000000; stroke: #76B900 }
+    gantt:
+        titleTopMargin: 42
+        topPadding: 70
+        leftPadding: 260
+        rightPadding: 5
+        sectionFontSize: 20
+        fontSize: 20
+        barHeight: 20
+        barGap: 3
+        numberSectionStyles: 2
+---
 gantt
 
 title FluidX3D Performance [MLUPs/s] - FP32 arithmetic, (fastest of FP32/FP16S/FP16C) memory storage
 dateFormat X
 axisFormat %s
-%%{
-	init: {
-		"gantt": {
-			'titleTopMargin': 42,
-			'topPadding': 70,
-			'leftPadding': 260,
-			'rightPadding': 5,
-			'sectionFontSize': 20,
-			'fontSize': 20,
-			'barHeight': 20,
-			'barGap': 3,
-			'numberSectionStyles': 2
-		},
-		'theme': 'forest',
-		'themeVariables': {
-			'sectionBkgColor': '#99999999',
-			'altSectionBkgColor': '#00000000',
-			'titleColor': '#AFAFAF',
-			'textColor': '#AFAFAF',
-			'taskTextColor': 'black',
-			'taskBorderColor': '#487E3A'
-		}
-	}
-}%%
 
 section MI355X
-	54494 :crit, 0, 54494
+	54494 :AMD, 0, 54494
 section MI300X
-	41327 :crit, 0, 41327
+	41327 :AMD, 0, 41327
 section MI250 (1 GCD)
-	9030 :crit, 0, 9030
+	9030 :AMD, 0, 9030
 section MI210
-	9547 :crit, 0, 9547
+	9547 :AMD, 0, 9547
 section MI100
-	8542 :crit, 0, 8542
+	8542 :AMD, 0, 8542
 section MI60
-	5111 :crit, 0, 5111
+	5111 :AMD, 0, 5111
 section MI50 32GB
-	8477 :crit, 0, 8477
+	8477 :AMD, 0, 8477
 section Radeon VII
-	7778 :crit, 0, 7778
+	7778 :AMD, 0, 7778
 section GPU Max 1100
-	6303 :done, 0, 6303
+	6303 :Intel, 0, 6303
 section B200 SXM6 180GB
-	55609 : 0, 55609
+	55609 :Nvidia, 0, 55609
 section H200 SXM5 141GB
-	36610 : 0, 36610
+	36610 :Nvidia, 0, 36610
 section GH200 94GB GPU
-	34689 : 0, 34689
+	34689 :Nvidia, 0, 34689
 section H100 NVL
-	32922 : 0, 32922
+	32922 :Nvidia, 0, 32922
 section H100 SXM5 80GB HBM3
-	29561 : 0, 29561
+	29561 :Nvidia, 0, 29561
 section H100 PCIe 80GB HBM2e
-	20624 : 0, 20624
+	20624 :Nvidia, 0, 20624
 section A100 SXM4 80GB
-	18448 : 0, 18448
+	18448 :Nvidia, 0, 18448
 section A100 PCIe 80GB
-	17896 : 0, 17896
+	17896 :Nvidia, 0, 17896
 section PG506-242/243
-	15654 : 0, 15654
+	15654 :Nvidia, 0, 15654
 section A100 SXM4 40GB
-	16013 : 0, 16013
+	16013 :Nvidia, 0, 16013
 section A100 PCIe 40GB
-	16035 : 0, 16035
+	16035 :Nvidia, 0, 16035
 section CMP 170HX
-	12392 : 0, 12392
+	12392 :Nvidia, 0, 12392
 section A30
-	9721 : 0, 9721
+	9721 :Nvidia, 0, 9721
 section V100 SXM2 32GB
-	8947 : 0, 8947
+	8947 :Nvidia, 0, 8947
 section V100 PCIe 16GB
-	10325 : 0, 10325
+	10325 :Nvidia, 0, 10325
 section GV100
-	6641 : 0, 6641
+	6641 :Nvidia, 0, 6641
 section Titan V
-	7253 : 0, 7253
+	7253 :Nvidia, 0, 7253
 section P100 PCIe 16GB
-	5950 : 0, 5950
+	5950 :Nvidia, 0, 5950
 section P100 PCIe 12GB
-	4141 : 0, 4141
+	4141 :Nvidia, 0, 4141
 section GTX TITAN
-	2500 : 0, 2500
+	2500 :Nvidia, 0, 2500
 section K40m
-	1868 : 0, 1868
+	1868 :Nvidia, 0, 1868
 section K80 (1 GPU)
-	1642 : 0, 1642
+	1642 :Nvidia, 0, 1642
 section K20c
-	1507 : 0, 1507
+	1507 :Nvidia, 0, 1507
 
 section AI PRO R9700
-	6395 :crit, 0, 6395
+	6395 :AMD, 0, 6395
 section RX 9070 XT
-	6688 :crit, 0, 6688
+	6688 :AMD, 0, 6688
 section RX 9070
-	6019 :crit, 0, 6019
+	6019 :AMD, 0, 6019
 section RX 7900 XTX
-	7716 :crit, 0, 7716
+	7716 :AMD, 0, 7716
 section PRO W7900
-	5939 :crit, 0, 5939
+	5939 :AMD, 0, 5939
 section RX 7900 XT
-	5986 :crit, 0, 5986
+	5986 :AMD, 0, 5986
 section RX 7800 XT
-	3105 :crit, 0, 3105
+	3105 :AMD, 0, 3105
 section PRO W7800
-	4426 :crit, 0, 4426
+	4426 :AMD, 0, 4426
 section RX 7900 GRE
-	4570 :crit, 0, 4570
+	4570 :AMD, 0, 4570
 section PRO W7700
-	2943 :crit, 0, 2943
+	2943 :AMD, 0, 2943
 section RX 7700 XT
-	2828 :crit, 0, 2828
+	2828 :AMD, 0, 2828
 section RX 7600
-	2561 :crit, 0, 2561
+	2561 :AMD, 0, 2561
 section PRO W7600
-	2287 :crit, 0, 2287
+	2287 :AMD, 0, 2287
 section PRO W7500
-	1682 :crit, 0, 1682
+	1682 :AMD, 0, 1682
 section RX 6900 XT
-	4227 :crit, 0, 4227
+	4227 :AMD, 0, 4227
 section RX 6800 XT
-	4241 :crit, 0, 4241
+	4241 :AMD, 0, 4241
 section PRO W6800
-	3361 :crit, 0, 3361
+	3361 :AMD, 0, 3361
 section RX 6700 XT
-	2908 :crit, 0, 2908
+	2908 :AMD, 0, 2908
 section RX 6750 GRE 12GB
-	2848 :crit, 0, 2848
+	2848 :AMD, 0, 2848
 section RX 6800M
-	3213 :crit, 0, 3213
+	3213 :AMD, 0, 3213
 section RX 6700M
-	2429 :crit, 0, 2429
+	2429 :AMD, 0, 2429
 section RX 6600
-	1839 :crit, 0, 1839
+	1839 :AMD, 0, 1839
 section RX 6500 XT
-	1030 :crit, 0, 1030
+	1030 :AMD, 0, 1030
 section RX 5700 XT
-	3253 :crit, 0, 3253
+	3253 :AMD, 0, 3253
 section RX 5700
-	3167 :crit, 0, 3167
+	3167 :AMD, 0, 3167
 section RX 5600 XT
-	2214 :crit, 0, 2214
+	2214 :AMD, 0, 2214
 section RX Vega 64
-	3227 :crit, 0, 3227
+	3227 :AMD, 0, 3227
 section RX 590
-	1688 :crit, 0, 1688
+	1688 :AMD, 0, 1688
 section RX 580 4GB
-	1848 :crit, 0, 1848
+	1848 :AMD, 0, 1848
 section RX 580 2048SP 8GB
-	1622 :crit, 0, 1622
+	1622 :AMD, 0, 1622
 section RX 480 8GB
-	1908 :crit, 0, 1908
+	1908 :AMD, 0, 1908
 section Pro WX 5100
-	1604 :crit, 0, 1604
+	1604 :AMD, 0, 1604
 section R9 Fury X
-	2880 :crit, 0, 2880
+	2880 :AMD, 0, 2880
 section R9 Nano
-	2761 :crit, 0, 2761
+	2761 :AMD, 0, 2761
 section R9 390X
-	2217 :crit, 0, 2217
+	2217 :AMD, 0, 2217
 section R9 290X
-	1699 :crit, 0, 1699
+	1699 :AMD, 0, 1699
 section R9 290
-	1647 :crit, 0, 1647
+	1647 :AMD, 0, 1647
 section HD 7970
-	1563 :crit, 0, 1563
+	1563 :AMD, 0, 1563
 section HD 7870
-	868 :crit, 0, 868
+	868 :AMD, 0, 868
 section HD 7850
-	635 :crit, 0, 635
+	635 :AMD, 0, 635
 section HD 6970
-	211 :crit, 0, 211
+	211 :AMD, 0, 211
 section HD 6870
-	181 :crit, 0, 181
+	181 :AMD, 0, 181
 section HD 5870
-	257 :crit, 0, 257
+	257 :AMD, 0, 257
 section HD 5770
-	132 :crit, 0, 132
+	132 :AMD, 0, 132
 section FirePro V5800
-	108 :crit, 0, 108
+	108 :AMD, 0, 108
 section Arc Pro B60
-	5138 :done, 0, 5138
+	5138 :Intel, 0, 5138
 section Arc B580 LE
-	5153 :done, 0, 5153
+	5153 :Intel, 0, 5153
 section Arc B570
-	4186 :done, 0, 4186
+	4186 :Intel, 0, 4186
 section Arc Pro B50
-	2559 :done, 0, 2559
+	2559 :Intel, 0, 2559
 section Arc A770 LE
-	4568 :done, 0, 4568
+	4568 :Intel, 0, 4568
 section Arc A750 LE
-	4314 :done, 0, 4314
+	4314 :Intel, 0, 4314
 section Arc A580
-	3889 :done, 0, 3889
+	3889 :Intel, 0, 3889
 section Arc Pro A40
-	985 :done, 0, 985
+	985 :Intel, 0, 985
 section Arc A380
-	1115 :done, 0, 1115
+	1115 :Intel, 0, 1115
 section RTX PRO 6000 Blackwell
-	20841 : 0, 20841
+	20841 :Nvidia, 0, 20841
 section RTX 5090
-	19141 : 0, 19141
+	19141 :Nvidia, 0, 19141
 section RTX 5080
-	10304 : 0, 10304
+	10304 :Nvidia, 0, 10304
 section RTX 5090M
-	9227 : 0, 9227
+	9227 :Nvidia, 0, 9227
 section RTX 5070
-	7238 : 0, 7238
+	7238 :Nvidia, 0, 7238
 section RTX 4090
-	11496 : 0, 11496
+	11496 :Nvidia, 0, 11496
 section RTX 6000 Ada
-	10293 : 0, 10293
+	10293 :Nvidia, 0, 10293
 section L40S
-	7637 : 0, 7637
+	7637 :Nvidia, 0, 7637
 section L40
-	7945 : 0, 7945
+	7945 :Nvidia, 0, 7945
 section RTX 4080 Super
-	8218 : 0, 8218
+	8218 :Nvidia, 0, 8218
 section RTX 4080
-	7933 : 0, 7933
+	7933 :Nvidia, 0, 7933
 section RTX 4070 Ti Super
-	7295 : 0, 7295
+	7295 :Nvidia, 0, 7295
 section RTX 4090M
-	6901 : 0, 6901
+	6901 :Nvidia, 0, 6901
 section RTX 4070 Super
-	5554 : 0, 5554
+	5554 :Nvidia, 0, 5554
 section RTX 4070
-	5016 : 0, 5016
+	5016 :Nvidia, 0, 5016
 section RTX 4080M
-	5114 : 0, 5114
+	5114 :Nvidia, 0, 5114
 section RTX 4000 Ada
-	4221 : 0, 4221
+	4221 :Nvidia, 0, 4221
 section L4
-	2857 : 0, 2857
+	2857 :Nvidia, 0, 2857
 section RTX 4060
-	3124 : 0, 3124
+	3124 :Nvidia, 0, 3124
 section RTX 4070M
-	3092 : 0, 3092
+	3092 :Nvidia, 0, 3092
 section RTX 2000 Ada
-	2526 : 0, 2526
+	2526 :Nvidia, 0, 2526
 section RTX 3090 Ti
-	10956 : 0, 10956
+	10956 :Nvidia, 0, 10956
 section RTX 3090
-	10732 : 0, 10732
+	10732 :Nvidia, 0, 10732
 section RTX 3080 Ti
-	9832 : 0, 9832
+	9832 :Nvidia, 0, 9832
 section RTX 3080 12GB
-	9657 : 0, 9657
+	9657 :Nvidia, 0, 9657
 section RTX A6000
-	8814 : 0, 8814
+	8814 :Nvidia, 0, 8814
 section RTX A5000
-	8617 : 0, 8617
+	8617 :Nvidia, 0, 8617
 section RTX 3080 10GB
-	8118 : 0, 8118
+	8118 :Nvidia, 0, 8118
 section RTX A40
-	6622 : 0, 6622
+	6622 :Nvidia, 0, 6622
 section RTX 3070 Ti
-	6807 : 0, 6807
+	6807 :Nvidia, 0, 6807
 section RTX A10
-	5741 : 0, 5741
+	5741 :Nvidia, 0, 5741
 section RTX 3080M Ti
-	5908 : 0, 5908
+	5908 :Nvidia, 0, 5908
 section RTX 3070
-	5096 : 0, 5096
+	5096 :Nvidia, 0, 5096
 section RTX 3060 Ti
-	5129 : 0, 5129
+	5129 :Nvidia, 0, 5129
 section RTX A4000
-	4945 : 0, 4945
+	4945 :Nvidia, 0, 4945
 section RTX A5000M
-	4461 : 0, 4461
+	4461 :Nvidia, 0, 4461
 section RTX 3060
-	4070 : 0, 4070
+	4070 :Nvidia, 0, 4070
 section RTX 3060M
-	4012 : 0, 4012
+	4012 :Nvidia, 0, 4012
 section A16 (1 GPU)
-	2031 : 0, 2031
+	2031 :Nvidia, 0, 2031
 section A2
-	2051 : 0, 2051
+	2051 :Nvidia, 0, 2051
 section RTX 3050M Ti
-	2341 : 0, 2341
+	2341 :Nvidia, 0, 2341
 section RTX 3050M
-	2339 : 0, 2339
+	2339 :Nvidia, 0, 2339
 section RTX 3050 6GB
-	1898 : 0, 1898
+	1898 :Nvidia, 0, 1898
 section Titan RTX
-	7554 : 0, 7554
+	7554 :Nvidia, 0, 7554
 section RTX 6000
-	6879 : 0, 6879
+	6879 :Nvidia, 0, 6879
 section RTX 8000 Passive
-	5607 : 0, 5607
+	5607 :Nvidia, 0, 5607
 section RTX 2080 Ti
-	6853 : 0, 6853
+	6853 :Nvidia, 0, 6853
 section RTX 2080 Super
-	5284 : 0, 5284
+	5284 :Nvidia, 0, 5284
 section RTX 5000
-	4773 : 0, 4773
+	4773 :Nvidia, 0, 4773
 section RTX 2080
-	4977 : 0, 4977
+	4977 :Nvidia, 0, 4977
 section RTX 2070 Super
-	4893 : 0, 4893
+	4893 :Nvidia, 0, 4893
 section RTX 2070
-	5017 : 0, 5017
+	5017 :Nvidia, 0, 5017
 section RTX 2060 Super
-	5035 : 0, 5035
+	5035 :Nvidia, 0, 5035
 section RTX 4000
-	4584 : 0, 4584
+	4584 :Nvidia, 0, 4584
 section RTX 2060 KO
-	3376 : 0, 3376
+	3376 :Nvidia, 0, 3376
 section RTX 2060
-	3604 : 0, 3604
+	3604 :Nvidia, 0, 3604
 section GTX 1660 Super
-	3551 : 0, 3551
+	3551 :Nvidia, 0, 3551
 section CMP 30HX
-	3084 : 0, 3084
+	3084 :Nvidia, 0, 3084
 section T4
-	2887 : 0, 2887
+	2887 :Nvidia, 0, 2887
 section GTX 1660 Ti
-	3041 : 0, 3041
+	3041 :Nvidia, 0, 3041
 section GTX 1660
-	1992 : 0, 1992
+	1992 :Nvidia, 0, 1992
 section GTX 1650M 896C
-	1858 : 0, 1858
+	1858 :Nvidia, 0, 1858
 section GTX 1650M 1024C
-	1400 : 0, 1400
+	1400 :Nvidia, 0, 1400
 section T500
-	665 : 0, 665
+	665 :Nvidia, 0, 665
 section Titan Xp
-	5495 : 0, 5495
+	5495 :Nvidia, 0, 5495
 section GTX 1080 Ti
-	4877 : 0, 4877
+	4877 :Nvidia, 0, 4877
 section GTX 1080
-	3182 : 0, 3182
+	3182 :Nvidia, 0, 3182
 section GTX 1060 6GB
-	1925 : 0, 1925
+	1925 :Nvidia, 0, 1925
 section GTX 1060M
-	1882 : 0, 1882
+	1882 :Nvidia, 0, 1882
 section GTX 1050M Ti
-	1224 : 0, 1224
+	1224 :Nvidia, 0, 1224
 section P1000
-	839 : 0, 839
+	839 :Nvidia, 0, 839
 section GTX TITAN X
-	2665 : 0, 2665
+	2665 :Nvidia, 0, 2665
 section GTX 980 Ti
-	2703 : 0, 2703
+	2703 :Nvidia, 0, 2703
 section GTX 980
-	1965 : 0, 1965
+	1965 :Nvidia, 0, 1965
 section GTX 970
-	1721 : 0, 1721
+	1721 :Nvidia, 0, 1721
 section M4000
-	1519 : 0, 1519
+	1519 :Nvidia, 0, 1519
 section M60 (1 GPU)
-	1571 : 0, 1571
+	1571 :Nvidia, 0, 1571
 section GTX 960M
-	872 : 0, 872
+	872 :Nvidia, 0, 872
 section GTX 780 Ti
-	2776 : 0, 2776
+	2776 :Nvidia, 0, 2776
 section GTX 770
-	1215 : 0, 1215
+	1215 :Nvidia, 0, 1215
 section GTX 680 4GB
-	1274 : 0, 1274
+	1274 :Nvidia, 0, 1274
 section GTX 670
-	1220 : 0, 1220
+	1220 :Nvidia, 0, 1220
 section GTX 660
-	1146 : 0, 1146
+	1146 :Nvidia, 0, 1146
 section GTX 660 OEM
-	990 : 0, 990
+	990 :Nvidia, 0, 990
 section K2000
-	444 : 0, 444
+	444 :Nvidia, 0, 444
 section GT 630 (OEM)
-	185 : 0, 185
+	185 :Nvidia, 0, 185
 section GTX 580
-	1481 : 0, 1481
+	1481 :Nvidia, 0, 1481
 section GTX 560 Ti
-	895 : 0, 895
+	895 :Nvidia, 0, 895
 section GTX 480
-	1264 : 0, 1264
+	1264 :Nvidia, 0, 1264
 section GTX 280
-	462 : 0, 462
+	462 :Nvidia, 0, 462
 section GTX 260
-	421 : 0, 421
+	421 :Nvidia, 0, 421
 section FX 5800
-	296 : 0, 296
+	296 :Nvidia, 0, 296
 section NVS 290
-	9 : 0, 9
+	9 :Nvidia, 0, 9
 section Arise 1020
-	6 :active, 0, 6
-
+	6 :Glenfly, 0, 6
+	
+section M5 (10-CU, 32GB)
+	1613 :Apple, 0, 1613
 section M2 Ultra (76-CU, 192GB)
-	8769 :active, 0, 8769
+	8769 :Apple, 0, 8769
 section M2 Max (38-CU, 32GB)
-	4641 :active, 0, 4641
+	4641 :Apple, 0, 4641
 section M2 Pro (19-CU, 16GB)
-	2374 :active, 0, 2374
+	2374 :Apple, 0, 2374
 section M1 Ultra (64-CU, 128GB)
-	8418 :active, 0, 8418
+	8418 :Apple, 0, 8418
 section M1 Max (24-CU, 32GB)
-	4496 :active, 0, 4496
+	4496 :Apple, 0, 4496
 section M1 Pro (16-CU, 16GB)
-	2329 :active, 0, 2329
+	2329 :Apple, 0, 2329
 section M1 (8-CU, 16GB)
-	759 :active, 0, 759
+	759 :Apple, 0, 759
 section Radeon 8060S (Max+ 395)
-	2563 :crit, 0, 2563
+	2563 :AMD, 0, 2563
 section Radeon 780M (Z1 Extreme)
-	860 :crit, 0, 860
+	860 :AMD, 0, 860
 section Radeon Graphics (7800X3D)
-	498 :crit, 0, 498
+	498 :AMD, 0, 498
 section Vega 8 (4750G)
-	511 :crit, 0, 511
+	511 :AMD, 0, 511
 section Vega 8 (3500U)
-	288 :crit, 0, 288
+	288 :AMD, 0, 288
 section Arc 140V GPU (16GB)
-	1282 :done, 0, 1282
+	1282 :Intel, 0, 1282
 section Graphics (Ultra 9 285K)
-	691 :done, 0, 691
+	691 :Intel, 0, 691
 section Arc Graphics (Ultra 9 185H)
-	724 :done, 0, 724
+	724 :Intel, 0, 724
 section Iris Xe Graphics (i7-1265U)
-	621 :done, 0, 621
+	621 :Intel, 0, 621
 section UHD Xe 32EUs
-	245 :done, 0, 245
+	245 :Intel, 0, 245
 section UHD 770
-	475 :done, 0, 475
+	475 :Intel, 0, 475
 section UHD 630
-	301 :done, 0, 301
+	301 :Intel, 0, 301
 section UHD P630
-	288 :done, 0, 288
+	288 :Intel, 0, 288
 section HD 5500
-	192 :done, 0, 192
+	192 :Intel, 0, 192
 section HD 4600
-	115 :done, 0, 115
+	115 :Intel, 0, 115
 section GB10 (DGX Spark)
-	2402 : 0, 2402
+	2402 :Nvidia, 0, 2402
 section Orange Pi 5 Mali-G610 MP4
-	232 :active, 0, 232
+	232 :ARM, 0, 232
 section Samsung Mali-G72 MP18
-	230 :active, 0, 230
+	230 :ARM, 0, 230
 
 section 2x EPYC 9754
-	5179 :crit, 0, 5179
+	5179 :AMDCPU, 0, 5179
 section 2x EPYC 9654
-	4092 :crit, 0, 4092
+	4092 :AMDCPU, 0, 4092
 section 2x EPYC 9554
-	2552 :crit, 0, 2552
+	2552 :AMDCPU, 0, 2552
 section 1x EPYC 9124
-	772 :crit, 0, 772
+	772 :AMDCPU, 0, 772
 section 2x EPYC 7713
-	1418 :crit, 0, 1418
+	1418 :AMDCPU, 0, 1418
 section 2x EPYC 7352
-	739 :crit, 0, 739
+	739 :AMDCPU, 0, 739
 section 2x EPYC 7313
-	498 :crit, 0, 498
+	498 :AMDCPU, 0, 498
 section 2x EPYC 7302
-	784 :crit, 0, 784
+	784 :AMDCPU, 0, 784
 section 2x Xeon 6980P
-	7875 :done, 0, 7875
+	7875 :IntelCPU, 0, 7875
 section 2x Xeon 6979P
-	8135 :done, 0, 8135
+	8135 :IntelCPU, 0, 8135
 section 2x Xeon 6960P
-	5477 :done, 0, 5477
+	5477 :IntelCPU, 0, 5477
 section 2x Platinum 8592+
-	3135 :done, 0, 3135
+	3135 :IntelCPU, 0, 3135
 section 2x Gold 6548N
-	1811 :done, 0, 1811
+	1811 :IntelCPU, 0, 1811
 section 2x CPU Max 9480
-	2037 :done, 0, 2037
+	2037 :IntelCPU, 0, 2037
 section 2x Platinum 8480+
-	2162 :done, 0, 2162
+	2162 :IntelCPU, 0, 2162
 section 2x Platinum 8470
-	2068 :done, 0, 2068
+	2068 :IntelCPU, 0, 2068
 section 2x Gold 6438Y+
-	1945 :done, 0, 1945
+	1945 :IntelCPU, 0, 1945
 section 2x Platinum 8380
-	1410 :done, 0, 1410
+	1410 :IntelCPU, 0, 1410
 section 2x Platinum 8358
-	1285 :done, 0, 1285
+	1285 :IntelCPU, 0, 1285
 section 2x Platinum 8256
-	396 :done, 0, 396
+	396 :IntelCPU, 0, 396
 section 2x Platinum 8153
-	691 :done, 0, 691
+	691 :IntelCPU, 0, 691
 section 2x Gold 6248R
-	755 :done, 0, 755
+	755 :IntelCPU, 0, 755
 section 2x Gold 6128
-	254 :done, 0, 254
+	254 :IntelCPU, 0, 254
 section Phi 7210
-	415 :done, 0, 415
+	415 :IntelCPU, 0, 415
 section 4x E5-4620 v4
-	460 :done, 0, 460
+	460 :IntelCPU, 0, 460
 section 2x E5-2630 v4
-	264 :done, 0, 264
+	264 :IntelCPU, 0, 264
 section 2x E5-2623 v4
-	125 :done, 0, 125
+	125 :IntelCPU, 0, 125
 section 2x E5-2680 v3
-	304 :done, 0, 304
+	304 :IntelCPU, 0, 304
 section GH200 Neoverse-V2
-	1323 : 0, 1323
+	1323 :NvidiaCPU, 0, 1323
 section TR PRO 7995WX
-	1715 :crit, 0, 1715
+	1715 :AMDCPU, 0, 1715
 section TR 3970X
-	463 :crit, 0, 463
+	463 :AMDCPU, 0, 463
 section TR 1950X
-	273 :crit, 0, 273
+	273 :AMDCPU, 0, 273
 section Ryzen 7900X3D
-	521 :crit, 0, 521
+	521 :AMDCPU, 0, 521
 section Ryzen 7800X3D
-	363 :crit, 0, 363
+	363 :AMDCPU, 0, 363
 section Ryzen 5700X3D
-	229 :crit, 0, 229
+	229 :AMDCPU, 0, 229
 section FX-6100
-	22 :crit, 0, 22
+	22 :AMDCPU, 0, 22
 section Athlon X2 QL-65
-	3 :crit, 0, 3
+	3 :AMDCPU, 0, 3
 section w9-3595X
-	1393 :done, 0, 1393
+	1393 :IntelCPU, 0, 1393
 section w7-3445
-	1173 :done, 0, 1173
+	1173 :IntelCPU, 0, 1173
 section Ultra 9 285K
-	620 :done, 0, 620
+	620 :IntelCPU, 0, 620
 section Ultra 7 258V
-	287 :done, 0, 287
+	287 :IntelCPU, 0, 287
 section Ultra 9 185H
-	317 :done, 0, 317
+	317 :IntelCPU, 0, 317
 section i9-14900K
-	490 :done, 0, 490
+	490 :IntelCPU, 0, 490
 section i7-13700K
-	504 :done, 0, 504
+	504 :IntelCPU, 0, 504
 section i7-1265U
-	128 :done, 0, 128
+	128 :IntelCPU, 0, 128
 section i9-11900KB
-	208 :done, 0, 208
+	208 :IntelCPU, 0, 208
 section i9-10980XE
-	286 :done, 0, 286
+	286 :IntelCPU, 0, 286
 section E-2288G
-	198 :done, 0, 198
+	198 :IntelCPU, 0, 198
 section i7-9700
-	103 :done, 0, 103
+	103 :IntelCPU, 0, 103
 section i5-9600
-	147 :done, 0, 147
+	147 :IntelCPU, 0, 147
 section i7-8700K
-	152 :done, 0, 152
+	152 :IntelCPU, 0, 152
 section E-2176G
-	201 :done, 0, 201
+	201 :IntelCPU, 0, 201
 section i7-7700HQ
-	108 :done, 0, 108
+	108 :IntelCPU, 0, 108
 section E3-1240 v5
-	141 :done, 0, 141
+	141 :IntelCPU, 0, 141
 section i5-5300U
-	37 :done, 0, 37
+	37 :IntelCPU, 0, 37
 section i7-4770
-	104 :done, 0, 104
+	104 :IntelCPU, 0, 104
 section i7-4720HQ
-	80 :done, 0, 80
+	80 :IntelCPU, 0, 80
 section N2807
-	7 :done, 0, 7
+	7 :IntelCPU, 0, 7
 ```
 
 <details><summary>Single-GPU/CPU Benchmark Table</summary>
 
-Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
+Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 
 | Device                                           | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :----------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
@@ -1262,8 +1271,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🟢&nbsp;GeForce&nbsp;GTX&nbsp;260                |               0.48 |         0.9 |          111 |              345 (47%) |               421 (29%) |               160 (11%) |
 | 🟢&nbsp;Quadro&nbsp;FX&nbsp;5800                 |               0.62 |           4 |          102 |              296 (44%) |               268 (20%) |               211 (16%) |
 | 🟢&nbsp;Quadro&nbsp;NVS&nbsp;290                 |               0.03 |        0.25 |            6 |                9 (22%) |                 4 ( 5%) |                 4 ( 5%) |
-| 🟤&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
+| 🟡&nbsp;Arise&nbsp;1020                          |               1.50 |           2 |           19 |                6 ( 5%) |                 6 ( 2%) |                 6 ( 2%) |
 |                                                  |                    |             |              |                        |                         |                         |
+| ⚪&nbsp;M5&nbsp;GPU&nbsp;10CU&nbsp;32GB          |               2.56 |          18 |          153 |              800 (80%) |              1596 (80%) |              1613 (81%) |
 | ⚪&nbsp;M2&nbsp;Ultra&nbsp;GPU&nbsp;76CU&nbsp;192GB |           19.46 |         147 |          800 |             4629 (89%) |              8769 (84%) |              7972 (77%) |
 | ⚪&nbsp;M2&nbsp;Max&nbsp;GPU&nbsp;38CU&nbsp;32GB |               9.73 |          22 |          400 |             2405 (92%) |              4641 (89%) |              2444 (47%) |
 | ⚪&nbsp;M2&nbsp;Pro&nbsp;GPU&nbsp;19CU&nbsp;16GB |               4.86 |          11 |          200 |             1195 (91%) |              2374 (91%) |              2173 (84%) |
@@ -1287,8 +1297,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 | 🔵&nbsp;HD&nbsp;Graphics&nbsp;5500               |               0.35 |           3 |           26 |               75 (45%) |               192 (58%) |               108 (32%) |
 | 🔵&nbsp;HD&nbsp;Graphics&nbsp;4600               |               0.38 |           2 |           26 |              105 (63%) |               115 (35%) |                34 (10%) |
 | 🟢&nbsp;GB10&nbsp;(DGX&nbsp;Spark)               |              29.71 |         122 |          273 |             1288 (72%) |              2309 (65%) |              2402 (68%) |
-| 🟡&nbsp;Mali-G610&nbsp;MP4 (Orange&nbsp;Pi&nbsp;5) |             0.06 |          16 |           34 |              130 (58%) |               232 (52%) |                93 (21%) |
-| 🟡&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |              110 (59%) |               230 (62%) |                21 ( 6%) |
+| 🟣&nbsp;Mali-G610&nbsp;MP4 (Orange&nbsp;Pi&nbsp;5) |             0.06 |          16 |           34 |              130 (58%) |               232 (52%) |                93 (21%) |
+| 🟣&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |              110 (59%) |               230 (62%) |                21 ( 6%) |
 |                                                  |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754                   |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             3087 (51%) |              3675 (31%) |              4092 (34%) |
@@ -1357,266 +1367,277 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
 Multi-GPU benchmarks are done at the largest possible grid resolution with cubic domains, and either 2x1x1, 2x2x1 or 2x2x2 of these domains together. The (percentages in round brackets) are single-GPU [roofline model](https://en.wikipedia.org/wiki/Roofline_model) efficiency, and the (multiplicators in round brackets) are scaling factors relative to benchmarked single-GPU performance.
 
 ```mermaid
+---
+config:
+    themeVariables: {
+        sectionBkgColor: "#99999999",
+        altSectionBkgColor: "#00000000",
+        titleColor: "#AFAFAF",
+        textColor: "#AFAFAF",
+        taskTextColor: "black",
+        taskBorderColor: "#487E3A"
+    }
+    themeCSS: >
+        [id$="AMD"] { fill: #ED1C24; stroke: #ED1C24 }
+        [id$="Intel"] { fill: #00C7FD; stroke: #00C7FD }
+        [id$="Nvidia"] { fill: #76B900; stroke: #76B900 }
+        [id$="Apple"] { fill: #EFEFEF; stroke: #EFEFEF }
+        [id$="ARM"] { fill: #886CE4; stroke: #886CE4 }
+        [id$="Glenfly"] { fill: #FFF100; stroke: #FFF100 }
+        [id$="AMDCPU"] { fill: #00000000; stroke: #ED1C24 }
+        [id$="IntelCPU"] { fill: #00000000; stroke: #00C7FD }
+        [id$="NvidiaCPU"] { fill: #00000000; stroke: #76B900 }
+        [id$="Mix1"] { fill: #D0441B; stroke: #D0441B }
+        [id$="Mix2"] { fill: #A86D28; stroke: #A86D28 }
+        [id$="Mix3"] { fill: #778A61; stroke: #778A61 }
+        [id$="Mix4"] { fill: #3BC07F; stroke: #3BC07F }
+    gantt:
+        titleTopMargin: 42
+        topPadding: 70
+        leftPadding: 260
+        rightPadding: 5
+        sectionFontSize: 20
+        fontSize: 20
+        barHeight: 20
+        barGap: 3
+        numberSectionStyles: 2
+---
 gantt
 
 title FluidX3D Performance [MLUPs/s] - FP32 arithmetic, (fastest of FP32/FP16S/FP16C) memory storage
 dateFormat X
 axisFormat %s
-%%{
-	init: {
-		"gantt": {
-			'titleTopMargin': 42,
-			'topPadding': 70,
-			'leftPadding': 260,
-			'rightPadding': 5,
-			'sectionFontSize': 20,
-			'fontSize': 20,
-			'barHeight': 20,
-			'barGap': 3,
-			'numberSectionStyles': 2
-		},
-		'theme': 'forest',
-		'themeVariables': {
-			'sectionBkgColor': '#99999999',
-			'altSectionBkgColor': '#00000000',
-			'titleColor': '#AFAFAF',
-			'textColor': '#AFAFAF',
-			'taskTextColor': 'black',
-			'taskBorderColor': '#487E3A'
-		}
-	}
-}%%
 
 section 8x MI355X
-	362344 :crit, 0, 362344
+	362344 :AMD, 0, 362344
 section 1x MI355X
-	54494 :crit, 0, 54494
+	54494 :AMD, 0, 54494
 
 section 8x MI300X
-	204924 :crit, 0, 204924
+	204924 :AMD, 0, 204924
 section 4x MI300X
-	109546 :crit, 0, 109546
+	109546 :AMD, 0, 109546
 section 2x MI300X
-	61053 :crit, 0, 61053
+	61053 :AMD, 0, 61053
 section 1x MI300X
-	41327 :crit, 0, 41327
+	41327 :AMD, 0, 41327
 
 section 4x MI250 (8 GCD)
-	53521 :crit, 0, 53521
+	53521 :AMD, 0, 53521
 section 2x MI250 (4 GCD)
-	29627 :crit, 0, 29627
+	29627 :AMD, 0, 29627
 section 1x MI250 (2 GCD
-	17338 :crit, 0, 17338
+	17338 :AMD, 0, 17338
 section 1x MI250 (1 GCD)
-	9030 :crit, 0, 9030
+	9030 :AMD, 0, 9030
 
 section 32x MI210 GigaIO
-	50952 :crit, 0, 50952
+	50952 :AMD, 0, 50952
 section 24x MI210 GigaIO
-	45033 :crit, 0, 45033
+	45033 :AMD, 0, 45033
 section 16x MI210 GigaIO
-	37922 :crit, 0, 37922
+	37922 :AMD, 0, 37922
 section 8x MI210 GigaIO
-	27996 :crit, 0, 27996
+	27996 :AMD, 0, 27996
 section 4x MI210 GigaIO
-	17232 :crit, 0, 17232
+	17232 :AMD, 0, 17232
 section 2x MI210 GigaIO
-	13539 :crit, 0, 13539
+	13539 :AMD, 0, 13539
 section 1x MI210 GigaIO
-	9105 :crit, 0, 9105
+	9105 :AMD, 0, 9105
 
 section 4x MI210
-	31408 :crit, 0, 31408
+	31408 :AMD, 0, 31408
 section 2x MI210
-	16156 :crit, 0, 16156
+	16156 :AMD, 0, 16156
 section 1x MI210
-	8757 :crit, 0, 8757
+	8757 :AMD, 0, 8757
 
 section 3x  MI50 + 1x A100 40GB
-	22759 :active,crit, 0, 22759
+	22759 :Mix1, 0, 22759
 section 3x MI50 32GB
-	21693 :crit, 0, 21693
+	21693 :AMD, 0, 21693
 section 2x MI50 32GB
-	14484 :crit, 0, 14484
+	14484 :AMD, 0, 14484
 section 1x MI50 32GB
-	8477 :crit, 0, 8477
+	8477 :AMD, 0, 8477
 
 section 8x Radeon VII
-	30826 :crit, 0, 30826
+	30826 :AMD, 0, 30826
 section 4x Radeon VII
-	24273 :crit, 0, 24273
+	24273 :AMD, 0, 24273
 section 2x Radeon VII
-	15591 :crit, 0, 15591
+	15591 :AMD, 0, 15591
 section 1x Radeon VII
-	7778 :crit, 0, 7778
+	7778 :AMD, 0, 7778
 
 section 1x Radeon Pro Duo (2 GPUs)
-	3310 :crit, 0, 3310
+	3310 :AMD, 0, 3310
 section 1x R9 295X2 (2 GPUs)
-	2428 :crit, 0, 2428
+	2428 :AMD, 0, 2428
 section 1x HD 7990 (2 GPUs)
-	2314 :crit, 0, 2314
+	2314 :AMD, 0, 2314
 section 1x HD 6990 (2 GPUs)
-	344 :crit, 0, 344
+	344 :AMD, 0, 344
 section 1x HD 5970 (2 GPUs)
-	360 :crit, 0, 360
+	360 :AMD, 0, 360
 
 section 4x GPU Max 1100
-	22777 :done, 0, 22777
+	22777 :Intel, 0, 22777
 section 2x GPU Max 1100
-	11815 :done, 0, 11815
+	11815 :Intel, 0, 11815
 section 1x GPU Max 1100
-	6209 :done, 0, 6209
+	6209 :Intel, 0, 6209
 
 section 8x B200 SXM6 180GB
-	219300 : 0, 219300
+	219300 :Nvidia, 0, 219300
 section 4x B200 SXM6 180GB
-	147446 : 0, 147446
+	147446 :Nvidia, 0, 147446
 section 2x B200 SXM6 180GB
-	85077 : 0, 85077
+	85077 :Nvidia, 0, 85077
 section 1x B200 SXM6 180GB
-	55609 : 0, 55609
+	55609 :Nvidia, 0, 55609
 
 section 8x H200 SXM5 141GB
-	157743 : 0, 157743
+	157743 :Nvidia, 0, 157743
 section 4x H200 SXM5 141GB
-	96056 : 0, 96056
+	96056 :Nvidia, 0, 96056
 section 2x H200 SXM5 141GB
-	57070 : 0, 57070
+	57070 :Nvidia, 0, 57070
 section 1x H200 SXM5 141GB
-	36610 : 0, 36610
+	36610 :Nvidia, 0, 36610
 
 section 4x H100 NVL
-	82122 : 0, 82122
+	82122 :Nvidia, 0, 82122
 section 2x H100 NVL
-	49958 : 0, 49958
+	49958 :Nvidia, 0, 49958
 section 1x H100 NVL
-	32922 : 0, 32922
+	32922 :Nvidia, 0, 32922
 
 section 4x H100 SXM5 80GB HBM3
-	78462 : 0, 78462
+	78462 :Nvidia, 0, 78462
 section 2x H100 SXM5 80GB HBM3
-	46189 : 0, 46189
+	46189 :Nvidia, 0, 46189
 section 1x H100 SXM5 80GB HBM3
-	28522 : 0, 28522
+	28522 :Nvidia, 0, 28522
 
 section 4x A100 PCIe 80GB
-	52056 : 0, 52056
+	52056 :Nvidia, 0, 52056
 section 2x A100 PCIe 80GB
-	27165 : 0, 27165
+	27165 :Nvidia, 0, 27165
 section 1x A100 PCIe 80GB
-	17896 : 0, 17896
+	17896 :Nvidia, 0, 17896
 
 section 4x PG506-243/242
-	41088 : 0, 41088
+	41088 :Nvidia, 0, 41088
 section 2x PG506-243/242
-	24168 : 0, 24168
+	24168 :Nvidia, 0, 24168
 section 1x PG506-243/242
-	15654 : 0, 15654
+	15654 :Nvidia, 0, 15654
 
 section 8x A100 SXM4 40GB
-	72965 : 0, 72965
+	72965 :Nvidia, 0, 72965
 section 4x A100 SXM4 40GB
-	42400 : 0, 42400
+	42400 :Nvidia, 0, 42400
 section 2x A100 SXM4 40GB
-	23707 : 0, 23707
+	23707 :Nvidia, 0, 23707
 section 1x A100 SXM4 40GB
-	15917 : 0, 15917
+	15917 :Nvidia, 0, 15917
 
 section 4x V100 SXM2 32GB
-	26527 : 0, 26527
+	26527 :Nvidia, 0, 26527
 section 2x V100 SXM2 32GB
-	15469 : 0, 15469
+	15469 :Nvidia, 0, 15469
 section 1x V100 SXM2 32GB
-	8947 : 0, 8947
+	8947 :Nvidia, 0, 8947
 
 section 3x K40m + 1x Titan Xp
-	5174 : 0, 5174
+	5174 :Nvidia, 0, 5174
 section 2x Tesla K40m
-	3300 : 0, 3300
+	3300 :Nvidia, 0, 3300
 section 1x Tesla K40m
-	1868 : 0, 1868
+	1868 :Nvidia, 0, 1868
 
 section 1x Tesla K80 (2 GPUs)
-	3448 : 0, 3448
+	3448 :Nvidia, 0, 3448
 section 1x Tesla K80 (1 GPU)
-	1642 : 0, 1642
+	1642 :Nvidia, 0, 1642
 
 section 2x L40S
-	13640 : 0, 13640
+	13640 :Nvidia, 0, 13640
 section 1x L40S
-	7669 : 0, 7669
+	7669 :Nvidia, 0, 7669
 
 section 2x L40
-	14164 : 0, 14164
+	14164 :Nvidia, 0, 14164
 section 1x L40
-	7945 : 0, 7945
+	7945 :Nvidia, 0, 7945
 
 section 8x RTX A6000
-	40063 : 0, 40063
+	40063 :Nvidia, 0, 40063
 section 4x RTX A6000
-	27915 : 0, 27915
+	27915 :Nvidia, 0, 27915
 section 2x RTX A6000
-	15026 : 0, 15026
+	15026 :Nvidia, 0, 15026
 section 1x RTX A6000
-	8814 : 0, 8814
+	8814 :Nvidia, 0, 8814
 
 section 4x A16 (16 GPUs)
-	22451 : 0, 22451
+	22451 :Nvidia, 0, 22451
 section 2x A16 (8 GPUs)
-	11777 : 0, 11777
+	11777 :Nvidia, 0, 11777
 section 1x A16 (4 GPUs)
-	6348 : 0, 6348
+	6348 :Nvidia, 0, 6348
 section 1x A16 (2 GPUs)
-	3475 : 0, 3475
+	3475 :Nvidia, 0, 3475
 section 1x A16 (1 GPU)
-	2031 : 0, 2031
+	2031 :Nvidia, 0, 2031
 
 section 2x A2
-	3539 : 0, 3539
+	3539 :Nvidia, 0, 3539
 section 1x A2
-	2051 : 0, 2051
+	2051 :Nvidia, 0, 2051
 
 section 2x Quadro RTX 8000 Pa.
-	10214 : 0, 10214
+	10214 :Nvidia, 0, 10214
 section 1x Quadro RTX 8000 Pa.
-	5607 : 0, 5607
+	5607 :Nvidia, 0, 5607
 
 section 7x 2080 Ti + 1x A100 40GB
-	33857 : 0, 33857
+	33857 :Nvidia, 0, 33857
 section 4x GeForce RTX 2080 Ti
-	18598 : 0, 18598
+	18598 :Nvidia, 0, 18598
 section 2x GeForce RTX 2080 Ti
-	10922 : 0, 10922
+	10922 :Nvidia, 0, 10922
 section 1x GeForce RTX 2080 Ti
-	6853 : 0, 6853
+	6853 :Nvidia, 0, 6853
 
 section 1x GTX 690 (2 GPUs)
-	920 : 0, 920
+	920 :Nvidia, 0, 920
 
 section 4x Arc Pro B60
-	16099 :done, 0, 16099
+	16099 :Intel, 0, 16099
 section 2x Arc Pro B60
-	8829 :done, 0, 8829
+	8829 :Intel, 0, 8829
 section 1x Arc Pro B60
-	5138 :done, 0, 5138
+	5138 :Intel, 0, 5138
 
 section 2x Arc A770
-	8745 :done, 0, 8745
+	8745 :Intel, 0, 8745
 section 1x Arc A770
-	4568 :done, 0, 4568
+	4568 :Intel, 0, 4568
 
 section 1x A100 + 1x P100 + 2x A2 + 3x MI50 + 1x A770
-	17296 :active,crit, 0, 17296
+	17296 :Mix2, 0, 17296
 section 1x 7700 XT + 1x B580 + 1x Titan Xp
-	8358 :active,crit, 0, 8358
+	8358 :Mix3, 0, 8358
 section 1x A770 + 1x Titan Xp
-	8380 :active,done, 0, 8380
+	8380 :Mix4, 0, 8380
 ```
 
 <details><summary>Multi-GPU Benchmark Table</summary>
 
-Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟡 ARM, 🟤 Glenfly
+Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 
 | Device                                                          | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :-------------------------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
