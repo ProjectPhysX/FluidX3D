@@ -526,13 +526,13 @@ config:
     }
     themeCSS: >
         [id$="AMD"] { fill: #ED1C24; stroke: #ED1C24 }
-        [id$="Intel"] { fill: #00C7FD; stroke: #00C7FD }
+        [id$="Intel"] { fill: #0071C5; stroke: #0071C5 }
         [id$="Nvidia"] { fill: #76B900; stroke: #76B900 }
         [id$="Apple"] { fill: #EFEFEF; stroke: #EFEFEF }
         [id$="ARM"] { fill: #886CE4; stroke: #886CE4 }
         [id$="Glenfly"] { fill: #FFF100; stroke: #FFF100 }
         [id$="AMDCPU"] { fill: #00000000; stroke: #ED1C24 }
-        [id$="IntelCPU"] { fill: #00000000; stroke: #00C7FD }
+        [id$="IntelCPU"] { fill: #00000000; stroke: #0071C5 }
         [id$="NvidiaCPU"] { fill: #00000000; stroke: #76B900 }
     gantt:
         titleTopMargin: 42
@@ -1379,18 +1379,18 @@ config:
     }
     themeCSS: >
         [id$="AMD"] { fill: #ED1C24; stroke: #ED1C24 }
-        [id$="Intel"] { fill: #00C7FD; stroke: #00C7FD }
+        [id$="Intel"] { fill: #0071C5; stroke: #0071C5 }
         [id$="Nvidia"] { fill: #76B900; stroke: #76B900 }
         [id$="Apple"] { fill: #EFEFEF; stroke: #EFEFEF }
         [id$="ARM"] { fill: #886CE4; stroke: #886CE4 }
         [id$="Glenfly"] { fill: #FFF100; stroke: #FFF100 }
         [id$="AMDCPU"] { fill: #00000000; stroke: #ED1C24 }
-        [id$="IntelCPU"] { fill: #00000000; stroke: #00C7FD }
+        [id$="IntelCPU"] { fill: #00000000; stroke: #0071C5 }
         [id$="NvidiaCPU"] { fill: #00000000; stroke: #76B900 }
-        [id$="Mix1"] { fill: #D0441B; stroke: #D0441B }
-        [id$="Mix2"] { fill: #A86D28; stroke: #A86D28 }
-        [id$="Mix3"] { fill: #778A61; stroke: #778A61 }
-        [id$="Mix4"] { fill: #3BC07F; stroke: #3BC07F }
+        [id$="MixAI"] { fill: #774675; stroke: #774675 }
+        [id$="MixAN"] { fill: #B26B12; stroke: #B26B12 }
+        [id$="MixIN"] { fill: #3B9562; stroke: #3B9562 }
+        [id$="MixAIN"] { fill: #766D4E; stroke: #766D4E }
     gantt:
         titleTopMargin: 42
         topPadding: 70
@@ -1454,7 +1454,7 @@ section 1x MI210
 	8757 :AMD, 0, 8757
 
 section 3x  MI50 + 1x A100 40GB
-	22759 :Mix1, 0, 22759
+	22759 :MixAN, 0, 22759
 section 3x MI50 32GB
 	21693 :AMD, 0, 21693
 section 2x MI50 32GB
@@ -1628,11 +1628,11 @@ section 1x Arc A770
 	4568 :Intel, 0, 4568
 
 section 1x A100 + 1x P100 + 2x A2 + 3x MI50 + 1x A770
-	17296 :Mix2, 0, 17296
+	17296 :MixAIN, 0, 17296
 section 1x 7700 XT + 1x B580 + 1x Titan Xp
-	8358 :Mix3, 0, 8358
+	8358 :MixAIN, 0, 8358
 section 1x A770 + 1x Titan Xp
-	8380 :Mix4, 0, 8380
+	8380 :MixIN, 0, 8380
 ```
 
 <details><summary>Multi-GPU Benchmark Table</summary>
