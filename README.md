@@ -483,7 +483,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
 ## Solving the Compatibility Problem
 
 - FluidX3D is written in OpenCL, so it runs on all hardware from all vendors (Nvidia, AMD, Intel, ...):
-  - world's fastest datacenter GPUs: MI355X, B200, MI300X, H200, H100 (NVL), A100, MI200, GPU Max 1100, ...
+  - world's fastest datacenter GPUs: B300, B200, MI355X, MI300X, H200, H100 (NVL), A100, MI200, GPU Max 1100, ...
   - gaming GPUs (desktop/laptop): Nvidia GeForce, AMD Radeon, Intel Arc
   - professional/workstation GPUs: Nvidia Quadro, AMD Radeon Pro / FirePro, Intel Arc Pro
   - integrated GPUs
@@ -496,8 +496,7 @@ $$f_j(i\\%2\\ ?\\ \vec{x}+\vec{e}_i\\ :\\ \vec{x},\\ t+\Delta t)=f_i^\textrm{tem
   - [GPUs don't even have to be from the same vendor](https://youtu.be/_8Ed8ET9gBU), but similar memory capacity and bandwidth are recommended
 - works on [Windows](DOCUMENTATION.md#windows) and [Linux](DOCUMENTATION.md#linux--macos--android) with C++17, with limited support also for [macOS](DOCUMENTATION.md#linux--macos--android) and [Android](DOCUMENTATION.md#linux--macos--android)
 - supports [importing and voxelizing triangle meshes](DOCUMENTATION.md#loading-stl-files) from binary `.stl` files, with fast GPU voxelization
-- supports [exporting volumetric data](DOCUMENTATION.md#data-export) as binary `.vtk` files
-- supports [exporting triangle meshes](DOCUMENTATION.md#data-export) as binary `.vtk` files
+- supports [exporting volumetric data / triangle meshes](DOCUMENTATION.md#data-export) as binary `.vtk` files
 - supports [exporting rendered images](DOCUMENTATION.md#video-rendering) as `.png`/`.qoi`/`.bmp` files; encoding runs in parallel on the CPU while the simulation on GPU can continue without delay
 
 
@@ -531,9 +530,9 @@ config:
         [id$="Apple"] { fill: #EFEFEF; stroke: #EFEFEF }
         [id$="ARM"] { fill: #886CE4; stroke: #886CE4 }
         [id$="Glenfly"] { fill: #FFF100; stroke: #FFF100 }
-        [id$="AMDCPU"] { fill: #00000000; stroke: #ED1C24 }
-        [id$="IntelCPU"] { fill: #00000000; stroke: #0071C5 }
-        [id$="NvidiaCPU"] { fill: #00000000; stroke: #76B900 }
+        [id$="AMDCPU"] { fill: #ED1C24; stroke: #ED1C24 }
+        [id$="IntelCPU"] { fill: #0071C5; stroke: #0071C5 }
+        [id$="NvidiaCPU"] { fill: #76B900; stroke: #76B900 }
     gantt:
         titleTopMargin: 42
         topPadding: 70
@@ -569,6 +568,8 @@ section Radeon VII
 	7778 :AMD, 0, 7778
 section GPU Max 1100
 	6303 :Intel, 0, 6303
+section B300 SXM6 AC
+	57279 :Nvidia, 0, 57279
 section B200 SXM6 180GB
 	55609 :Nvidia, 0, 55609
 section H200 SXM5 141GB
@@ -1100,7 +1101,8 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🔴&nbsp;Instinct&nbsp;MI50&nbsp;32GB             |              13.25 |          32 |         1024 |             4446 (66%) |              8477 (64%) |              4406 (33%) |
 | 🔴&nbsp;Radeon&nbsp;VII                          |              13.83 |          16 |         1024 |             4898 (73%) |              7778 (58%) |              5256 (40%) |
 | 🔵&nbsp;Data&nbsp;Center&nbsp;GPU&nbsp;Max&nbsp;1100 |          22.22 |          48 |         1229 |             3769 (47%) |              6303 (39%) |              3520 (22%) |
-| 🟢&nbsp;B200&nbsp;SXM6&nbsp;180GB                |              74.45 |         180 |         8000 |       42152&nbsp;(81%) |        55609&nbsp;(54%) |        22695&nbsp;(22%) |
+| 🟢&nbsp;B300&nbsp;SXM6&nbsp;AC                   |              76.99 |         274 |         8000 |       42519&nbsp;(81%) |        57279&nbsp;(55%) |        23191&nbsp;(22%) |
+| 🟢&nbsp;B200&nbsp;SXM6&nbsp;180GB                |              74.45 |         182 |         8000 |       42152&nbsp;(81%) |        55609&nbsp;(54%) |        22695&nbsp;(22%) |
 | 🟢&nbsp;H200&nbsp;SXM5&nbsp;141GB                |              66.91 |         141 |         4800 |       23056&nbsp;(73%) |        36610&nbsp;(59%) |        20291&nbsp;(33%) |
 | 🟢&nbsp;GH200&nbsp;94GB&nbsp;GPU                 |              66.91 |          94 |         4000 |       20595&nbsp;(79%) |        34689&nbsp;(67%) |        19407&nbsp;(37%) |
 | 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20303&nbsp;(79%) |        32922&nbsp;(64%) |        18424&nbsp;(36%) |
@@ -1384,9 +1386,9 @@ config:
         [id$="Apple"] { fill: #EFEFEF; stroke: #EFEFEF }
         [id$="ARM"] { fill: #886CE4; stroke: #886CE4 }
         [id$="Glenfly"] { fill: #FFF100; stroke: #FFF100 }
-        [id$="AMDCPU"] { fill: #00000000; stroke: #ED1C24 }
-        [id$="IntelCPU"] { fill: #00000000; stroke: #0071C5 }
-        [id$="NvidiaCPU"] { fill: #00000000; stroke: #76B900 }
+        [id$="AMDCPU"] { fill: #ED1C24; stroke: #ED1C24 }
+        [id$="IntelCPU"] { fill: #0071C5; stroke: #0071C5 }
+        [id$="NvidiaCPU"] { fill: #76B900; stroke: #76B900 }
         [id$="MixAI"] { fill: #774675; stroke: #774675 }
         [id$="MixAN"] { fill: #B26B12; stroke: #B26B12 }
         [id$="MixIN"] { fill: #3B9562; stroke: #3B9562 }
@@ -1488,6 +1490,15 @@ section 2x GPU Max 1100
 	11815 :Intel, 0, 11815
 section 1x GPU Max 1100
 	6209 :Intel, 0, 6209
+
+section 8x B300 SXM6 AC
+	211021 :Nvidia, 0, 211021
+section 4x B300 SXM6 AC
+	129974 :Nvidia, 0, 129974
+section 2x B300 SXM6 AC
+	80706 :Nvidia, 0, 80706
+section 1x B300 SXM6 AC
+	57279 :Nvidia, 0, 57279
 
 section 8x B200 SXM6 180GB
 	219300 :Nvidia, 0, 219300
@@ -1687,10 +1698,15 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🔵&nbsp;2x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              44.44 |          96 |         2458 |            6301 (1.8x) |            11815 (1.9x) |             5970 (1.8x) |
 | 🔵&nbsp;1x&nbsp;DC&nbsp;GPU&nbsp;Max&nbsp;1100                  |              22.22 |          48 |         1229 |             3487 (43%) |              6209 (39%) |              3252 (20%) |
 |                                                                 |                    |             |              |                        |                         |                         |
-| 🟢&nbsp;8x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |             595.60 |        1440 |        64000 |     132105&nbsp;(3.1x) |      219300&nbsp;(3.9x) |      128668&nbsp;(5.7x) |
-| 🟢&nbsp;4x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |             297.80 |         720 |        32000 |      94073&nbsp;(2.2x) |      147446&nbsp;(2.7x) |            72670 (3.2x) |
-| 🟢&nbsp;2x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |             148.90 |         360 |        16000 |      62046&nbsp;(1.5x) |            85077 (1.5x) |            39275 (1.7x) |
-| 🟢&nbsp;1x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |              74.45 |         180 |         8000 |       42152&nbsp;(81%) |             55609 (54%) |             22695 (22%) |
+| 🟢&nbsp;8x&nbsp;B300&nbsp;SXM6&nbsp;AC                          |             615.90 |        2192 |        64000 |      88378&nbsp;(2.1x) |      211021&nbsp;(3.7x) |      122983&nbsp;(5.3x) |
+| 🟢&nbsp;4x&nbsp;B300&nbsp;SXM6&nbsp;AC                          |             307.95 |        1096 |        32000 |      85666&nbsp;(2.0x) |      129974&nbsp;(2.3x) |            69911 (3.0x) |
+| 🟢&nbsp;2x&nbsp;B300&nbsp;SXM6&nbsp;AC                          |             153.98 |         548 |        16000 |      60905&nbsp;(1.4x) |            80706 (1.4x) |            38376 (1.7x) |
+| 🟢&nbsp;1x&nbsp;B300&nbsp;SXM6&nbsp;AC                          |              76.99 |         274 |         8000 |       42519&nbsp;(81%) |             57279 (55%) |             23191 (22%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;8x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |             595.60 |        1456 |        64000 |     132105&nbsp;(3.1x) |      219300&nbsp;(3.9x) |      128668&nbsp;(5.7x) |
+| 🟢&nbsp;4x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |             297.80 |         728 |        32000 |      94073&nbsp;(2.2x) |      147446&nbsp;(2.7x) |            72670 (3.2x) |
+| 🟢&nbsp;2x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |             148.90 |         364 |        16000 |      62046&nbsp;(1.5x) |            85077 (1.5x) |            39275 (1.7x) |
+| 🟢&nbsp;1x&nbsp;B200&nbsp;SXM6&nbsp;180GB                       |              74.45 |         182 |         8000 |       42152&nbsp;(81%) |             55609 (54%) |             22695 (22%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;8x&nbsp;H200&nbsp;SXM5&nbsp;141GB                       |             535.28 |        1128 |        38400 |      92008&nbsp;(4.0x) |      157743&nbsp;(4.3x) |      113490&nbsp;(5.6x) |
 | 🟢&nbsp;4x&nbsp;H200&nbsp;SXM5&nbsp;141GB                       |             267.64 |         564 |        19200 |      57310&nbsp;(2.5x) |            96056 (2.6x) |            63117 (3.1x) |
