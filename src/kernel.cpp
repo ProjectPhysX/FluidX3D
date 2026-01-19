@@ -2304,7 +2304,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float cx=bbu[ 7], cy=bbu[ 8], cz=bbu[ 9], ux=bbu[10], uy=bbu[11], uz=bbu[12], rx=bbu[13], ry=bbu[14], rz=bbu[15];
 	const uint3 xyz = direction==0u ? (uint3)((uint)clamp((int)x0-def_Ox, 0, (int)def_Nx-1), a%def_Ny, a/def_Ny) : direction==1u ? (uint3)(a/def_Nz, (uint)clamp((int)y0-def_Oy, 0, (int)def_Ny-1), a%def_Nz) : (uint3)(a%def_Nx, a/def_Nx, (uint)clamp((int)z0-def_Oz, 0, (int)def_Nz-1));
 	const float3 offset = (float3)(0.5f*(float)((int)def_Nx+2*def_Ox)-0.5f, 0.5f*(float)((int)def_Ny+2*def_Oy)-0.5f, 0.5f*(float)((int)def_Nz+2*def_Oz)-0.5f);
-	const float3 r_origin = position(xyz)+offset;
+
+	float3 r_origin = position(xyz)+offset;
+	const float jitter = 0.001f; // 0.1% of voxel size
+	r_origin = r_origin + (float3)(jitter*(float)(direction!=0u),
+								jitter*(float)(direction!=1u),
+								jitter*(float)(direction!=2u));
+
 	const float3 r_direction = (float3)((float)(direction==0u), (float)(direction==1u), (float)(direction==2u));
 	uint intersections=0u, intersections_check=0u;
 	ushort distances[64]; // allow up to 64 mesh intersections
