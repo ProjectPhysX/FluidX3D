@@ -325,6 +325,43 @@ void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, con
 	bounding_box_and_velocity.write_to_device();
 	kernel_voxelize_mesh.run();
 }
+void LBM_Domain::voxelize_sdf_on_device(const SDF* sdf, const float3& center, const float3x3& rotation, const float scale, const uchar flag) { // voxelize SDF on GPU
+	// Upload SDF data to GPU
+	const ulong sdf_size = (ulong)sdf->Nx * (ulong)sdf->Ny * (ulong)sdf->Nz;
+	Memory<float> sdf_data(device, sdf_size, 1u, sdf->data);
+
+	// Compute inverse rotation matrix (to transform LBM coords back to SDF space)
+	// For orthogonal matrices, inverse = transpose
+	const float3x3 rotation_inv = transpose(rotation);
+
+	// Pack parameters into array (similar to voxelize_mesh approach)
+	Memory<float> sdf_params(device, 20u);
+	const float3 sdf_world_size = sdf->get_world_size();
+	const float sdf_max_world_dim = fmax(fmax(sdf_world_size.x, sdf_world_size.y), sdf_world_size.z);
+	const float world_to_lbm = scale / sdf_max_world_dim;
+
+	sdf_params[0] = as_float(sdf->Nx);      // pack uint as float
+	sdf_params[1] = as_float(sdf->Ny);
+	sdf_params[2] = as_float(sdf->Nz);
+	sdf_params[3] = sdf->cell_size;
+	sdf_params[4] = sdf->origin.x;          // SDF origin
+	sdf_params[5] = sdf->origin.y;
+	sdf_params[6] = sdf->origin.z;
+	sdf_params[7] = center.x;               // LBM center
+	sdf_params[8] = center.y;
+	sdf_params[9] = center.z;
+	sdf_params[10] = world_to_lbm;
+	// Inverse rotation matrix (row-major: row0, row1, row2)
+	sdf_params[11] = rotation_inv.xx; sdf_params[12] = rotation_inv.xy; sdf_params[13] = rotation_inv.xz;
+	sdf_params[14] = rotation_inv.yx; sdf_params[15] = rotation_inv.yy; sdf_params[16] = rotation_inv.yz;
+	sdf_params[17] = rotation_inv.zx; sdf_params[18] = rotation_inv.zy; sdf_params[19] = rotation_inv.zz;
+
+	// Create kernel and run
+	Kernel kernel_voxelize_sdf(device, get_N(), "voxelize_sdf", flags, flag, sdf_data, sdf_params);
+	sdf_data.write_to_device();
+	sdf_params.write_to_device();
+	kernel_voxelize_sdf.run();
+}
 void LBM_Domain::enqueue_unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag) { // remove voxelized triangle mesh from LBM grid
 	const float x0=mesh->pmin.x, y0=mesh->pmin.y, z0=mesh->pmin.z, x1=mesh->pmax.x, y1=mesh->pmax.y, z1=mesh->pmax.z; // remove all flags in bounding box of mesh
 	Kernel kernel_unvoxelize_mesh(device, get_N(), "unvoxelize_mesh", flags, flag, x0, y0, z0, x1, y1, z1);
@@ -1109,6 +1146,42 @@ void LBM::voxelize_stl(const string& path, const float3& center, const float siz
 }
 void LBM::voxelize_stl(const string& path, const float size, const uchar flag) { // read and voxelize binary .stl file (place in box center, no rotation)
 	voxelize_stl(path, center(), float3x3(1.0f), size, flag);
+}
+
+void LBM::voxelize_sdf(const string& path, const float3& center, const float3x3& rotation, const float scale, const uchar flag) { // voxelize SDF
+	const SDF* sdf = read_sdf(path);
+	if(sdf == nullptr) return; // Error already printed by read_sdf
+
+	flags.write_to_device();
+
+	print_info("Voxelizing SDF on GPU...");
+	print_info("LBM grid: " + to_string(get_Nx()) + " x " + to_string(get_Ny()) + " x " + to_string(get_Nz()));
+
+	// Voxelize on GPU using kernel
+	for(uint d = 0u; d < get_D(); d++) {
+		lbm_domain[d]->voxelize_sdf_on_device(sdf, center, rotation, scale, flag);
+	}
+	flags.read_from_device();
+
+	delete sdf;
+
+	// Count total solid voxels
+	uint total_solid = 0;
+	for(ulong n = 0; n < get_N(); n++) {
+		if(flags[n] == flag) total_solid++;
+	}
+
+	flags.write_to_device(); // Push the modified flags back to GPU
+	print_info("SDF voxelization complete. Total solid voxels: " + to_string(total_solid));
+}
+void LBM::voxelize_sdf(const string& path, const float3x3& rotation, const float scale, const uchar flag) { // read and voxelize binary SDF file (place in box center)
+	voxelize_sdf(path, center(), rotation, scale, flag);
+}
+void LBM::voxelize_sdf(const string& path, const float3& center, const float scale, const uchar flag) { // read and voxelize binary SDF file (no rotation)
+	voxelize_sdf(path, center, float3x3(1.0f), scale, flag);
+}
+void LBM::voxelize_sdf(const string& path, const float scale, const uchar flag) { // read and voxelize binary SDF file (place in box center, no rotation)
+	voxelize_sdf(path, center(), float3x3(1.0f), scale, flag);
 }
 
 #ifdef GRAPHICS
