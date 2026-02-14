@@ -156,13 +156,13 @@ struct Device_Info {
 			if(is_gpu&&length(amd_device_name)>0u) name = amd_device_name; // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
 			const int intel_device_id = (int)cl_device.getInfo<CL_DEVICE_ID_INTEL>(); // also see CL_DEVICE_IP_VERSION_INTEL
-			const bool intel_16_cores_per_cu = contains({ 0x0BD5, 0x0BDA, 0x64A0, 0xE20B, 0xE20C, 0xE211, 0xE212 }, intel_device_id); // GPU Max 1550, GPU Max 1100, Arc 140V/130V, Arc B580, Arc B570, Arc Pro B60, Arc Pro B50
-			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC/Xe2) or 8 cores/CU (Xe1), Intel CPUs (with HT) have 1/2 core/CU
+			const bool intel_16_cores_per_cu = contains({ 0x0BD5, 0x0BDA, 0x64A0, 0xE20B, 0xE20C, 0xE211, 0xE212, 0xB080, 0xB082, 0xB084, 0xB086, 0xB081, 0xB083, 0xB085, 0xB087, 0xB090, 0xB0A0 }, intel_device_id); // GPU Max 1550/1100, Arc 140V/130V, Arc B580/B570, Arc Pro B60/B50, Arc B390/B370/Graphics
+			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC/Xe2/Xe3) or 8 cores/CU (Xe1), Intel CPUs (with HT) have 1/2 core/CU
 			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
 #if defined(_WIN32)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L969
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L953
 #elif defined(__linux__)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1545
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1547
 #endif // Linux
 			}
 			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&memory>4096u); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
