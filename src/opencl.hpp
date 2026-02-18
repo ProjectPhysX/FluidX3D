@@ -102,6 +102,7 @@ struct Device_Info {
 	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u, is_dp4a_capable=0u;
 	uint cores = 0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 	float tflops = 0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
+	uint intel_compute_capability = 0u; // compute capability for Intel GPUs, for example intel_compute_capability=2000100 means compute capability 20.001.00
 	uint nvidia_compute_capability = 0u; // compute capability for Nvidia GPUs, for example nvidia_compute_capability=61 means compute capability 6.1
 	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
 	bool patch_nvidia_fp16 = false; // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
@@ -155,8 +156,9 @@ struct Device_Info {
 			const string amd_device_name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>());
 			if(is_gpu&&length(amd_device_name)>0u) name = amd_device_name; // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
-			const int intel_device_id = (int)cl_device.getInfo<CL_DEVICE_ID_INTEL>(); // also see CL_DEVICE_IP_VERSION_INTEL
-			const bool intel_16_cores_per_cu = contains({ 0x0BD5, 0x0BDA, 0x64A0, 0xE20B, 0xE20C, 0xE211, 0xE212, 0xB080, 0xB082, 0xB084, 0xB086, 0xB081, 0xB083, 0xB085, 0xB087, 0xB090, 0xB0A0 }, intel_device_id); // GPU Max 1550/1100, Arc 140V/130V, Arc B580/B570, Arc Pro B60/B50, Arc B390/B370/Graphics
+			const uint intel_device_ip_version = (uint)cl_device.getInfo<CL_DEVICE_IP_VERSION_INTEL>()&0xFFFFC03Fu; // bits 22-31: major, bits 14-21: minor, bits 0-5: revision, https://github.com/openvinotoolkit/openvino/blob/master/src/plugins/intel_gpu/src/runtime/ocl/ocl_device.cpp#L150-L158
+			intel_compute_capability = 100000u*(intel_device_ip_version>>22)+100u*((intel_device_ip_version>>14)&0xFFu)+(intel_device_ip_version&0x3Fu); // for example 2000100 means compute capability 20.001.00
+			const bool intel_16_cores_per_cu = (intel_compute_capability>=1206000u&&intel_compute_capability<1207000u)||(intel_compute_capability>=2000000u); // (PVC/Xe2/Xe3)
 			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC/Xe2/Xe3) or 8 cores/CU (Xe1), Intel CPUs (with HT) have 1/2 core/CU
 			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
 #if defined(_WIN32)
@@ -169,9 +171,9 @@ struct Device_Info {
 			if(is_cpu) is_dp4a_capable = 0u; // native dp4a in Intel CPU Runtime for OpenCL is slower than emulated dp4a
 		} else if(vendor_id==0x10DE||vendor_id==0x13B5) { // Nvidia GPU/CPU
 			if(is_gpu) nvidia_compute_capability = 10u*(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV>()+(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV>();
-			const bool nvidia__32_cores_per_cu = (nvidia_compute_capability <30); // identify Fermi GPUs
-			const bool nvidia_192_cores_per_cu = (nvidia_compute_capability>=30&&nvidia_compute_capability< 50); // identify Kepler GPUs
-			const bool nvidia__64_cores_per_cu = (nvidia_compute_capability>=70&&nvidia_compute_capability<=80)||nvidia_compute_capability==60; // identify Volta, Turing, P100, A100, A30
+			const bool nvidia__32_cores_per_cu = (nvidia_compute_capability <30u); // identify Fermi GPUs
+			const bool nvidia_192_cores_per_cu = (nvidia_compute_capability>=30u&&nvidia_compute_capability< 50u); // identify Kepler GPUs
+			const bool nvidia__64_cores_per_cu = (nvidia_compute_capability>=70u&&nvidia_compute_capability<=80u)||nvidia_compute_capability==60u; // identify Volta, Turing, P100, A100, A30
 			cores_per_cu = is_gpu ? (nvidia__32_cores_per_cu ? 32.0f : nvidia_192_cores_per_cu ? 192.0f : nvidia__64_cores_per_cu ? 64.0f : 128.0f) : 1.0f; // 32 (Fermi), 192 (Kepler), 64 (Volta, Turing, P100, A100, A30), 128 (Maxwell, Pascal, Ampere, Hopper, Ada, Blackwell) or 1 (CPUs)
 			patch_nvidia_fp16 = patch_nvidia_fp16||(nvidia_compute_capability>=60&&atof(driver_version.substr(0, 6).c_str())>=520.00); // enable for all Nvidia Pascal or newer GPUs with driver>=520.00
 			if(patch_nvidia_fp16) is_fp16_capable = 2u;
@@ -285,6 +287,7 @@ private:
 	inline string enable_device_capabilities() const { return // enable FP64/FP16 capabilities if available
 		string(info.patch_nvidia_fp16         ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
 		string(info.patch_legacy_gpu_fma      ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
+		string(info.intel_compute_capability  ? "\n #define cl_intel_compute_capability "+to_string(info.intel_compute_capability) : "")+ // allows querying Intel compute capability
 		string(info.nvidia_compute_capability ? "\n #define cl_nv_compute_capability "+to_string(info.nvidia_compute_capability) : "")+ // allows querying Nvidia compute capability for inline PTX
 		string(info.is_dp4a_capable==0u       ? "\n #undef __opencl_c_integer_dot_product_input_4x8bit\n #undef __opencl_c_integer_dot_product_input_4x8bit_packed" : "")+ // patch false dp4a reporting on Intel
 		"\n #define cl_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
