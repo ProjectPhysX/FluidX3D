@@ -574,6 +574,8 @@ section B200 SXM6 180GB
 	55609 :Nvidia, 0, 55609
 section H200 SXM5 141GB
 	36610 :Nvidia, 0, 36610
+section H200 NVL
+	34387 :Nvidia, 0, 34387
 section GH200 94GB GPU
 	34689 :Nvidia, 0, 34689
 section H100 NVL
@@ -971,6 +973,8 @@ section 2x EPYC 9754
 	5179 :AMDCPU, 0, 5179
 section 2x EPYC 9654
 	4092 :AMDCPU, 0, 4092
+section 2x EPYC 9555
+	3123 :AMDCPU, 0, 3123
 section 2x EPYC 9554
 	2552 :AMDCPU, 0, 2552
 section 1x EPYC 9124
@@ -1104,6 +1108,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🟢&nbsp;B300&nbsp;SXM6&nbsp;AC                   |              76.99 |         274 |         8000 |       42519&nbsp;(81%) |        57279&nbsp;(55%) |        23191&nbsp;(22%) |
 | 🟢&nbsp;B200&nbsp;SXM6&nbsp;180GB                |              74.45 |         182 |         8000 |       42152&nbsp;(81%) |        55609&nbsp;(54%) |        22695&nbsp;(22%) |
 | 🟢&nbsp;H200&nbsp;SXM5&nbsp;141GB                |              66.91 |         141 |         4800 |       23056&nbsp;(73%) |        36610&nbsp;(59%) |        20291&nbsp;(33%) |
+| 🟢&nbsp;H200&nbsp;NVL                            |              60.32 |         141 |         4800 |       21703&nbsp;(69%) |        34387&nbsp;(55%) |        18221&nbsp;(29%) |
 | 🟢&nbsp;GH200&nbsp;94GB&nbsp;GPU                 |              66.91 |          94 |         4000 |       20595&nbsp;(79%) |        34689&nbsp;(67%) |        19407&nbsp;(37%) |
 | 🟢&nbsp;H100&nbsp;NVL                            |              60.32 |          94 |         3938 |       20303&nbsp;(79%) |        32922&nbsp;(64%) |        18424&nbsp;(36%) |
 | 🟢&nbsp;H100&nbsp;SXM5&nbsp;80GB&nbsp;HBM3       |              66.91 |          80 |         3350 |       17602&nbsp;(80%) |        29561&nbsp;(68%) |        20227&nbsp;(46%) |
@@ -1304,6 +1309,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 |                                                  |                    |             |              |                        |                         |                         |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754                   |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             3087 (51%) |              3675 (31%) |              4092 (34%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9555                   |              34.41 |        2304 |         1229 |             3123 (39%) |              2054 (13%) |              2027 (13%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;9554                   |              30.72 |         384 |          922 |             2552 (42%) |              2127 (18%) |              2144 (18%) |
 | 🔴&nbsp;1x&nbsp;EPYC&nbsp;9124                   |               3.69 |         128 |          307 |              772 (38%) |               579 (15%) |               586 (15%) |
 | 🔴&nbsp;2x&nbsp;EPYC&nbsp;7713                   |               8.19 |         512 |          410 |             1298 (48%) |               492 ( 9%) |              1418 (27%) |
@@ -1518,6 +1524,13 @@ section 2x H200 SXM5 141GB
 section 1x H200 SXM5 141GB
 	36610 :Nvidia, 0, 36610
 
+section 4x H200 NVL
+	100925 :Nvidia, 0, 100925
+section 2x H200 NVL
+	58655 :Nvidia, 0, 58655
+section 1x H200 NVL
+	34387 :Nvidia, 0, 34387
+
 section 4x H100 NVL
 	82122 :Nvidia, 0, 82122
 section 2x H100 NVL
@@ -1712,6 +1725,10 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🟢&nbsp;4x&nbsp;H200&nbsp;SXM5&nbsp;141GB                       |             267.64 |         564 |        19200 |      57310&nbsp;(2.5x) |            96056 (2.6x) |            63117 (3.1x) |
 | 🟢&nbsp;2x&nbsp;H200&nbsp;SXM5&nbsp;141GB                       |             133.82 |         282 |         9600 |      36711&nbsp;(1.6x) |            57070 (1.6x) |            34871 (1.7x) |
 | 🟢&nbsp;1x&nbsp;H200&nbsp;SXM5&nbsp;141GB                       |              66.91 |         141 |         4800 |       23056&nbsp;(73%) |             36610 (59%) |             20291 (33%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🟢&nbsp;4x&nbsp;H200&nbsp;NVL                                   |             241.28 |         564 |        19200 |      63517&nbsp;(2.9x) |      100925&nbsp;(2.9x) |       62245&nbsp;(3.4x) |
+| 🟢&nbsp;2x&nbsp;H200&nbsp;NVL                                   |             120.64 |         282 |         9600 |      36836&nbsp;(1.7x) |       58655&nbsp;(1.7x) |       32614&nbsp;(1.8x) |
+| 🟢&nbsp;1x&nbsp;H200&nbsp;NVL                                   |              60.32 |         141 |         4800 |       21703&nbsp;(69%) |        34387&nbsp;(55%) |        18221&nbsp;(29%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;4x&nbsp;H100&nbsp;NVL                                   |             241.28 |         376 |        15752 |      44284&nbsp;(2.2x) |            82122 (2.5x) |            53855 (2.9x) |
 | 🟢&nbsp;2x&nbsp;H100&nbsp;NVL                                   |             120.64 |         188 |         7876 |      29050&nbsp;(1.4x) |            49958 (1.5x) |            30586 (1.7x) |
