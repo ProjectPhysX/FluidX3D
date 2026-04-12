@@ -95,8 +95,8 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed bug in voxelization ray direction for re-voxelizing rotating objects
   - fixed bug in `Mesh::get_bounding_box_size()`
   - fixed bug in `print_message()` function in `utilities.hpp`
-- [v2.10](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.10) (05.11.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.9...v2.10) (frustrum culling)
-  - improved rasterization performance via frustrum culling when only part of the simulation box is visible
+- [v2.10](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.10) (05.11.2023) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.9...v2.10) (frustum culling)
+  - improved rasterization performance via frustum culling when only part of the simulation box is visible
   - improved switching between centered/free camera mode
   - refactored OpenCL rendering library
   - unit conversion factors are now automatically printed in console when `units.set_m_kg_s(...)` is used
@@ -110,7 +110,7 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - interactive graphics on Linux are now in fullscreen mode too, fully matching Windows
   - made CPU/GPU buffer initialization significantly faster with `std::fill` and `enqueueFillBuffer` (overall ~8% faster simulation startup)
   - added operating system info to OpenCL device driver version printout
-  - fixed flickering with frustrum culling at very small field of view
+  - fixed flickering with frustum culling at very small field of view
   - fixed bug where rendered/exported frame was not updated when `visualization_modes` changed
 - [v2.12](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v2.12) (18.01.2024) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v2.11...v2.12) (faster startup)
   - ~3x faster source code compiling on Linux using multiple CPU cores if [`make`](https://www.gnu.org/software/make/) is installed
@@ -1879,7 +1879,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 
 ### Hardware
 
-- <details><summary>Can FluidX3D run on multiple GPUs at the same time?</summary><br>Yes. The simulation grid is then split in domains, one for each GPU (domain decomposition method). The GPUs essentially pool their memory, enabling much larger grid resolution and higher performance. Rendering is parallelized across multiple GPUs as well; each GPU renders its own domain with a 3D offset, then rendered frames from all GPUs are overlayed with their z-buffers. Communication between domains is done over PCIe, so no SLI/Crossfire/NVLink/InfinityFabric is required. All GPUs must however be installed in the same node (PC/laptop/server). Even <a href="https://youtu.be/_8Ed8ET9gBU">unholy combinations of AMD+Intel+Nvidia GPUs will work</a>, although it is recommended to only use GPUs with similar memory capacity and bandwidth together. Using a fast gaming GPU and slow integrated GPU together would only decrease performance due to communication overhead.<br><br></details>
+- <details><summary>Can FluidX3D run on multiple GPUs at the same time?</summary><br>Yes. The simulation grid is then split in domains, one for each GPU (domain decomposition method). The GPUs essentially pool their memory, enabling much larger grid resolution and higher performance. Rendering is parallelized across multiple GPUs as well; each GPU renders its own domain with a 3D offset, then rendered frames from all GPUs are overlaid with their z-buffers. Communication between domains is done over PCIe, so no SLI/Crossfire/NVLink/InfinityFabric is required. All GPUs must however be installed in the same node (PC/laptop/server). Even <a href="https://youtu.be/_8Ed8ET9gBU">unholy combinations of AMD+Intel+Nvidia GPUs will work</a>, although it is recommended to only use GPUs with similar memory capacity and bandwidth together. Using a fast gaming GPU and slow integrated GPU together would only decrease performance due to communication overhead.<br><br></details>
 
 - <details><summary>Can I run FluidX3D on the CPU?</summary><br>Yes, and this is especially useful when you need more memory than a GPU can offer. You only need to install the <a href="https://github.com/ProjectPhysX/FluidX3D/blob/master/DOCUMENTATION.md#0-install-gpu-drivers-and-opencl-runtime">Intel CPU Runtime for OpenCL</a>.<br><br></details>
 

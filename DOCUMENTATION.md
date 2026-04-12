@@ -119,7 +119,7 @@
 
 ## 2. Compiling the Source Code
 - There is no "installation" of FluidX3D. Instead, you have to compile the source code yourself.
-- I have made this as easy as possible and this documentation will guide you through it. Nontheless, some basic programming experience with C++ would be good for the setup scripts.
+- I have made this as easy as possible and this documentation will guide you through it. Nonetheless, some basic programming experience with C++ would be good for the setup scripts.
 - First, compile the code as-is; this is the standard FP32 benchmark test case. By default, the fastest installed GPU will be selected automatically. Compile time is about 5 seconds.
 
 ### Windows
@@ -247,7 +247,7 @@
 - Available Boundary Conditions
   - Periodic Boundaries
     - All box sides where no solid (`TYPE_S`) or other boundary type are set will remain periodic boundaries.
-    - If strict mass conservation is required (for example flow through a linear pipe), use periodic boundaries (i.e. don't set any boundary type on the cells at these simulation box sides), and drive the flow with a volume force (equivalent to a pressure gradient). For this you need to enable (uncomment) the [`VOLUME_FORCE`](src/defines.hpp) extension, and in the [LBM constuctor](#the-lbm-class) set the force per volume (`fx`|`fy`|`fz`):
+    - If strict mass conservation is required (for example flow through a linear pipe), use periodic boundaries (i.e. don't set any boundary type on the cells at these simulation box sides), and drive the flow with a volume force (equivalent to a pressure gradient). For this you need to enable (uncomment) the [`VOLUME_FORCE`](src/defines.hpp) extension, and in the [LBM constructor](#the-lbm-class) set the force per volume (`fx`|`fy`|`fz`):
       ```c
       LBM lbm(Nx, Ny, Nz, nu, fx, fy, fz);
       ```
