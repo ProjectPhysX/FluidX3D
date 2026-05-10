@@ -639,14 +639,6 @@ private:
 		link_parameters(starting_position+1u, parameters...);
 	}
 public:
-	template<class... T> inline Kernel(const Device& device, const ulong N, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
-		if(!device.is_initialized()) print_error("No OpenCL Device selected. Call Device constructor.");
-		this->name = name;
-		cl_kernel = cl::Kernel(device.get_cl_program(), name.c_str());
-		link_parameters(0u, parameters...); // expand variadic template to link kernel parameters
-		set_ranges(N);
-		cl_queue = device.get_cl_queue();
-	}
 	template<class... T> inline Kernel(const Device& device, const ulong N, const uint workgroup_size, const string& name, const T&... parameters) { // accepts Memory<T> objects and fundamental data type constants
 		if(!device.is_initialized()) print_error("No OpenCL Device selected. Call Device constructor.");
 		this->name = name;
@@ -654,6 +646,9 @@ public:
 		link_parameters(0u, parameters...); // expand variadic template to link kernel parameters
 		set_ranges(N, (ulong)workgroup_size);
 		cl_queue = device.get_cl_queue();
+	}
+	template<class... T> inline Kernel(const Device& device, const ulong N, const string& name, const T&... parameters)
+		:Kernel(device, N, WORKGROUP_SIZE, name, parameters...) { // delegating constructor
 	}
 	inline Kernel() {} // default constructor
 	inline Kernel& set_ranges(const ulong N, const ulong workgroup_size=(ulong)WORKGROUP_SIZE) {
