@@ -64,7 +64,7 @@ private:
 #endif // PARTICLES
 
 	void allocate(Device& device); // allocate all memory for data fields on host and device and set up kernels
-	string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
+	string device_defines(const Device_Info& device_info) const; // returns preprocessor constants for embedding in OpenCL C code
 
 public:
 	Memory<float> rho; // density of every cell
@@ -197,7 +197,7 @@ public:
 		bool enqueue_draw_frame(const int visualization_modes, const int field_mode=0, const int slice_mode=0, const int slice_x=0, const int slice_y=0, const int slice_z=0, const bool visualization_change=true); // main rendering function, calls rendering kernels, returns true if new frame is rendered, false if old frame is returned when camera has not moved
 		int* get_bitmap(); // returns pointer to bitmap
 		int* get_zbuffer(); // returns pointer to zbuffer
-		string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
+		string device_defines(const Device_Info& device_info) const; // returns preprocessor constants for embedding in OpenCL C code
 	}; // Graphics
 	Graphics graphics;
 #endif // GRAPHICS

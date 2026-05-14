@@ -106,9 +106,9 @@ LBM_Domain::LBM_Domain(const Device_Info& device_info, const uint Nx, const uint
 	string opencl_c_code;
 #ifdef GRAPHICS
 	graphics = Graphics(this);
-	opencl_c_code = device_defines()+graphics.device_defines()+get_opencl_c_code();
+	opencl_c_code = device_defines(device_info)+graphics.device_defines(device_info)+get_opencl_c_code();
 #else // GRAPHICS
-	opencl_c_code = device_defines()+get_opencl_c_code();
+	opencl_c_code = device_defines(device_info)+get_opencl_c_code();
 #endif // GRAPHICS
 	this->device = Device(device_info, opencl_c_code);
 	print_info("Allocating memory. This may take a few seconds.");
@@ -331,7 +331,7 @@ void LBM_Domain::enqueue_unvoxelize_mesh_on_device(const Mesh* mesh, const uchar
 	kernel_unvoxelize_mesh.run();
 }
 
-string LBM_Domain::device_defines() const { return
+string LBM_Domain::device_defines(const Device_Info& device_info) const { return
 	"\n	#define def_Nx "+to_string(Nx)+"u"
 	"\n	#define def_Ny "+to_string(Ny)+"u"
 	"\n	#define def_Nz "+to_string(Nz)+"u"
@@ -483,7 +483,12 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 #else // D2Q9
 	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 2D
 #endif // D2Q9
-	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u);
+	const uint graphics_q_cache_required = (cb(GRAPHICS_LBS+3u)*12u+1023u)/1024u; // in KB
+	const bool graphics_q_enable_lbs = GRAPHICS_LBS>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LBS)&&device.info.local_cache>=graphics_q_cache_required;
+	if(GRAPHICS_LBS>0u&&!graphics_q_enable_lbs) print_warning(device.info.name+" does not support local memory optimization with GRAPHICS_LBS = "+to_string(GRAPHICS_LBS)+" (max supported workgroup size: "+to_string(device.info.max_workgroup_size)+" (required: "+to_string(cb(GRAPHICS_LBS))+"), cache: "+to_string(device.info.local_cache)+"KB (required: "+to_string(graphics_q_cache_required)+"KB)). Disabling local memory optimization.");
+	const ulong graphics_q_N = graphics_q_enable_lbs ? (ulong)((lbm->get_Nx()+GRAPHICS_LBS-1u)/GRAPHICS_LBS)*(ulong)((lbm->get_Ny()+GRAPHICS_LBS-1u)/GRAPHICS_LBS)*(ulong)((lbm->get_Nz()+GRAPHICS_LBS-1u)/GRAPHICS_LBS)*(ulong)cb(GRAPHICS_LBS) : lbm->get_N();
+	const uint graphics_q_workgroup_size = graphics_q_enable_lbs ? cb(GRAPHICS_LBS) : WORKGROUP_SIZE;
+	kernel_graphics_q = Kernel(device, graphics_q_N, graphics_q_workgroup_size, "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u);
 
 #ifdef FORCE_FIELD
 	kernel_graphics_flags.add_parameters(lbm->F);
@@ -577,7 +582,7 @@ int* LBM_Domain::Graphics::get_zbuffer() { // returns pointer to zbuffer
 	return zbuffer.data();
 }
 
-string LBM_Domain::Graphics::device_defines() const { return
+string LBM_Domain::Graphics::device_defines(const Device_Info& device_info) const { return
 	"\n	#define GRAPHICS"
 	"\n	#define def_background_color " +to_string(GRAPHICS_BACKGROUND_COLOR)+""
 	"\n	#define def_screen_width "     +to_string(camera.width)+"u"
@@ -615,6 +620,8 @@ string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define def_skybox_width " +to_string(skybox_image->width() )+"u"
 	"\n	#define def_skybox_height "+to_string(skybox_image->height())+"u"
 #endif // SURFACE
+
+	"\n	#define LBS "+to_string((GRAPHICS_LBS>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LBS)&&device_info.local_cache>=(cb(GRAPHICS_LBS+3u)*12u+1023u)/1024u) ? GRAPHICS_LBS : 0u)+"u" // local box size (default: 8)
 ;}
 #endif // GRAPHICS
 

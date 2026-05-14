@@ -24,7 +24,7 @@ BEGIN
 			VALUE "LegalCopyright", "(c) Dr. Moritz Lehmann"
 			VALUE "OriginalFilename", "FluidX3D.exe"
 			VALUE "ProductName", "FluidX3D"
-			VALUE "ProductVersion", "v3.6"
+			VALUE "ProductVersion", "v3.7"
 		END
 	END
 	BLOCK "VarFileInfo"

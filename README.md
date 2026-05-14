@@ -253,6 +253,11 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - set `nvidia_compute_capability` only for Nvidia GPUs not Nvidia CPUs
   - fixed TFLOPs/s estimate for AMD CDNA3/4 GPUs
   - fixed Device Name and CU reporting for AMD GPUs with rusticl
+- [v3.7](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.7) (14.05.2026) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.6...v3.7) (faster Q-criterion rendering)
+  - up to 2x faster Q-criterion isosurface rendering on some GPUs
+  - reduced assembly spaghettification by simpler condition for VR rendering and disabling loop unrolling in rasterization
+  - micro-optimization in `convert_triangle/_interpolated()`
+  - fixed empty kernel name and workgroup size error printout in OpenCL-Wrapper
 
 </details>
 

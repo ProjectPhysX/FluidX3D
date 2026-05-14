@@ -36,10 +36,11 @@
 #define GRAPHICS_T_DELTA 1.0f // coloring range for temperature T will be [1.0f-GRAPHICS_T_DELTA, 1.0f+GRAPHICS_T_DELTA] (default: 1.0f)
 #define GRAPHICS_F_MAX 0.001f // maximum force in LBM units for visualization of forces on solid boundaries if VOLUME_FORCE is enabled and lbm.update_force_field(); is called (default: 0.001f)
 #define GRAPHICS_Q_CRITERION 0.0001f // Q-criterion value for Q-criterion isosurface visualization (default: 0.0001f)
-#define GRAPHICS_STREAMLINE_SPARSE 8 // set how many streamlines there are every x lattice points
-#define GRAPHICS_STREAMLINE_LENGTH 128 // set maximum length of streamlines
+#define GRAPHICS_STREAMLINE_SPARSE 8u // set how many streamlines there are every x lattice points
+#define GRAPHICS_STREAMLINE_LENGTH 128u // set maximum length of streamlines
 #define GRAPHICS_RAYTRACING_TRANSMITTANCE 0.25f // transmitted light fraction in raytracing graphics ("0.25f" = 1/4 of light is transmitted and 3/4 is absorbed along longest box side length, "1.0f" = no absorption)
 #define GRAPHICS_RAYTRACING_COLOR 0x005F7F // absorption color of fluid in raytracing graphics
+#define GRAPHICS_LBS 8u // local box size for local memory optimization in graphics_q() kernel, possible values: 0u (disable local memory optimization), 4u (no speedup), 8u (default, ~10% speedup)
 
 //#define GRAPHICS_TRANSPARENCY 0.7f // optional: comment/uncomment this line to disable/enable semi-transparent rendering (looks better but reduces framerate), number represents transparency (equal to 1-opacity) (default: 0.7f)
 
