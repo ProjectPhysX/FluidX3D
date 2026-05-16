@@ -475,7 +475,7 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
 
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", camera_parameters, bitmap, zbuffer, lbm->flags);
-	kernel_graphics_flags_mc = Kernel(device, lbm->get_N(), "graphics_flags_mc", camera_parameters, bitmap, zbuffer, lbm->flags);
+	kernel_graphics_flags_mc = Kernel(device, (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u), "graphics_flags_mc", camera_parameters, bitmap, zbuffer, lbm->flags);
 	kernel_graphics_field = Kernel(device, lbm->get_D()==1u ? camera.width*camera.height : lbm->get_N(), lbm->get_D()==1u ? "graphics_field_rt" : "graphics_field", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u, lbm->flags); // raytraced field visualization only works for single-GPU
 	kernel_graphics_field_slice = Kernel(device, lbm->get_N(), "graphics_field_slice", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags);
 #ifndef D2Q9
@@ -486,7 +486,7 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	const uint graphics_q_cache_required = (cb(GRAPHICS_LBS+3u)*12u+1023u)/1024u; // in KB
 	const bool graphics_q_enable_lbs = GRAPHICS_LBS>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LBS)&&device.info.local_cache>=graphics_q_cache_required;
 	if(GRAPHICS_LBS>0u&&!graphics_q_enable_lbs) print_warning(device.info.name+" does not support local memory optimization with GRAPHICS_LBS = "+to_string(GRAPHICS_LBS)+" (max supported workgroup size: "+to_string(device.info.max_workgroup_size)+" (required: "+to_string(cb(GRAPHICS_LBS))+"), cache: "+to_string(device.info.local_cache)+"KB (required: "+to_string(graphics_q_cache_required)+"KB)). Disabling local memory optimization.");
-	const ulong graphics_q_N = graphics_q_enable_lbs ? (ulong)((lbm->get_Nx()+GRAPHICS_LBS-1u)/GRAPHICS_LBS)*(ulong)((lbm->get_Ny()+GRAPHICS_LBS-1u)/GRAPHICS_LBS)*(ulong)((lbm->get_Nz()+GRAPHICS_LBS-1u)/GRAPHICS_LBS)*(ulong)cb(GRAPHICS_LBS) : lbm->get_N();
+	const ulong graphics_q_N = graphics_q_enable_lbs ? (ulong)((lbm->get_Nx()+GRAPHICS_LBS-2u)/GRAPHICS_LBS)*(ulong)((lbm->get_Ny()+GRAPHICS_LBS-2u)/GRAPHICS_LBS)*(ulong)((lbm->get_Nz()+GRAPHICS_LBS-2u)/GRAPHICS_LBS)*(ulong)cb(GRAPHICS_LBS) : (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u);
 	const uint graphics_q_workgroup_size = graphics_q_enable_lbs ? cb(GRAPHICS_LBS) : WORKGROUP_SIZE;
 	kernel_graphics_q = Kernel(device, graphics_q_N, graphics_q_workgroup_size, "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u);
 

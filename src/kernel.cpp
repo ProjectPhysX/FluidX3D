@@ -841,9 +841,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint3 xyz = coordinates(n);
 	return ((def_Dx>1u)&(xyz.x==0u||xyz.x>=def_Nx-1u))||((def_Dy>1u)&(xyz.y==0u||xyz.y>=def_Ny-1u))||((def_Dz>1u)&(xyz.z==0u||xyz.z>=def_Nz-1u));
 }
-)+R(bool is_halo_q(const uint3 xyz) {
-	return ((def_Dx>1u)&(xyz.x==0u||xyz.x>=def_Nx-2u))||((def_Dy>1u)&(xyz.y==0u||xyz.y>=def_Ny-2u))||((def_Dz>1u)&(xyz.z==0u||xyz.z>=def_Nz-2u)); // halo data is kept up-to-date, so allow using halo data for rendering
-}
 
 )+R(float half_to_float_custom(const ushort x) { // custom 16-bit floating-point format, 1-4-11, exp-15, +-1.99951168, +-6.10351562E-5, +-2.98023224E-8, 3.612 digits
 	const uint e = (x&0x7800)>>11; // exponent
@@ -2367,7 +2364,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 // ################################################## graphics code ##################################################
 
 )+"#ifdef GRAPHICS"+R(
-
+)+R(uint3 coordinates_mc(const uxx n) { // disassemble 1D index to 3D coordinates for marching-cubes (n -> x,y,z)
+	const uint t = (uint)(n%(uxx)((def_Nx-1u)*(def_Ny-1u)));
+	return (uint3)(t%(def_Nx-1u), t/(def_Nx-1u), (uint)(n/(uxx)((def_Nx-1u)*(def_Ny-1u)))); // n = x+(y+z*Ny)*Nx
+}
+)+R(bool is_halo_mc(const uint3 xyz) {
+	return ((def_Dx>1u)&(xyz.x==0u||xyz.x>=def_Nx-2u))||((def_Dy>1u)&(xyz.y==0u||xyz.y>=def_Ny-2u))||((def_Dz>1u)&(xyz.z==0u||xyz.z>=def_Nz-2u)); // halo data is kept up-to-date, so allow using halo data for rendering
+}
 )+R(void calculate_j8(const uint3 xyz, uxx* j) {
 	const uxx x0 = (uxx)  xyz.x; // cube stencil
 	const uxx xp = (uxx) (xyz.x+1u);
@@ -2506,9 +2509,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(kernel void graphics_flags_mc(const global float* camera, global int* bitmap, global int* zbuffer, const global uchar* flags, const global float* F) {
 )+"#endif"+R( // FORCE_FIELD
 	const uxx n = get_global_id(0);
-	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
-	const uint3 xyz = coordinates(n);
-	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
+	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
+	const uint3 xyz = coordinates_mc(n);
+	if(is_halo_mc(xyz)) return; // don't execute graphics_flags_mc() on halo
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	const float3 p = position(xyz);
@@ -2836,8 +2839,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#if LBS>0u"+R( // use local memory
 	const uxx n_global = n/(LBS*LBS*LBS);
 	const uint n_local = (uint)(n%(LBS*LBS*LBS));
-	const uint t_global = (uint)(n_global%(uxx)(((def_Nx+LBS-1u)/LBS)*((def_Ny+LBS-1u)/LBS)));
-	const uint3 xyz_global = (uint3)(t_global%((def_Nx+LBS-1u)/LBS), t_global/((def_Nx+LBS-1u)/LBS), (uint)(n_global/(uxx)(((def_Nx+LBS-1u)/LBS)*((def_Ny+LBS-1u)/LBS)))); // n = x+(y+z*Ny)*Nx
+	const uint t_global = (uint)(n_global%(uxx)(((def_Nx+LBS-2u)/LBS)*((def_Ny+LBS-2u)/LBS))); // -1u for coordinates_mc, +LBM-1u for always rounding up
+	const uint3 xyz_global = (uint3)(t_global%((def_Nx+LBS-2u)/LBS), t_global/((def_Nx+LBS-2u)/LBS), (uint)(n_global/(uxx)(((def_Nx+LBS-2u)/LBS)*((def_Ny+LBS-2u)/LBS)))); // n = x+(y+z*Ny)*Nx
 	const uint t_local = n_local%(LBS*LBS);
 	const uint3 xyz_local = (uint3)(t_local%LBS, t_local/LBS, n_local/(LBS*LBS)); // n = x+(y+z*Ny)*Nx
 	const uint3 xyz = LBS*xyz_global+xyz_local;
@@ -2853,10 +2856,12 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 	}
 	barrier(CLK_GLOBAL_MEM_FENCE);
+	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_mc(xyz)) return; // don't execute graphics_q() on marching-cubes halo
 )+"#else"+R( // do not use local memory
-	const uint3 xyz = coordinates(n);
+	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
+	const uint3 xyz = coordinates_mc(n);
+	if(is_halo_mc(xyz)) return; // don't execute graphics_q() on marching-cubes halo
 )+"#endif"+R( // do not use local memory
-	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_q(xyz)) return; // don't execute graphics_q_field() on marching-cubes halo
 	const float3 p = position(xyz);
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
