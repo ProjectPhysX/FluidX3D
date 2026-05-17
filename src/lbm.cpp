@@ -473,9 +473,19 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, lbm->get_D()>1u); // if there are multiple domains, allocate zbuffer also on host side
 	camera_parameters = Memory<float>(device, 15u);
 	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
-
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", camera_parameters, bitmap, zbuffer, lbm->flags);
-	kernel_graphics_flags_mc = Kernel(device, (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u), "graphics_flags_mc", camera_parameters, bitmap, zbuffer, lbm->flags);
+	{
+#ifndef FORCE_FIELD
+		const uint cache_required = (cb(GRAPHICS_LSF+1u)* 1u+1023u)/1024u; // in KB
+#else // FORCE_FIELD
+		const uint cache_required = (cb(GRAPHICS_LSF+1u)*13u+1023u)/1024u; // in KB
+#endif // FORCE_FIELD
+		const bool enable_ls = GRAPHICS_LSF>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LSF)&&device.info.local_cache>=cache_required;
+		if(GRAPHICS_LSF>0u&&!enable_ls) print_warning(device.info.name+" does not support local memory optimization with GRAPHICS_LSF = "+to_string(GRAPHICS_LSF)+" (max supported workgroup size: "+to_string(device.info.max_workgroup_size)+" (required: "+to_string(cb(GRAPHICS_LSF))+"), cache: "+to_string(device.info.local_cache)+"KB (required: "+to_string(cache_required)+"KB)). Disabling local memory optimization.");
+		const ulong N = enable_ls ? (ulong)((lbm->get_Nx()+GRAPHICS_LSF-2u)/GRAPHICS_LSF)*(ulong)((lbm->get_Ny()+GRAPHICS_LSF-2u)/GRAPHICS_LSF)*(ulong)((lbm->get_Nz()+GRAPHICS_LSF-2u)/GRAPHICS_LSF)*(ulong)cb(GRAPHICS_LSF) : (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u);
+		const uint workgroup_size = enable_ls ? cb(GRAPHICS_LSF) : WORKGROUP_SIZE;
+		kernel_graphics_flags_mc = Kernel(device, N, workgroup_size, "graphics_flags_mc", camera_parameters, bitmap, zbuffer, lbm->flags);
+	}
 	kernel_graphics_field = Kernel(device, lbm->get_D()==1u ? camera.width*camera.height : lbm->get_N(), lbm->get_D()==1u ? "graphics_field_rt" : "graphics_field", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u, lbm->flags); // raytraced field visualization only works for single-GPU
 	kernel_graphics_field_slice = Kernel(device, lbm->get_N(), "graphics_field_slice", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags);
 #ifndef D2Q9
@@ -483,12 +493,14 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 #else // D2Q9
 	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 2D
 #endif // D2Q9
-	const uint graphics_q_cache_required = (cb(GRAPHICS_LBS+3u)*12u+1023u)/1024u; // in KB
-	const bool graphics_q_enable_lbs = GRAPHICS_LBS>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LBS)&&device.info.local_cache>=graphics_q_cache_required;
-	if(GRAPHICS_LBS>0u&&!graphics_q_enable_lbs) print_warning(device.info.name+" does not support local memory optimization with GRAPHICS_LBS = "+to_string(GRAPHICS_LBS)+" (max supported workgroup size: "+to_string(device.info.max_workgroup_size)+" (required: "+to_string(cb(GRAPHICS_LBS))+"), cache: "+to_string(device.info.local_cache)+"KB (required: "+to_string(graphics_q_cache_required)+"KB)). Disabling local memory optimization.");
-	const ulong graphics_q_N = graphics_q_enable_lbs ? (ulong)((lbm->get_Nx()+GRAPHICS_LBS-2u)/GRAPHICS_LBS)*(ulong)((lbm->get_Ny()+GRAPHICS_LBS-2u)/GRAPHICS_LBS)*(ulong)((lbm->get_Nz()+GRAPHICS_LBS-2u)/GRAPHICS_LBS)*(ulong)cb(GRAPHICS_LBS) : (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u);
-	const uint graphics_q_workgroup_size = graphics_q_enable_lbs ? cb(GRAPHICS_LBS) : WORKGROUP_SIZE;
-	kernel_graphics_q = Kernel(device, graphics_q_N, graphics_q_workgroup_size, "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u);
+	{
+		const uint cache_required = (cb(GRAPHICS_LSQ+3u)*12u+1023u)/1024u; // in KB
+		const bool enable_ls = GRAPHICS_LSQ>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LSQ)&&device.info.local_cache>=cache_required;
+		if(GRAPHICS_LSQ>0u&&!enable_ls) print_warning(device.info.name+" does not support local memory optimization with GRAPHICS_LSQ = "+to_string(GRAPHICS_LSQ)+" (max supported workgroup size: "+to_string(device.info.max_workgroup_size)+" (required: "+to_string(cb(GRAPHICS_LSQ))+"), cache: "+to_string(device.info.local_cache)+"KB (required: "+to_string(cache_required)+"KB)). Disabling local memory optimization.");
+		const ulong N = enable_ls ? (ulong)((lbm->get_Nx()+GRAPHICS_LSQ-2u)/GRAPHICS_LSQ)*(ulong)((lbm->get_Ny()+GRAPHICS_LSQ-2u)/GRAPHICS_LSQ)*(ulong)((lbm->get_Nz()+GRAPHICS_LSQ-2u)/GRAPHICS_LSQ)*(ulong)cb(GRAPHICS_LSQ) : (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u);
+		const uint workgroup_size = enable_ls ? cb(GRAPHICS_LSQ) : WORKGROUP_SIZE;
+		kernel_graphics_q = Kernel(device, N, workgroup_size, "graphics_q", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u);
+	}
 
 #ifdef FORCE_FIELD
 	kernel_graphics_flags.add_parameters(lbm->F);
@@ -621,7 +633,12 @@ string LBM_Domain::Graphics::device_defines(const Device_Info& device_info) cons
 	"\n	#define def_skybox_height "+to_string(skybox_image->height())+"u"
 #endif // SURFACE
 
-	"\n	#define LBS "+to_string((GRAPHICS_LBS>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LBS)&&device_info.local_cache>=(cb(GRAPHICS_LBS+3u)*12u+1023u)/1024u) ? GRAPHICS_LBS : 0u)+"u" // local box size (default: 8)
+#ifndef FORCE_FIELD
+	"\n	#define LSF "+to_string((GRAPHICS_LSF>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSF)&&device_info.local_cache>=(cb(GRAPHICS_LSF+1u)* 1u+1023u)/1024u) ? GRAPHICS_LSF : 0u)+"u" // local box size for graphics_flags_mc() kernel (default: 4)
+#else // FORCE_FIELD
+	"\n	#define LSF "+to_string((GRAPHICS_LSF>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSF)&&device_info.local_cache>=(cb(GRAPHICS_LSF+1u)*13u+1023u)/1024u) ? GRAPHICS_LSF : 0u)+"u" // local box size for graphics_flags_mc() kernel (default: 4)
+#endif // FORCE_FIELD
+	"\n	#define LSQ "+to_string((GRAPHICS_LSQ>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSQ)&&device_info.local_cache>=(cb(GRAPHICS_LSQ+3u)*12u+1023u)/1024u) ? GRAPHICS_LSQ : 0u)+"u" // local box size for graphics_q() kernel (default: 8)
 ;}
 #endif // GRAPHICS
 

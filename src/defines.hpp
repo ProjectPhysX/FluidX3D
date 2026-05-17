@@ -40,7 +40,8 @@
 #define GRAPHICS_STREAMLINE_LENGTH 128u // set maximum length of streamlines
 #define GRAPHICS_RAYTRACING_TRANSMITTANCE 0.25f // transmitted light fraction in raytracing graphics ("0.25f" = 1/4 of light is transmitted and 3/4 is absorbed along longest box side length, "1.0f" = no absorption)
 #define GRAPHICS_RAYTRACING_COLOR 0x005F7F // absorption color of fluid in raytracing graphics
-#define GRAPHICS_LBS 8u // local box size for local memory optimization in graphics_q() kernel, possible values: 0u (disable local memory optimization), 4u (no speedup), 8u (default, ~10% speedup)
+#define GRAPHICS_LSF 4u // local box size for local memory optimization in graphics_flags_mc() kernel, possible values: 0u (disable local memory optimization), 4u (default, ~40% speedup), 8u (~40% speedup)
+#define GRAPHICS_LSQ 8u // local box size for local memory optimization in graphics_q() kernel, possible values: 0u (disable local memory optimization), 4u (no speedup), 8u (default, ~10-90% speedup)
 
 //#define GRAPHICS_TRANSPARENCY 0.7f // optional: comment/uncomment this line to disable/enable semi-transparent rendering (looks better but reduces framerate), number represents transparency (equal to 1-opacity) (default: 0.7f)
 

@@ -2509,24 +2509,83 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(kernel void graphics_flags_mc(const global float* camera, global int* bitmap, global int* zbuffer, const global uchar* flags, const global float* F) {
 )+"#endif"+R( // FORCE_FIELD
 	const uxx n = get_global_id(0);
+)+"#if LSF>0u"+R( // use local memory
+	const uxx n_global = n/(LSF*LSF*LSF);
+	const uint n_local = (uint)(n%(LSF*LSF*LSF));
+	const uint t_global = (uint)(n_global%(uxx)(((def_Nx+LSF-2u)/LSF)*((def_Ny+LSF-2u)/LSF))); // -1u for coordinates_mc, +LSF-1u for always rounding up
+	const uint3 xyz_global = (uint3)(t_global%((def_Nx+LSF-2u)/LSF), t_global/((def_Nx+LSF-2u)/LSF), (uint)(n_global/(uxx)(((def_Nx+LSF-2u)/LSF)*((def_Ny+LSF-2u)/LSF)))); // n = x+(y+z*Ny)*Nx
+	const uint t_local = n_local%(LSF*LSF);
+	const uint3 xyz_local = (uint3)(t_local%LSF, t_local/LSF, n_local/(LSF*LSF)); // n = x+(y+z*Ny)*Nx
+	const uint3 xyz = LSF*xyz_global+xyz_local;
+	local uchar flags_cache[(LSF+1u)*(LSF+1u)*(LSF+1u)]; // for LSF==4: 4x4x4 cells with [0,+1] halo = 5x5x5 cells (125 Byte) to load in cache
+)+"#ifdef FORCE_FIELD"+R(
+	local float3 F_cache[(LSF+1u)*(LSF+1u)*(LSF+1u)]; // for LSF==4: 4x4x4 cells with [0,+1] halo = 5x5x5 cells (1500 Byte) to load in cache
+)+"#endif"+R( // FORCE_FIELD
+	const uint loads_per_thread = ((LSF+1u)*(LSF+1u)*(LSF+1u)+LSF*LSF*LSF-1u)/(LSF*LSF*LSF); // number of grid cells each thread has to load (for LSF==4: 2, for LSF==8: 2)
+	for(uint c=0u; c<loads_per_thread; c++) {
+		const uint n_local_c = c*(LSF*LSF*LSF)+n_local; // SoA (>2x faster on GPUs)
+		if(n_local_c<(LSF+1u)*(LSF+1u)*(LSF+1u)) {
+			const uint t_local_c = n_local_c%((LSF+1u)*(LSF+1u));
+			const uint3 xyz_local_c = (uint3)(t_local_c%(LSF+1u), t_local_c/(LSF+1u), n_local_c/((LSF+1u)*(LSF+1u))); // n = x+(y+z*Ny)*Nx
+			const uint3 xyz_global_c = (LSF*xyz_global+xyz_local_c)%(uint3)(def_Nx, def_Ny, def_Nz); // apply periodic boundaries
+			const uxx n_global_c = index(xyz_global_c);
+			const uchar flags_nc = (flags[n_global_c]&TYPE_BO)==TYPE_S; // load flags from global memory into local memory
+			flags_cache[n_local_c] = flags_nc;
+)+"#ifdef FORCE_FIELD"+R(
+			F_cache[n_local_c] = (flags_nc ? load3(F, n_global_c) : (float3)(0.0f, 0.0f, 0.0f)); // load F from global memory into local memory
+)+"#endif"+R( // FORCE_FIELD
+		}
+	}
+	barrier(CLK_GLOBAL_MEM_FENCE);
+	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_mc(xyz)) return; // don't execute graphics_flags_mc() on marching-cubes halo
+)+"#else"+R( // do not use local memory
 	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
 	const uint3 xyz = coordinates_mc(n);
-	if(is_halo_mc(xyz)) return; // don't execute graphics_flags_mc() on halo
+	if(is_halo_mc(xyz)) return; // don't execute graphics_flags_mc() on marching-cubes halo
+)+"#endif"+R( // do not use local memory
+	const float3 p = position(xyz);
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
-	const float3 p = position(xyz);
 	if(!is_in_camera_frustum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
+	bool v[8];
+)+"#ifdef FORCE_FIELD"+R(
+	float3 Fj[8];
+)+"#endif"+R( // FORCE_FIELD
+)+"#if LSF>0u"+R( // use local memory
+	{ // load 8-cell stencil from cache
+		const uint x0=xyz_local.x                    , xp=x0+               1u  ;
+		const uint y0=xyz_local.y*          (LSF+1u) , yp=y0+          (LSF+1u) ;
+		const uint z0=xyz_local.z*((LSF+1u)*(LSF+1u)), zp=z0+((LSF+1u)*(LSF+1u));
+		v[0] = flags_cache[x0+y0+z0]; // 000 // cube stencil
+		v[1] = flags_cache[xp+y0+z0]; // +00
+		v[2] = flags_cache[xp+y0+zp]; // +0+
+		v[3] = flags_cache[x0+y0+zp]; // 00+
+		v[4] = flags_cache[x0+yp+z0]; // 0+0
+		v[5] = flags_cache[xp+yp+z0]; // ++0
+		v[6] = flags_cache[xp+yp+zp]; // +++
+		v[7] = flags_cache[x0+yp+zp]; // 0++
+)+"#ifdef FORCE_FIELD"+R(
+		Fj[0] = F_cache[x0+y0+z0]; // 000 // cube stencil
+		Fj[1] = F_cache[xp+y0+z0]; // +00
+		Fj[2] = F_cache[xp+y0+zp]; // +0+
+		Fj[3] = F_cache[x0+y0+zp]; // 00+
+		Fj[4] = F_cache[x0+yp+z0]; // 0+0
+		Fj[5] = F_cache[xp+yp+z0]; // ++0
+		Fj[6] = F_cache[xp+yp+zp]; // +++
+		Fj[7] = F_cache[x0+yp+zp]; // 0++
+)+"#endif"+R( // FORCE_FIELD
+	}
+)+"#else"+R( // do not use local memory
 	uxx j[8];
 	calculate_j8(xyz, j);
-	bool v[8];
 	for(uint i=0u; i<8u; i++) v[i] = (flags[j[i]]&TYPE_BO)==TYPE_S;
+)+"#ifdef FORCE_FIELD"+R(
+	for(uint i=0u; i<8u; i++) Fj[i] = (v[i] ? load3(F, j[i]) : (float3)(0.0f, 0.0f, 0.0f));
+)+"#endif"+R( // FORCE_FIELD
+)+"#endif"+R( // do not use local memory
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
 	const uint tn = marching_cubes_halfway(v, triangles); // run marching cubes algorithm
 	if(tn==0u) return;
-)+"#ifdef FORCE_FIELD"+R(
-	float3 Fj[8];
-	for(uint i=0u; i<8u; i++) Fj[i] = (v[i] ? load3(F, j[i]) : (float3)(0.0f, 0.0f, 0.0f));
-)+"#endif"+R( // FORCE_FIELD
 	for(uint i=0u; i<tn; i++) {
 		const float3 p0 = triangles[3u*i   ];
 		const float3 p1 = triangles[3u*i+1u];
@@ -2836,22 +2895,22 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // TEMPERATURE
 )+") {"+R( // graphics_q()
 	const uxx n = get_global_id(0);
-)+"#if LBS>0u"+R( // use local memory
-	const uxx n_global = n/(LBS*LBS*LBS);
-	const uint n_local = (uint)(n%(LBS*LBS*LBS));
-	const uint t_global = (uint)(n_global%(uxx)(((def_Nx+LBS-2u)/LBS)*((def_Ny+LBS-2u)/LBS))); // -1u for coordinates_mc, +LBM-1u for always rounding up
-	const uint3 xyz_global = (uint3)(t_global%((def_Nx+LBS-2u)/LBS), t_global/((def_Nx+LBS-2u)/LBS), (uint)(n_global/(uxx)(((def_Nx+LBS-2u)/LBS)*((def_Ny+LBS-2u)/LBS)))); // n = x+(y+z*Ny)*Nx
-	const uint t_local = n_local%(LBS*LBS);
-	const uint3 xyz_local = (uint3)(t_local%LBS, t_local/LBS, n_local/(LBS*LBS)); // n = x+(y+z*Ny)*Nx
-	const uint3 xyz = LBS*xyz_global+xyz_local;
-	local float3 u_cache[(LBS+3u)*(LBS+3u)*(LBS+3u)]; // for LBM==8: 8x8x8 cells with [-1,+2] halo = 11x11x11 cells (15972 Byte) to load in cache
-	const uint loads_per_thread = ((LBS+3u)*(LBS+3u)*(LBS+3u)+LBS*LBS*LBS-1u)/(LBS*LBS*LBS); // number of grid cells each thread has to load
+)+"#if LSQ>0u"+R( // use local memory
+	const uxx n_global = n/(LSQ*LSQ*LSQ);
+	const uint n_local = (uint)(n%(LSQ*LSQ*LSQ));
+	const uint t_global = (uint)(n_global%(uxx)(((def_Nx+LSQ-2u)/LSQ)*((def_Ny+LSQ-2u)/LSQ))); // -1u for coordinates_mc, +LSQ-1u for always rounding up
+	const uint3 xyz_global = (uint3)(t_global%((def_Nx+LSQ-2u)/LSQ), t_global/((def_Nx+LSQ-2u)/LSQ), (uint)(n_global/(uxx)(((def_Nx+LSQ-2u)/LSQ)*((def_Ny+LSQ-2u)/LSQ)))); // n = x+(y+z*Ny)*Nx
+	const uint t_local = n_local%(LSQ*LSQ);
+	const uint3 xyz_local = (uint3)(t_local%LSQ, t_local/LSQ, n_local/(LSQ*LSQ)); // n = x+(y+z*Ny)*Nx
+	const uint3 xyz = LSQ*xyz_global+xyz_local;
+	local float3 u_cache[(LSQ+3u)*(LSQ+3u)*(LSQ+3u)]; // for LSQ==8: 8x8x8 cells with [-1,+2] halo = 11x11x11 cells (15972 Byte) to load in cache
+	const uint loads_per_thread = ((LSQ+3u)*(LSQ+3u)*(LSQ+3u)+LSQ*LSQ*LSQ-1u)/(LSQ*LSQ*LSQ); // number of grid cells each thread has to load (for LSQ==4: 6, for LSQ==8: 3)
 	for(uint c=0u; c<loads_per_thread; c++) {
-		const uint n_local_c = c*(LBS*LBS*LBS)+n_local; // SoA (>2x faster on GPUs)
-		if(n_local_c<(LBS+3u)*(LBS+3u)*(LBS+3u)) {
-			const uint t_local_c = n_local_c%((LBS+3u)*(LBS+3u));
-			const uint3 xyz_local_c = (uint3)(t_local_c%(LBS+3u), t_local_c/(LBS+3u), n_local_c/((LBS+3u)*(LBS+3u))); // n = x+(y+z*Ny)*Nx
-			const uint3 xyz_global_c = (LBS*xyz_global+xyz_local_c+(uint3)(def_Nx-1u, def_Ny-1u, def_Nz-1u))%(uint3)(def_Nx, def_Ny, def_Nz); // shift by -1 cell and apply periodic boundaries
+		const uint n_local_c = c*(LSQ*LSQ*LSQ)+n_local; // SoA (>2x faster on GPUs)
+		if(n_local_c<(LSQ+3u)*(LSQ+3u)*(LSQ+3u)) {
+			const uint t_local_c = n_local_c%((LSQ+3u)*(LSQ+3u));
+			const uint3 xyz_local_c = (uint3)(t_local_c%(LSQ+3u), t_local_c/(LSQ+3u), n_local_c/((LSQ+3u)*(LSQ+3u))); // n = x+(y+z*Ny)*Nx
+			const uint3 xyz_global_c = (LSQ*xyz_global+xyz_local_c+(uint3)(def_Nx-1u, def_Ny-1u, def_Nz-1u))%(uint3)(def_Nx, def_Ny, def_Nz); // shift by -1 cell and apply periodic boundaries
 			u_cache[n_local_c] = load3(u, index(xyz_global_c)); // load u from global memory into local memory
 		}
 	}
@@ -2866,11 +2925,12 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
-)+"#if LBS>0u"+R( // use local memory
-	float3 uj[32]; { // load 32-cell stencil from cache
+	float3 uj[32];
+)+"#if LSQ>0u"+R( // use local memory
+	{ // load 32-cell stencil from cache
 		const uint xm=xyz_local.x                    , x0=xm+               1u  , xp=xm+ 2u                   , xq=xm+ 3u                   ;
-		const uint ym=xyz_local.y*          (LBS+3u) , y0=ym+          (LBS+3u) , yp=ym+(2u*         (LBS+3u)), yq=ym+(3u*         (LBS+3u));
-		const uint zm=xyz_local.z*((LBS+3u)*(LBS+3u)), z0=zm+((LBS+3u)*(LBS+3u)), zp=zm+(2u*(LBS+3u)*(LBS+3u)), zq=zm+(3u*(LBS+3u)*(LBS+3u));
+		const uint ym=xyz_local.y*          (LSQ+3u) , y0=ym+          (LSQ+3u) , yp=ym+(2u*         (LSQ+3u)), yq=ym+(3u*         (LSQ+3u));
+		const uint zm=xyz_local.z*((LSQ+3u)*(LSQ+3u)), z0=zm+((LSQ+3u)*(LSQ+3u)), zp=zm+(2u*(LSQ+3u)*(LSQ+3u)), zq=zm+(3u*(LSQ+3u)*(LSQ+3u));
 		uj[ 0] = u_cache[x0+y0+z0]; // 000 // cube stencil
 		uj[ 1] = u_cache[xp+y0+z0]; // +00
 		uj[ 2] = u_cache[xp+y0+zp]; // +0+
@@ -2909,7 +2969,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#else"+R( // do not use local memory
 	uxx j[32];
 	calculate_j32(xyz, j);
-	float3 uj[32];
 	for(uint i=0u; i<32u; i++) uj[i] = load3(u, j[i]);
 )+"#endif"+R( // do not use local memory
 )+"#ifdef SURFACE"+R(
