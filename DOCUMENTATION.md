@@ -302,7 +302,7 @@
 ### Loading .stl Files
 - For more complex geometries, you can load `.stl` triangle meshes and voxelize them to the Cartesian simulation grid on the GPU(s).
 - Create a `FluidX3D/stl/` folder next to the `FluidX3D/src/` folder and download the geometry from websites like [Thingiverse](https://www.thingiverse.com/), or create your own.
-- Only binary `.stl` files are supported. Meshes must be watertight (no holes) and all triangles must be oriented such that their normals point to the outside. For conversion from other formats or for splitting composite geometries like helicopter hull and rotors, I recommend [Microsoft 3D Builder](http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/e1ef440e-8bef-4d19-8a2e-e835b7bb4ae1?P1=1779294012&P2=404&P3=2&P4=aq53OufTOLy9Y%2fDryTan6sAIZhCM0xIJCnKTnGJPrL5L0ACyWMi7yuvz91qc5dlEL8VqWka3OvOSqQEu5Unmpg%3d%3d) on Windows or [Blender](https://www.blender.org/) on Windows/Linux.
+- Only binary `.stl` files are supported. Meshes must be watertight (no holes) and all triangles must be oriented such that their normals point to the outside. For conversion from other formats or for splitting composite geometries like helicopter hull and rotors, I recommend [Microsoft 3D Builder](https://apps.microsoft.com/detail/9wzdncrfj3t6) (to download: paste `apps.microsoft.com/detail/9wzdncrfj3t6` in [here](https://store.rg-adguard.net/) and click on `Microsoft.3DBuilder_20.0.4.0_neutral_~_8wekyb3d8bbwe.appxbundle`) on Windows or [Blender](https://www.blender.org/) on Windows/Linux.
 - Load and voxelize simple `.stl` files directly with
   ```c
   lbm.voxelize_stl(get_exe_path()+"../stl/mesh.stl", center, rotation, size);
