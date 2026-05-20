@@ -25,7 +25,7 @@
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
     mkdir -p ~/amdgpu
-    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/25.35/ubuntu/noble/amdgpu-install_7.2.70200-1_all.deb
+    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/25.35.1/ubuntu/noble/amdgpu-install_7.2.1.70201-1_all.deb
     sudo apt install -y ~/amdgpu/amdgpu-install*.deb
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
     sudo usermod -a -G render,video $(whoami)
@@ -61,12 +61,12 @@
   - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=%22oneAPI+DPC%2B%2B+Compiler+dependencies%22) and [oneTBB](https://github.com/uxlfoundation/oneTBB/releases) with:
     ```bash
     export OCLV="oclcpuexp-2025.21.10.0.10_160000_rel"
-    export TBBV="oneapi-tbb-2022.3.0"
+    export TBBV="oneapi-tbb-2023.0.0"
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
     sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
     sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2025-WW45/${OCLV}.tar.gz
-    sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2022.3.0/${TBBV}-lin.tgz
+    sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2023.0.0/${TBBV}-lin.tgz
     sudo tar -zxvf ~/cpurt/${OCLV}.tar.gz -C /opt/intel/${OCLV}
     sudo tar -zxvf ~/cpurt/${TBBV}-lin.tgz -C /opt/intel
     echo /opt/intel/${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
@@ -302,7 +302,7 @@
 ### Loading .stl Files
 - For more complex geometries, you can load `.stl` triangle meshes and voxelize them to the Cartesian simulation grid on the GPU(s).
 - Create a `FluidX3D/stl/` folder next to the `FluidX3D/src/` folder and download the geometry from websites like [Thingiverse](https://www.thingiverse.com/), or create your own.
-- Only binary `.stl` files are supported. Meshes must be watertight (no holes) and all triangles must be oriented such that their normals point to the outside. For conversion from other formats or for splitting composite geometries like helicopter hull and rotors, I recommend [Microsoft 3D Builder](https://apps.microsoft.com/store/detail/3d-builder/9WZDNCRFJ3T6) on Windows or [Blender](https://www.blender.org/) on Windows/Linux.
+- Only binary `.stl` files are supported. Meshes must be watertight (no holes) and all triangles must be oriented such that their normals point to the outside. For conversion from other formats or for splitting composite geometries like helicopter hull and rotors, I recommend [Microsoft 3D Builder](http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/e1ef440e-8bef-4d19-8a2e-e835b7bb4ae1?P1=1779294012&P2=404&P3=2&P4=aq53OufTOLy9Y%2fDryTan6sAIZhCM0xIJCnKTnGJPrL5L0ACyWMi7yuvz91qc5dlEL8VqWka3OvOSqQEu5Unmpg%3d%3d) on Windows or [Blender](https://www.blender.org/) on Windows/Linux.
 - Load and voxelize simple `.stl` files directly with
   ```c
   lbm.voxelize_stl(get_exe_path()+"../stl/mesh.stl", center, rotation, size);
