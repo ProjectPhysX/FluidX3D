@@ -42,6 +42,7 @@
 #define GRAPHICS_RAYTRACING_COLOR 0x005F7F // absorption color of fluid in raytracing graphics
 #define GRAPHICS_LSF 4u // local box size for local memory optimization in graphics_flags_mc() kernel, possible values: 0u (disable local memory optimization), 4u (default, ~40% speedup), 8u (~40% speedup)
 #define GRAPHICS_LSQ 8u // local box size for local memory optimization in graphics_q() kernel, possible values: 0u (disable local memory optimization), 4u (no speedup), 8u (default, ~10-90% speedup)
+#define GRAPHICS_LSP 4u // local box size for local memory optimization in graphics_rasterize_phi() kernel, possible values: 0u (disable local memory optimization), 4u (default, ~40% speedup), 8u (~40% speedup)
 
 //#define GRAPHICS_TRANSPARENCY 0.7f // optional: comment/uncomment this line to disable/enable semi-transparent rendering (looks better but reduces framerate), number represents transparency (equal to 1-opacity) (default: 0.7f)
 

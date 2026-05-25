@@ -422,8 +422,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	vertex[11] = (float3)(0.0f, interpolate(v[3], v[7], iso), 1.0f);
 	cube *= 15u;
 	uint i; // number of triangle vertices
-	for(i=0u; i<15u&&triangle_table(cube+i)!=15u; i+=3u) { // create the triangles
-		triangles[i   ] = vertex[triangle_table(cube+i   )];
+	for(i=0u; i<15u; i+=3u) { // create the triangles
+		const uchar triangle_table_cube_i_0u_ = triangle_table(cube+i);
+		if(triangle_table_cube_i_0u_==15u) break;
+		triangles[i   ] = vertex[triangle_table_cube_i_0u_];
 		triangles[i+1u] = vertex[triangle_table(cube+i+1u)];
 		triangles[i+2u] = vertex[triangle_table(cube+i+2u)];
 	}
@@ -448,8 +450,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	vertex[11] = (float3)(0.0f, 0.5f, 1.0f);
 	cube *= 15u;
 	uint i; // number of triangle vertices
-	for(i=0u; i<15u&&triangle_table(cube+i)!=15u; i+=3u) { // create the triangles
-		triangles[i   ] = vertex[triangle_table(cube+i   )];
+	for(i=0u; i<15u; i+=3u) { // create the triangles
+		const uchar triangle_table_cube_i_0u_ = triangle_table(cube+i);
+		if(triangle_table_cube_i_0u_==15u) break;
+		triangles[i   ] = vertex[triangle_table_cube_i_0u_];
 		triangles[i+1u] = vertex[triangle_table(cube+i+1u)];
 		triangles[i+2u] = vertex[triangle_table(cube+i+2u)];
 	}
@@ -3022,18 +3026,58 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef SURFACE"+R(
 )+R(kernel void graphics_rasterize_phi(const global float* camera, global int* bitmap, global int* zbuffer, const global float* phi) { // marching cubes
 	const uxx n = get_global_id(0);
-	const uint3 xyz = coordinates(n);
-	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
+)+"#if LSP>0u"+R( // use local memory
+	const uxx n_global = n/(LSP*LSP*LSP);
+	const uint n_local = (uint)(n%(LSP*LSP*LSP));
+	const uint t_global = (uint)(n_global%(uxx)(((def_Nx+LSP-2u)/LSP)*((def_Ny+LSP-2u)/LSP))); // -1u for coordinates_mc, +LSP-1u for always rounding up
+	const uint3 xyz_global = (uint3)(t_global%((def_Nx+LSP-2u)/LSP), t_global/((def_Nx+LSP-2u)/LSP), (uint)(n_global/(uxx)(((def_Nx+LSP-2u)/LSP)*((def_Ny+LSP-2u)/LSP)))); // n = x+(y+z*Ny)*Nx
+	const uint t_local = n_local%(LSP*LSP);
+	const uint3 xyz_local = (uint3)(t_local%LSP, t_local/LSP, n_local/(LSP*LSP)); // n = x+(y+z*Ny)*Nx
+	const uint3 xyz = LSP*xyz_global+xyz_local;
+	local float phi_cache[(LSP+1u)*(LSP+1u)*(LSP+1u)]; // for LSP==4: 4x4x4 cells with [0,+1] halo = 5x5x5 cells (500 Byte) to load in cache
+	const uint loads_per_thread = ((LSP+1u)*(LSP+1u)*(LSP+1u)+LSP*LSP*LSP-1u)/(LSP*LSP*LSP); // number of grid cells each thread has to load (for LSP==4: 2, for LSP==8: 2)
+	for(uint c=0u; c<loads_per_thread; c++) {
+		const uint n_local_c = c*(LSP*LSP*LSP)+n_local; // SoA (>2x faster on GPUs)
+		if(n_local_c<(LSP+1u)*(LSP+1u)*(LSP+1u)) {
+			const uint t_local_c = n_local_c%((LSP+1u)*(LSP+1u));
+			const uint3 xyz_local_c = (uint3)(t_local_c%(LSP+1u), t_local_c/(LSP+1u), n_local_c/((LSP+1u)*(LSP+1u))); // n = x+(y+z*Ny)*Nx
+			const uint3 xyz_global_c = (LSP*xyz_global+xyz_local_c)%(uint3)(def_Nx, def_Ny, def_Nz); // apply periodic boundaries
+			phi_cache[n_local_c] = phi[index(xyz_global_c)];
+		}
+	}
+	barrier(CLK_GLOBAL_MEM_FENCE);
+	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_mc(xyz)) return; // don't execute graphics_rasterize_phi() on marching-cubes halo
+)+"#else"+R( // do not use local memory
+	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
+	const uint3 xyz = coordinates_mc(n);
+	if(is_halo_mc(xyz)) return; // don't execute graphics_rasterize_phi() on marching-cubes halo
+)+"#endif"+R( // do not use local memory
 	const float3 p = position(xyz);
 	float camera_cache[15]; // cache camera parameters in case the kernel draws more than one shape
 	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
 	if(!is_in_camera_frustum(p, camera_cache)) return; // skip loading LBM data if grid cell is not visible
+	float v[8];
+)+"#if LSP>0u"+R( // use local memory
+	{ // load 8-cell stencil from cache
+		const uint x0=xyz_local.x                    , xp=x0+               1u  ;
+		const uint y0=xyz_local.y*          (LSP+1u) , yp=y0+          (LSP+1u) ;
+		const uint z0=xyz_local.z*((LSP+1u)*(LSP+1u)), zp=z0+((LSP+1u)*(LSP+1u));
+		v[0] = phi_cache[x0+y0+z0]; // 000 // cube stencil
+		v[1] = phi_cache[xp+y0+z0]; // +00
+		v[2] = phi_cache[xp+y0+zp]; // +0+
+		v[3] = phi_cache[x0+y0+zp]; // 00+
+		v[4] = phi_cache[x0+yp+z0]; // 0+0
+		v[5] = phi_cache[xp+yp+z0]; // ++0
+		v[6] = phi_cache[xp+yp+zp]; // +++
+		v[7] = phi_cache[x0+yp+zp]; // 0++
+	}
+)+"#else"+R( // do not use local memory
 	uxx j[8];
 	calculate_j8(xyz, j);
-	float v[8];
 	for(uint i=0u; i<8u; i++) v[i] = phi[j[i]];
+)+"#endif"+R( // do not use local memory
 	float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
-	const uint tn = marching_cubes(v, 0.502f, triangles); // run marching cubes algorithm, isovalue slightly larger than 0.5f to fix z-fighting with graphics_flags_mc()
+	const uint tn = marching_cubes(v, 0.51f, triangles); // run marching cubes algorithm, isovalue slightly larger than 0.5f to fix z-fighting with graphics_flags_mc()
 	if(tn==0u) return;
 	for(uint i=0u; i<tn; i++) {
 		const float3 p0 = triangles[3u*i   ];

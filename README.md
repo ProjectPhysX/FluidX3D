@@ -669,6 +669,8 @@ section RX 6900 XT
 	4227 :AMD, 0, 4227
 section RX 6800 XT
 	4241 :AMD, 0, 4241
+section RX 6800
+	4355 :AMD, 0, 4355
 section PRO W6800
 	3361 :AMD, 0, 3361
 section RX 6700 XT
@@ -1181,6 +1183,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6950&nbsp;XT         |              27.85 |          16 |          576 |             2130 (57%) |              4280 (57%) |              4362 (58%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6900&nbsp;XT         |              23.04 |          16 |          512 |             1968 (59%) |              4227 (64%) |              4207 (63%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6800&nbsp;XT         |              20.74 |          16 |          512 |             2008 (60%) |              4241 (64%) |              4224 (64%) |
+| 🔴&nbsp;Radeon&nbsp;RX&nbsp;6800                 |              19.01 |          16 |          512 |             2027 (61%) |              4355 (65%) |              4311 (65%) |
 | 🔴&nbsp;Radeon&nbsp;PRO&nbsp;W6800               |              17.83 |          32 |          512 |             1620 (48%) |              3361 (51%) |              3180 (48%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6700&nbsp;XT         |              13.21 |          12 |          384 |             1408 (56%) |              2883 (58%) |              2908 (58%) |
 | 🔴&nbsp;Radeon&nbsp;RX&nbsp;6750&nbsp;GRE&nbsp;12GB |           12.49 |          12 |          384 |             1298 (52%) |              2840 (57%) |              2848 (57%) |

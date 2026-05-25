@@ -509,7 +509,14 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 
 #ifdef SURFACE
 	skybox = Memory<int>(device, skybox_image->width()*skybox_image->height(), 1u, skybox_image->data());
-	kernel_graphics_rasterize_phi = Kernel(device, lbm->get_N(), "graphics_rasterize_phi", camera_parameters, bitmap, zbuffer, lbm->phi);
+	{
+		const uint cache_required = (cb(GRAPHICS_LSP+1u)*4u+1023u)/1024u; // in KB
+		const bool enable_ls = GRAPHICS_LSP>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LSP)&&device.info.local_cache>=cache_required;
+		if(GRAPHICS_LSP>0u&&!enable_ls) print_warning(device.info.name+" does not support local memory optimization with GRAPHICS_LSP = "+to_string(GRAPHICS_LSP)+" (max supported workgroup size: "+to_string(device.info.max_workgroup_size)+" (required: "+to_string(cb(GRAPHICS_LSP))+"), cache: "+to_string(device.info.local_cache)+"KB (required: "+to_string(cache_required)+"KB)). Disabling local memory optimization.");
+		const ulong N = enable_ls ? (ulong)((lbm->get_Nx()+GRAPHICS_LSP-2u)/GRAPHICS_LSP)*(ulong)((lbm->get_Ny()+GRAPHICS_LSP-2u)/GRAPHICS_LSP)*(ulong)((lbm->get_Nz()+GRAPHICS_LSP-2u)/GRAPHICS_LSP)*(ulong)cb(GRAPHICS_LSP) : (ulong)(lbm->get_Nx()-1u)*(ulong)(lbm->get_Ny()-1u)*(ulong)(lbm->get_Nz()-1u);
+		const uint workgroup_size = enable_ls ? cb(GRAPHICS_LSP) : WORKGROUP_SIZE;
+		kernel_graphics_rasterize_phi = Kernel(device, N, workgroup_size, "graphics_rasterize_phi", camera_parameters, bitmap, zbuffer, lbm->phi);
+	}
 	kernel_graphics_raytrace_phi = Kernel(device, bitmap.length(), "graphics_raytrace_phi", camera_parameters, bitmap, skybox, lbm->phi, lbm->flags);
 	kernel_graphics_q.add_parameters(lbm->flags);
 #endif // SURFACE
@@ -639,6 +646,7 @@ string LBM_Domain::Graphics::device_defines(const Device_Info& device_info) cons
 	"\n	#define LSF "+to_string((GRAPHICS_LSF>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSF)&&device_info.local_cache>=(cb(GRAPHICS_LSF+1u)*13u+1023u)/1024u) ? GRAPHICS_LSF : 0u)+"u" // local box size for graphics_flags_mc() kernel (default: 4)
 #endif // FORCE_FIELD
 	"\n	#define LSQ "+to_string((GRAPHICS_LSQ>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSQ)&&device_info.local_cache>=(cb(GRAPHICS_LSQ+3u)*12u+1023u)/1024u) ? GRAPHICS_LSQ : 0u)+"u" // local box size for graphics_q() kernel (default: 8)
+	"\n	#define LSP "+to_string((GRAPHICS_LSP>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSP)&&device_info.local_cache>=(cb(GRAPHICS_LSP+1u)* 4u+1023u)/1024u) ? GRAPHICS_LSP : 0u)+"u" // local box size for graphics_rasterize_phi() kernel (default: 4)
 ;}
 #endif // GRAPHICS
 
