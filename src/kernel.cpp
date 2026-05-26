@@ -168,24 +168,23 @@ string opencl_c_container() { return R( // ########################## begin of O
 		case +1: return x<def_screen_width/2||x>=def_screen_width  ||y<0||y>=def_screen_height; // right half
 	}
 }
-)+R(void draw(const int x, const int y, const float z, const int color, global int* bitmap, volatile global int* zbuffer, const int stereo) {
+)+R(void draw(const int x, const int y, const float z, const int color, volatile global int* bitmap, volatile global int* zbuffer, const int stereo) {
 	const int index=x+y*def_screen_width, iz=(int)(z*1E3f); // use fixed-point int z-buffer and atomic_max to minimize noise in image, maximum render distance is 2.147E6f
+	if(!is_off_screen(x, y, stereo)) { // only draw if point is on screen
 )+"#ifndef GRAPHICS_TRANSPARENCY"+R(
-	if(!is_off_screen(x, y, stereo)&&iz>atomic_max(&zbuffer[index], iz)) bitmap[index] = color; // only draw if point is on screen and first in zbuffer
+		if(iz>atomic_max(&zbuffer[index], iz)) atomic_xchg(&bitmap[index], color); // only draw if point is first in zbuffer
 )+"#else"+R( // GRAPHICS_TRANSPARENCY
-	if(!is_off_screen(x, y, stereo)) { // transparent rendering (not quite order-independent transparency, but elegant solution for order-reversible transparency which is good enough here)
-		const float transparency = GRAPHICS_TRANSPARENCY;
+		const float transparency = GRAPHICS_TRANSPARENCY; // transparent rendering (not quite order-independent transparency, but elegant solution for order-reversible transparency which is good enough here)
 		const uchar4 cc4=as_uchar4(color), cb4=as_uchar4(def_background_color);
 		const float3 fc = (float3)((float)cc4.x, (float)cc4.y, (float)cc4.z); // new pixel color that is behind topmost drawn pixel color
 		const float3 fb = (float3)((float)cb4.x, (float)cb4.y, (float)cb4.z); // background color
-		const bool is_front = iz>atomic_max(&zbuffer[index], iz);
 		const uchar4 cp4 = as_uchar4(bitmap[index]);
 		const float3 fp = (float3)((float)cp4.x, (float)cp4.y, (float)cp4.z); // current pixel color
 		const int draw_count = (int)cp4.w; // use alpha color value to store how often the pixel has been over-drawn already
-		const float3 fn = fp+(1.0f-transparency)*( is_front ? fc-fp : pown(transparency, draw_count)*(fc-fb)); // black magic: either over-draw colors back-to-front, or add back colors as correction terms
-		bitmap[index] = as_int((uchar4)((uchar)clamp(fn.x+0.5f, 0.0f, 255.0f), (uchar)clamp(fn.y+0.5f, 0.0f, 255.0f), (uchar)clamp(fn.z+0.5f, 0.0f, 255.0f), (uchar)min(draw_count+1, 255)));
-	}
+		const float3 fn = fp+(1.0f-transparency)*(iz>atomic_max(&zbuffer[index], iz) ? fc-fp : pown(transparency, draw_count)*(fc-fb)); // black magic: either over-draw colors back-to-front, or add back colors as correction terms
+		atomic_xchg(&bitmap[index], as_int((uchar4)((uchar)clamp(fn.x+0.5f, 0.0f, 255.0f), (uchar)clamp(fn.y+0.5f, 0.0f, 255.0f), (uchar)clamp(fn.z+0.5f, 0.0f, 255.0f), (uchar)min(draw_count+1, 255))));
 )+"#endif"+R( // GRAPHICS_TRANSPARENCY
+	}
 }
 )+R(bool convert(int* rx, int* ry, float* rz, const float3 p, const float* camera_cache, const int stereo) { // 3D -> 2D
 	const float zoom = camera_cache[0]; // fetch camera parameters (rotation matrix, camera position, etc.)
