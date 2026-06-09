@@ -717,6 +717,8 @@ section R9 290
 	1647 :AMD, 0, 1647
 section R9 285
 	1409 :AMD, 0, 1409
+section HD 7790 2GB
+	661 :AMD, 0, 661
 section HD 7970
 	1563 :AMD, 0, 1563
 section HD 7870
@@ -1115,6 +1117,8 @@ section E3-1240 v5
 	141 :IntelCPU, 0, 141
 section i5-5300U
 	37 :IntelCPU, 0, 37
+section i7-4771
+	100 :IntelCPU, 0, 100
 section i7-4770
 	104 :IntelCPU, 0, 104
 section i7-4720HQ
@@ -1207,6 +1211,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;290X                 |               5.63 |           4 |          320 |             1245 (60%) |              1699 (41%) |              1387 (33%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;290                  |               4.85 |           4 |          320 |             1136 (54%) |              1647 (40%) |              1272 (31%) |
 | 🔴&nbsp;Radeon&nbsp;R9&nbsp;285                  |               3.29 |           2 |          176 |              782 (68%) |              1409 (62%) |               992 (43%) |
+| 🔴&nbsp;Radeon&nbsp;HD&nbsp;7790&nbsp;2GB        |               1.88 |           2 |          102 |              395 (59%) |               661 (50%) |               562 (42%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7970                 |               3.79 |           3 |          264 |              193 (11%) |              1270 (37%) |              1563 (46%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7870                 |               2.56 |           2 |          154 |              105 (10%) |               716 (36%) |               868 (44%) |
 | 🔴&nbsp;Radeon&nbsp;HD&nbsp;7850                 |               1.84 |           2 |          154 |              112 (11%) |               120 ( 6%) |               635 (32%) |
@@ -1406,6 +1411,7 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🔵&nbsp;Xeon&nbsp;E-2176G                        |               0.71 |          64 |           42 |              201 (74%) |               136 (25%) |               148 (27%) |
 | 🔵&nbsp;Core&nbsp;i7-7700HQ                      |               0.36 |          12 |           38 |               81 (32%) |                82 (16%) |               108 (22%) |
 | 🔵&nbsp;Xeon&nbsp;E3-1240&nbsp;v5                |               0.50 |          32 |           34 |              141 (63%) |                75 (17%) |                88 (20%) |
+| 🔵&nbsp;Core&nbsp;i7-4771                        |               0.45 |          24 |           26 |              100 (60%) |                22 ( 7%) |                74 (22%) |
 | 🔵&nbsp;Core&nbsp;i7-4770                        |               0.44 |          16 |           26 |              104 (62%) |                69 (21%) |                59 (18%) |
 | 🔵&nbsp;Core&nbsp;i7-4720HQ                      |               0.33 |          16 |           26 |               80 (48%) |                23 ( 7%) |                60 (18%) |
 | 🔵&nbsp;Celeron&nbsp;N2807                       |               0.01 |           4 |           11 |                7 (10%) |                 3 ( 2%) |                 3 ( 2%) |
@@ -1631,6 +1637,11 @@ section 1x Tesla K80 (2 GPUs)
 section 1x Tesla K80 (1 GPU)
 	1642 :Nvidia, 0, 1642
 
+section 6x RX 7900 XTX
+	42954 :AMD, 0, 42954
+section 1x RX 7900 XTX
+	7716 :AMD, 0, 7716
+
 section 2x L40S
 	13640 :Nvidia, 0, 13640
 section 1x L40S
@@ -1805,6 +1816,9 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(2&nbsp;GPUs)               |               8.22 |          24 |          480 |            2086 (2.3x) |             3448 (2.1x) |             2174 (2.3x) |
 | 🟢&nbsp;1x&nbsp;Tesla&nbsp;K80&nbsp;(1&nbsp;GPU)                |               4.11 |          12 |          240 |              916 (58%) |              1642 (53%) |               943 (30%) |
+|                                                                 |                    |             |              |                        |                         |                         |
+| 🔴&nbsp;6x&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XTX              |             368.64 |         144 |         5760 |      20835&nbsp;(5.7x) |       42954&nbsp;(5.6x) |       41304&nbsp;(5.4x) |
+| 🔴&nbsp;1x&nbsp;Radeon&nbsp;RX&nbsp;7900&nbsp;XTX              |              61.44 |          24 |          960 |             3665 (58%) |              7644 (61%) |              7716 (62%) |
 |                                                                 |                    |             |              |                        |                         |                         |
 | 🟢&nbsp;2x&nbsp;L40S                                            |             183.22 |          96 |         1728 |            6888 (1.8x) |            13099 (1.8x) |            13640 (1.8x) |
 | 🟢&nbsp;1x&nbsp;L40S                                            |              91.61 |          48 |          864 |             3824 (68%) |              7463 (67%) |              7669 (68%) |

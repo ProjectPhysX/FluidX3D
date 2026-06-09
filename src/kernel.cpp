@@ -220,7 +220,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			case +1: if(rx<(int)def_screen_width/2-radius||rx>=(int)def_screen_width  +radius || ry<-radius||ry>=(int)def_screen_height+radius) return; break;
 		}
 		int d=-radius, x=radius, y=0; // Bresenham algorithm for circle
-		__attribute__((opencl_unroll_hint(1))) while(x>=y) {
+		while(x>=y) {
 			draw(rx+x, ry+y, rz, color, bitmap, zbuffer, stereo);
 			draw(rx-x, ry+y, rz, color, bitmap, zbuffer, stereo);
 			draw(rx+x, ry-y, rz, color, bitmap, zbuffer, stereo);
@@ -244,7 +244,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const int dx= abs(r1x-r0x), sx=2*(r0x<r1x)-1;
 		const int dy=-abs(r1y-r0y), sy=2*(r0y<r1y)-1;
 		int err = dx+dy;
-		__attribute__((opencl_unroll_hint(1))) while(x!=r1x||y!=r1y) {
+		while(x!=r1x||y!=r1y) {
 			draw(x, y, z, color, bitmap, zbuffer, stereo);
 			const int e2 = 2*err;
 			if(e2>dy) { err+=dy; x+=sx; }
@@ -263,17 +263,17 @@ string opencl_c_container() { return R( // ########################## begin of O
 		if(r1y>r2y) { const int xt = r1x; const int yt = r1y; r1x = r2x; r1y = r2y; r2x = xt; r2y = yt; }
 		const float z = (r0z+r1z+r2z)/3.0f; // approximate triangle z position for each pixel to be equal
 		const int r2xr0x=r2x-r0x, r2yr0y=r2y-r0y, r1xr0x=r1x-r0x, r1yr0y=r1y-r0y, r2xr1x=r2x-r1x, r2yr1y=r2y-r1y;
-		__attribute__((opencl_unroll_hint(1))) for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
+		for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
 			const int xA = r0x+r2xr0x*(y-r0y)/r2yr0y;
 			const int xB = r0x+r1xr0x*(y-r0y)/r1yr0y;
-			__attribute__((opencl_unroll_hint(1))) for(int x=min(xA, xB); x<max(xA, xB); x++) {
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
 				draw(x, y, z, color, bitmap, zbuffer, stereo);
 			}
 		}
-		__attribute__((opencl_unroll_hint(1))) for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
+		for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
 			const int xA = r0x+r2xr0x*(y-r0y)/r2yr0y;
 			const int xB = r1x+r2xr1x*(y-r1y)/r2yr1y;
-			__attribute__((opencl_unroll_hint(1))) for(int x=min(xA, xB); x<max(xA, xB); x++) {
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
 				draw(x, y, z, color, bitmap, zbuffer, stereo);
 			}
 		}
@@ -297,10 +297,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 		const float d = 1.0f/(float)(r1yr2y*r0xr2x+r2xr1x*r0yr2y);
 		const uchar4 cc0=as_uchar4(c0), cc1=as_uchar4(c1), cc2=as_uchar4(c2);
 		const float3 fc0=(float3)((float)cc0.x, (float)cc0.y, (float)cc0.z),  fc1=(float3)((float)cc1.x, (float)cc1.y, (float)cc1.z), fc2=(float3)((float)cc2.x, (float)cc2.y, (float)cc2.z);
-		__attribute__((opencl_unroll_hint(1))) for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
+		for(int y=r0y; y<r1y; y++) { // Bresenham algorithm (lower triangle half)
 			const int xA = r0x+r2xr0x*(y-r0y)/r2yr0y;
 			const int xB = r0x+r1xr0x*(y-r0y)/r1yr0y;
-			__attribute__((opencl_unroll_hint(1))) for(int x=min(xA, xB); x<max(xA, xB); x++) {
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
 				const float w0 = (float)(r1yr2y*x+r2xr1x*y-cw0)*d; // barycentric coordinates
 				const float w1 = (float)(r2yr0y*x+r0xr2x*y-cw1)*d;
 				const float w2 = 1.0f-w0-w1;
@@ -309,10 +309,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 				draw(x, y, z, color, bitmap, zbuffer, stereo);
 			}
 		}
-		__attribute__((opencl_unroll_hint(1))) for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
+		for(int y=r1y; y<r2y; y++) { // Bresenham algorithm (upper triangle half)
 			const int xA = r0x+r2xr0x*(y-r0y)/r2yr0y;
 			const int xB = r1x+r2xr1x*(y-r1y)/r2yr1y;
-			__attribute__((opencl_unroll_hint(1))) for(int x=min(xA, xB); x<max(xA, xB); x++) {
+			for(int x=min(xA, xB); x<max(xA, xB); x++) {
 				const float w0 = (float)(r1yr2y*x+r2xr1x*y-cw0)*d; // barycentric coordinates
 				const float w1 = (float)(r2yr0y*x+r0xr2x*y-cw1)*d;
 				const float w2 = 1.0f-w0-w1;
