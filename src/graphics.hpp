@@ -315,7 +315,7 @@ private:
 		dis = 0.5f*(float)width/tan(fov*pif/360.0f);
 	}
 	void input_N() {
-		eye_distance = fmax(eye_distance-0.2f, 0.0f);
+		eye_distance = eye_distance-0.2f;
 	}
 	void input_M() {
 		eye_distance += 0.2f;
