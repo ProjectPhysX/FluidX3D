@@ -20,7 +20,7 @@ void main_physics();
 
 class Camera {
 public:
-	int* bitmap = nullptr;
+	int* bitmap = nullptr; // make a copy of allocated bitmap/zbuffer pointers for deleting during destructor
 	int* zbuffer = nullptr;
 	uint width = 1920u; // screen width
 	uint height = 1080u; // screen height
@@ -42,6 +42,8 @@ public:
 	std::mutex rendring_frame; // a frame for interactive graphics is currently rendered
 
 private:
+	int* allocated_bitmap = nullptr;
+	int* allocated_zbuffer = nullptr;
 	float log_zoom=4.0f*log(zoom), target_log_zoom=log_zoom;
 	double mouse_x=0.0, mouse_y=0.0, target_mouse_x=0.0, target_mouse_y=0.0; // mouse position
 	double mouse_sensitivity = 1.0; // mouse sensitivity
@@ -54,13 +56,15 @@ public:
 		this->fps_limit = fps_limit;
 		bitmap = new int[width*height];
 		zbuffer = new int[width*height];
+		allocated_bitmap = bitmap; // make a copy of allocated bitmap/zbuffer pointers for deleting during destructor
+		allocated_zbuffer = zbuffer;
 		set_zoom(1.0f); // set initial zoom
 		update_matrix();
 	}
 	Camera() = default; // default constructor
 	~Camera() {
-		delete[] bitmap;
-		delete[] zbuffer;
+		delete[] allocated_bitmap;
+		delete[] allocated_zbuffer;
 	}
 	Camera& operator=(Camera&& camera) noexcept { // move assignment
 		this->width = camera.width;
@@ -109,7 +113,7 @@ public:
 			case '+': input_scroll_down(); break;
 			case '-': input_scroll_up(); break;
 			case 'F': input_F(); break;
-			case 27: running=false; println(); exit(0);
+			case 27: running=false; break;
 		}
 #ifdef INTERACTIVE_GRAPHICS_ASCII
 		if(free) { // move free camera

@@ -543,6 +543,7 @@ INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+		if(!running) break;
 		// main loop ################################################################
 		camera.rendring_frame.lock(); // block rendering for other threads until finished
 		camera.update_state(fmax(1.0/(double)camera.fps_limit, frametime));
