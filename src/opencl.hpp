@@ -625,7 +625,7 @@ private:
 	inline void check_for_errors(const int error) {
 		if(error==-48) print_error("There is no OpenCL kernel with name \""+name+"(...)\" in the OpenCL C code! Check spelling!");
 		if(error<-48&&error>-53) print_error("Parameters for OpenCL kernel \""+name+"(...)\" don't match between C++ and OpenCL C!");
-		if(error==-54) print_error("Workgrop size "+to_string(cl_range_local.get()[0])+" for OpenCL kernel \""+name+"(...)\" is invalid! Maximum supported workgroup size on "+device->info.name+" is "+to_string(device->info.max_workgroup_size)+".");
+		if(error==-54) print_error("Workgrop size "+to_string((ulong)cl_range_local.get()[0])+" for OpenCL kernel \""+name+"(...)\" is invalid! Maximum supported workgroup size on "+device->info.name+" is "+to_string(device->info.max_workgroup_size)+".");
 		if(error!=0) print_error("OpenCL kernel \""+name+"(...)\" failed with error code "+to_string(error)+"!");
 	}
 	template<typename T> inline void link_parameter(const uint position, const Memory<T>& memory) {
