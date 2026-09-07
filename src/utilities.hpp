@@ -4242,18 +4242,19 @@ inline Image* read_bmp(const string& filename, Image* image=nullptr) {
 	if(file.fail()) print_error("File \""+filename+"\" does not exist!");
 	uint width=0u, height=0u;
 	file.seekg(0, std::ios::end);
-	const uint filesize = (uint)file.tellg();
+	const ulong filesize = (ulong)file.tellg();
 	file.seekg(0, std::ios::beg);
 	uchar* data = new uchar[filesize];
 	file.read((char*)data, filesize);
 	file.close();
-	if(filesize==0u) print_error("File \""+filename+"\" is corrupt!");
+	if(filesize<54ull) print_error("File \""+filename+"\" is corrupt!");
 	for(uint i=0u; i<4u; i++) {
 		width  |= data[18+i]<<(8u*i);
 		height |= data[22+i]<<(8u*i);
 	}
-	const uint pad=(4u-(3u*width)%4u)%4u, imagesize=(3u*width+pad)*height;
-	if(filesize!=54u+imagesize) print_error("File \""+filename+"\" is corrupt or unsupported!");
+	const uint pad = (4u-(3u*width)%4u)%4u;
+	const ulong imagesize = (3ull*(ulong)width+(ulong)pad)*(ulong)height;
+	if(width==0u||height==0u||filesize!=54ull+imagesize) print_error("File \""+filename+"\" is corrupt or unsupported!");
 	if(image==nullptr||image->width()!=width||image->height()!=height) {
 		delete image;
 		image = new Image(width, height);
