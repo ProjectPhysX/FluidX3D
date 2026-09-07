@@ -4532,15 +4532,15 @@ inline Mesh* read_stl_raw(const string& path, const bool reposition, const float
 	std::ifstream file(filename, std::ios::in|std::ios::binary);
 	if(file.fail()) print_error("File \""+filename+"\" does not exist!");
 	file.seekg(0, std::ios::end);
-	const uint filesize = (uint)file.tellg();
+	const ulong filesize = (ulong)file.tellg();
 	file.seekg(0, std::ios::beg);
 	uchar* data = new uchar[filesize];
 	file.read((char*)data, filesize);
 	file.close();
-	if(filesize==0u) print_error("File \""+filename+"\" is corrupt!");
+	if(filesize<84ull) print_error("File \""+filename+"\" is corrupt!");
 	const uint triangle_number = ((uint*)data)[20];
 	uint counter = 84u;
-	if(triangle_number>0u&&filesize==84u+50u*triangle_number) print_info("Loading \""+filename+"\" with "+to_string(triangle_number)+" triangles.");
+	if(triangle_number>0u&&filesize==84ull+50ull*(ulong)triangle_number) print_info("Loading \""+filename+"\" with "+to_string(triangle_number)+" triangles.");
 	else print_error("File \""+filename+"\" is corrupt or unsupported! Only binary .stl files are supported.");
 	Mesh* mesh = new Mesh(triangle_number, center);
 	mesh->p0[0] = float3(0.0f); // to fix warning C6001
