@@ -1211,6 +1211,9 @@ inline float3 operator*(const float3& v, const float3x3& m) { // multiply vector
 inline float3 operator*(const float3x3& m, const float3& v) { // multiply matrix with vector
 		return float3(m.xx*v.x+m.xy*v.y+m.xz*v.z, m.yx*v.x+m.yy*v.y+m.yz*v.z, m.zx*v.x+m.zy*v.y+m.zz*v.z);
 }
+inline float3x3 transpose(const float3x3& m) { // transpose matrix
+	return float3x3(m.xx, m.yx, m.zx, m.xy, m.yy, m.zy, m.xz, m.yz, m.zz);
+}
 inline float3::float3(const float3x3& m) { // extract diagonal of matrix
 	this->x = m.xx;
 	this->y = m.yy;
@@ -4527,6 +4530,151 @@ struct Mesh { // triangle mesh
 		return fmin(fmin(box_size.x/(pmax.x-pmin.x), box_size.y/(pmax.y-pmin.y)), box_size.z/(pmax.z-pmin.z));
 	}
 };
+
+// ########################### SDF (Signed Distance Field) Support ###########################
+
+struct SDF { // 3D signed distance field
+	uint Nx = 0u, Ny = 0u, Nz = 0u; // Grid dimensions
+	float cell_size = 1.0f; // Size of each cell in world units
+	float3 origin; // World-space origin (lower corner) of the SDF grid
+	float* data = nullptr; // SDF values: negative=inside, positive=outside, zero=surface
+
+	inline SDF(const uint Nx, const uint Ny, const uint Nz, const float cell_size, const float3& origin) {
+		this->Nx = Nx;
+		this->Ny = Ny;
+		this->Nz = Nz;
+		this->cell_size = cell_size;
+		this->origin = origin;
+		this->data = new float[Nx*Ny*Nz];
+	}
+
+	inline ~SDF() {
+		if(data) delete[] data;
+	}
+
+	inline uint index(const uint x, const uint y, const uint z) const {
+		return x + Nx * (y + Ny * z);
+	}
+
+	inline float get(const uint x, const uint y, const uint z) const {
+		return data[index(x, y, z)];
+	}
+
+	inline void set(const uint x, const uint y, const uint z, const float value) {
+		data[index(x, y, z)] = value;
+	}
+
+	inline float3 get_world_size() const {
+		return float3((float)Nx * cell_size, (float)Ny * cell_size, (float)Nz * cell_size);
+	}
+
+	inline float3 get_bounding_box_size() const {
+		return get_world_size();
+	}
+
+	inline float3 get_bounding_box_center() const {
+		return origin + 0.5f * get_world_size();
+	}
+};
+
+/**
+ * @brief Read binary SDF file
+ * @param path Path to binary SDF file
+ * @return Pointer to SDF structure
+ *
+ * File format (binary, little-endian):
+ * - int32: Nx (grid dimension X)
+ * - int32: Ny (grid dimension Y)
+ * - int32: Nz (grid dimension Z)
+ * - float32: bounds_min_x (bounding box minimum X)
+ * - float32: bounds_min_y (bounding box minimum Y)
+ * - float32: bounds_min_z (bounding box minimum Z)
+ * - float32: bounds_max_x (bounding box maximum X)
+ * - float32: bounds_max_y (bounding box maximum Y)
+ * - float32: bounds_max_z (bounding box maximum Z)
+ * - float32[Nx*Ny*Nz]: SDF values (negative=inside, positive=outside, zero=surface)
+ *   Layout: data[x + Nx*(y + Ny*z)]
+ */
+inline SDF* read_sdf(const string& path) {
+	const string filename = create_file_extension(path, ".sdf");
+	std::ifstream file(filename, std::ios::in | std::ios::binary);
+
+	if(!file.is_open()) {
+		print_error("Error: SDF file \"" + filename + "\" could not be opened!");
+		return nullptr;
+	}
+
+	// Read header: grid dimensions + bounding box
+	int Nx, Ny, Nz;
+	float bounds_min_x, bounds_min_y, bounds_min_z;
+	float bounds_max_x, bounds_max_y, bounds_max_z;
+
+	file.read(reinterpret_cast<char*>(&Nx), sizeof(int));
+	file.read(reinterpret_cast<char*>(&Ny), sizeof(int));
+	file.read(reinterpret_cast<char*>(&Nz), sizeof(int));
+	file.read(reinterpret_cast<char*>(&bounds_min_x), sizeof(float));
+	file.read(reinterpret_cast<char*>(&bounds_min_y), sizeof(float));
+	file.read(reinterpret_cast<char*>(&bounds_min_z), sizeof(float));
+	file.read(reinterpret_cast<char*>(&bounds_max_x), sizeof(float));
+	file.read(reinterpret_cast<char*>(&bounds_max_y), sizeof(float));
+	file.read(reinterpret_cast<char*>(&bounds_max_z), sizeof(float));
+
+	if(file.fail()) {
+		print_error("Error: Failed to read SDF header from \"" + filename + "\"!");
+		file.close();
+		return nullptr;
+	}
+
+	// Calculate cell size and origin from bounding box
+	const float3 bounds_min(bounds_min_x, bounds_min_y, bounds_min_z);
+	const float3 bounds_max(bounds_max_x, bounds_max_y, bounds_max_z);
+	const float3 bounds_size = bounds_max - bounds_min;
+
+	// Cell size = bounding box size / (grid dimensions - 1) for grid corners
+	// Or = bounding box size / grid dimensions for grid centers
+	// Using grid centers interpretation:
+	const float cell_size_x = bounds_size.x / (float)Nx;
+	const float cell_size_y = bounds_size.y / (float)Ny;
+	const float cell_size_z = bounds_size.z / (float)Nz;
+	const float cell_size = (cell_size_x + cell_size_y + cell_size_z) / 3.0f; // Average
+
+	const float3 origin = bounds_min;
+	SDF* sdf = new SDF((uint)Nx, (uint)Ny, (uint)Nz, cell_size, origin);
+
+	// Read SDF data
+	const ulong data_size = (ulong)Nx * (ulong)Ny * (ulong)Nz;
+	float* temp_data = new float[data_size];
+	file.read(reinterpret_cast<char*>(temp_data), data_size * sizeof(float));
+
+	if(file.fail()) {
+		print_error("Error: Failed to read SDF data from \"" + filename + "\"!");
+		delete[] temp_data;
+		delete sdf;
+		file.close();
+		return nullptr;
+	}
+
+	file.close();
+
+	// Transpose data from file layout (k varies fastest) to our layout (x varies fastest)
+	// SDFGen writes: for(i) for(j) for(k) write(value) -> index: i*Ny*Nz + j*Nz + k
+	// We use: index(x,y,z) = x + Nx*(y + Ny*z) -> x varies fastest
+	for(uint i = 0; i < (uint)Nx; i++) {
+		for(uint j = 0; j < (uint)Ny; j++) {
+			for(uint k = 0; k < (uint)Nz; k++) {
+				const ulong file_index = (ulong)i * (ulong)Ny * (ulong)Nz + (ulong)j * (ulong)Nz + (ulong)k;
+				sdf->set(i, j, k, temp_data[file_index]);
+			}
+		}
+	}
+	delete[] temp_data;
+
+	print_info("Loaded SDF: " + to_string(Nx) + "x" + to_string(Ny) + "x" + to_string(Nz) +
+	           " cells, cell_size=" + to_string(cell_size) + "m");
+
+	return sdf;
+}
+
 inline Mesh* read_stl_raw(const string& path, const bool reposition, const float3& box_size, const float3& center, const float3x3& rotation, const float size) { // read binary .stl file
 	const string filename = create_file_extension(path, ".stl");
 	std::ifstream file(filename, std::ios::in|std::ios::binary);
