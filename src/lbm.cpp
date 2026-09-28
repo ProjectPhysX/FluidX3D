@@ -489,9 +489,9 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	kernel_graphics_field = Kernel(device, lbm->get_D()==1u ? camera.width*camera.height : lbm->get_N(), lbm->get_D()==1u ? "graphics_field_rt" : "graphics_field", camera_parameters, bitmap, zbuffer, 0, lbm->rho, lbm->u, lbm->flags); // raytraced field visualization only works for single-GPU
 	kernel_graphics_field_slice = Kernel(device, lbm->get_N(), "graphics_field_slice", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags);
 #ifndef D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 3D
+	kernel_graphics_streamline = Kernel(device, max(lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE, 1u)*max(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE, 1u)*max(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE, 1u), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 3D
 #else // D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 2D
+	kernel_graphics_streamline = Kernel(device, max(lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE, 1u)*max(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE, 1u), "graphics_streamline", camera_parameters, bitmap, zbuffer, 0, 0, 0, 0, 0, lbm->rho, lbm->u, lbm->flags); // 2D
 #endif // D2Q9
 	{
 		const uint cache_required = (cb(GRAPHICS_LSQ+3u)*12u+1023u)/1024u; // in KB

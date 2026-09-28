@@ -1529,8 +1529,12 @@ string opencl_c_container() { return R( // ########################## begin of O
 			for(uint i=0u; i<7u; i++) Tn += ghn[i]; // calculate temperature from g
 			Tn += 1.0f; // add 1.0f last to avoid digit extinction effects when summing up gi (perturbation method / DDF-shifting)
 		}
+		fxn -= fx*def_beta*(Tn-def_T_avg);
+		fyn -= fy*def_beta*(Tn-def_T_avg);
+		fzn -= fz*def_beta*(Tn-def_T_avg);
 		float geq[7]; // cache f_equilibrium[n]
-		calculate_g_eq(Tn, uxn, uyn, uzn, geq); // calculate equilibrium DDFs
+		const float rho2 = 0.5f/rhon; // apply external volume force (Guo forcing, Krueger p.233f)
+		calculate_g_eq(Tn, fma(fxn, rho2, uxn), fma(fyn, rho2, uyn), fma(fzn, rho2, uzn), geq); // calculate equilibrium DDFs
 		if(flagsn&TYPE_T) {
 			for(uint i=0u; i<7u; i++) ghn[i] = geq[i]; // just write geq to ghn (no collision)
 		} else {
@@ -1540,9 +1544,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 			for(uint i=0u; i<7u; i++) ghn[i] = fma(1.0f-def_w_T, ghn[i], def_w_T*geq[i]); // perform collision
 		}
 		store_g(n, ghn, gi, j7, t); // perform streaming (part 1)
-		fxn -= fx*def_beta*(Tn-def_T_avg);
-		fyn -= fy*def_beta*(Tn-def_T_avg);
-		fzn -= fz*def_beta*(Tn-def_T_avg);
 	}
 )+"#endif"+R( // TEMPERATURE
 
@@ -2813,7 +2814,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // TEMPERATURE
 	const uxx n = get_global_id(0);
 	const float3 ps = (float3)((float)slice_x+0.5f-0.5f*(float)def_Nx, (float)slice_y+0.5f-0.5f*(float)def_Ny, (float)slice_z+0.5f-0.5f*(float)def_Nz);
-)+"#ifndef D2Q9"+R(
+)+"#if !defined(D2Q9)&&def_Nz>1u"+R( // 3D
 	if(n>=(uxx)(def_Nx/def_streamline_sparse)*(uxx)(def_Ny/def_streamline_sparse)*(uxx)(def_Nz/def_streamline_sparse)) return;
 	const uint z = (uint)(n/(uxx)((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse))); // disassemble 1D index to 3D coordinates
 	const uint t = (uint)(n%(uxx)((def_Nx/def_streamline_sparse)*(def_Ny/def_streamline_sparse)));
