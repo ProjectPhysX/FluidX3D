@@ -1906,7 +1906,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint is_part_of_object = (uint)(n<(uxx)def_N&&flags[n]==flag_marker);
 	cache[lid] = is_part_of_object ? position(coordinates(n)) : (float3)(0.0f, 0.0f, 0.0f);
 	cells[lid] = is_part_of_object;
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
 		if(lid%(2u*s)==0u) {
 			cache[lid] += cache[lid+s];
@@ -1928,7 +1928,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint lid = get_local_id(0); // local memory reduction of cl_workgroup_size:1
 	local float3 cache[cl_workgroup_size];
 	cache[lid] = n<(uxx)def_N&&flags[n]==flag_marker ? load3(F, n) : (float3)(0.0f, 0.0f, 0.0f);
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
 		if(lid%(2u*s)==0u) cache[lid] += cache[lid+s];
 		barrier(CLK_LOCAL_MEM_FENCE);
@@ -1945,7 +1945,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint lid = get_local_id(0); // local memory reduction of cl_workgroup_size:1
 	local float3 cache[cl_workgroup_size];
 	cache[lid] = n<(uxx)def_N&&flags[n]==flag_marker ? cross(position(coordinates(n))-(float3)(cx, cy, cz), load3(F, n)) : (float3)(0.0f, 0.0f, 0.0f);
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	for(uint s=1u; s<cl_workgroup_size; s*=2u) {
 		if(lid%(2u*s)==0u) cache[lid] += cache[lid+s];
 		barrier(CLK_LOCAL_MEM_FENCE);
@@ -2539,7 +2539,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // FORCE_FIELD
 		}
 	}
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_mc(xyz)) return; // don't execute graphics_flags_mc() on marching-cubes halo
 )+"#else"+R( // do not use local memory
 	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
@@ -2918,7 +2918,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			u_cache[n_local_c] = load3(u, index(xyz_global_c)); // load u from global memory into local memory
 		}
 	}
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_mc(xyz)) return; // don't execute graphics_q() on marching-cubes halo
 )+"#else"+R( // do not use local memory
 	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
@@ -3059,7 +3059,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			phi_cache[n_local_c] = phi[index(xyz_global_c)];
 		}
 	}
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u||is_halo_mc(xyz)) return; // don't execute graphics_rasterize_phi() on marching-cubes halo
 )+"#else"+R( // do not use local memory
 	if(n>=(uxx)(def_Nx-1u)*(uxx)(def_Ny-1u)*(uxx)(def_Nz-1u)) return;
