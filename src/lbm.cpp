@@ -49,7 +49,7 @@ uint bytes_per_cell_device() { // returns the number of Bytes per cell allocated
 	return bytes_per_cell;
 }
 uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per cell per time step from/to device memory
-	uint bandwidth_bytes_per_cell = velocity_set*2u*sizeof(fpxx)+1u; // lattice.set()*2*fi, flags
+	uint bandwidth_bytes_per_cell = velocity_set*2u*sizeof(fpxx)+1u; // fi, flags
 #ifdef UPDATE_FIELDS
 	bandwidth_bytes_per_cell += 16u; // rho, u
 #ifdef TEMPERATURE
