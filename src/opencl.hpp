@@ -169,7 +169,7 @@ struct Device_Info {
 				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1547
 #endif // Linux
 			}
-			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&(memory>=4000u||!uses_ram)); // enable memory allocations greater than 4GB for Intel GPUs with >=4GB VRAM
+			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&memory>4096u); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
 			if(is_cpu) is_dp4a_capable = 0u; // native dp4a in Intel CPU Runtime for OpenCL is slower than emulated dp4a
 		} else if(vendor_id==0x10DE||vendor_id==0x13B5) { // Nvidia GPU/CPU
 			if(is_gpu) nvidia_compute_capability = 10u*(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV>()+(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV>();
