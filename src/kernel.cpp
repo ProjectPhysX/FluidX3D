@@ -860,45 +860,78 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(ulong index_f(const uxx n, const uint i) { // 64-bit indexing for DDFs
 	return (ulong)i*def_N+(ulong)n; // SoA (>2x faster on GPUs)
 }
-)+R(float c(const uint i) { // avoid constant keyword by encapsulating data in function which gets inlined by compiler
-	const float c[3u*def_velocity_set] = {
+)+R(constant char c_data[3u*def_velocity_set] = { // velocity sets
 )+"#if defined(D2Q9)"+R(
-		0, 1,-1, 0, 0, 1,-1, 1,-1, // x
-		0, 0, 0, 1,-1, 1,-1,-1, 1, // y
-		0, 0, 0, 0, 0, 0, 0, 0, 0  // z
+	0, 1,-1, 0, 0, 1,-1, 1,-1, // x
+	0, 0, 0, 1,-1, 1,-1,-1, 1, // y
+	0, 0, 0, 0, 0, 0, 0, 0, 0  // z
 )+"#elif defined(D3Q15)"+R(
-		0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, // x
-		0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1,-1, 1, 1,-1, // y
-		0, 0, 0, 0, 0, 1,-1, 1,-1,-1, 1, 1,-1, 1,-1  // z
+	0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, // x
+	0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1,-1, 1, 1,-1, // y
+	0, 0, 0, 0, 0, 1,-1, 1,-1,-1, 1, 1,-1, 1,-1  // z
 )+"#elif defined(D3Q19)"+R(
-		0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0, // x
-		0, 0, 0, 1,-1, 0, 0, 1,-1, 0, 0, 1,-1,-1, 1, 0, 0, 1,-1, // y
-		0, 0, 0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0,-1, 1,-1, 1  // z
+	0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0, // x
+	0, 0, 0, 1,-1, 0, 0, 1,-1, 0, 0, 1,-1,-1, 1, 0, 0, 1,-1, // y
+	0, 0, 0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0,-1, 1,-1, 1  // z
 )+"#elif defined(D3Q27)"+R(
-		0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, // x
-		0, 0, 0, 1,-1, 0, 0, 1,-1, 0, 0, 1,-1,-1, 1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, 1,-1, // y
-		0, 0, 0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0,-1, 1,-1, 1, 1,-1,-1, 1, 1,-1, 1,-1  // z
+	0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, // x
+	0, 0, 0, 1,-1, 0, 0, 1,-1, 0, 0, 1,-1,-1, 1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, 1,-1, // y
+	0, 0, 0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0,-1, 1,-1, 1, 1,-1,-1, 1, 1,-1, 1,-1  // z
 )+"#endif"+R( // D3Q27
-	};
-	return c[i];
+};
+)+R(char c(const uint i) {
+	return c_data[i];
 }
-)+R(float w(const uint i) { // avoid constant keyword by encapsulating data in function which gets inlined by compiler
-	const float w[def_velocity_set] = { def_w0, // velocity set weights
+)+R(constant float w_data[def_velocity_set] = { // velocity set weights
+	def_w0,
 )+"#if defined(D2Q9)"+R(
-		def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we
+	def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we
 )+"#elif defined(D3Q15)"+R(
-		def_ws, def_ws, def_ws, def_ws, def_ws, def_ws,
-		def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc
+	def_ws, def_ws, def_ws, def_ws, def_ws, def_ws,
+	def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc
 )+"#elif defined(D3Q19)"+R(
-		def_ws, def_ws, def_ws, def_ws, def_ws, def_ws,
-		def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we
+	def_ws, def_ws, def_ws, def_ws, def_ws, def_ws,
+	def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we
 )+"#elif defined(D3Q27)"+R(
-		def_ws, def_ws, def_ws, def_ws, def_ws, def_ws,
-		def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we,
-		def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc
+	def_ws, def_ws, def_ws, def_ws, def_ws, def_ws,
+	def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we,
+	def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc
 )+"#endif"+R( // D3Q27
-	};
-	return w[i];
+};
+)+R(float w(const uint i) {
+	return w_data[i];
+}
+)+R(constant uchar index_transfer_data[2u*def_dimensions*def_transfers] = {
+)+"#if defined(D2Q9)"+R(
+	1,  5,  7, // xp
+	2,  6,  8, // xm
+	3,  5,  8, // yp
+	4,  6,  7  // ym
+)+"#elif defined(D3Q15)"+R(
+	1,  7, 14,  9, 11, // xp
+	2,  8, 13, 10, 12, // xm
+	3,  7, 12,  9, 13, // yp
+	4,  8, 11, 10, 14, // ym
+	5,  7, 10, 11, 13, // zp
+	6,  8,  9, 12, 14  // zm
+)+"#elif defined(D3Q19)"+R(
+	1,  7, 13,  9, 15, // xp
+	2,  8, 14, 10, 16, // xm
+	3,  7, 14, 11, 17, // yp
+	4,  8, 13, 12, 18, // ym
+	5,  9, 16, 11, 18, // zp
+	6, 10, 15, 12, 17  // zm
+)+"#elif defined(D3Q27)"+R(
+	1,  7, 13,  9, 15, 19, 26, 21, 23, // xp
+	2,  8, 14, 10, 16, 20, 25, 22, 24, // xm
+	3,  7, 14, 11, 17, 19, 24, 21, 25, // yp
+	4,  8, 13, 12, 18, 20, 23, 22, 26, // ym
+	5,  9, 16, 11, 18, 19, 22, 23, 25, // zp
+	6, 10, 15, 12, 17, 20, 21, 24, 26  // zm
+)+"#endif"+R( // D3Q27
+};
+)+R(uint index_transfer(const uint side_i) {
+	return (uint)index_transfer_data[side_i];
 }
 )+R(void calculate_indices(const uxx n, uxx* x0, uxx* xp, uxx* xm, uxx* y0, uxx* yp, uxx* ym, uxx* z0, uxx* zp, uxx* zm) {
 	const uint3 xyz = coordinates(n);
@@ -1081,9 +1114,10 @@ string opencl_c_container() { return R( // ########################## begin of O
 	uz = f[ 5]-f[ 6]+f[ 9]-f[10]+f[11]-f[12]+f[16]-f[15]+f[18]-f[17]+f[19]-f[20]+f[22]-f[21]+f[23]-f[24]+f[25]-f[26];
 )+"#endif"+R( // D3Q27
 	*rhon = rho;
-	*uxn = ux/rho;
-	*uyn = uy/rho;
-	*uzn = uz/rho;
+	const float rhom1 = 1.0f/rho;
+	*uxn = ux*rhom1;
+	*uyn = uy*rhom1;
+	*uzn = uz*rhom1;
 } // calculate_rho_u()
 
 )+"#ifdef VOLUME_FORCE"+R(
@@ -1095,7 +1129,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // D2Q9
 	Fin[0] = 9.0f*def_w0*uF ; // 000 (identical for all velocity sets)
 	for(uint i=1u; i<def_velocity_set; i++) { // loop is entirely unrolled by compiler, no unnecessary FLOPs are happening
-		Fin[i] = 9.0f*w(i)*fma(c(i)*fx+c(def_velocity_set+i)*fy+c(2u*def_velocity_set+i)*fz, c(i)*ux+c(def_velocity_set+i)*uy+c(2u*def_velocity_set+i)*uz+0.33333334f, uF);
+		const float cx=(float)c(i), cy=(float)c(def_velocity_set+i), cz=(float)c(2u*def_velocity_set+i);
+		Fin[i] = 9.0f*w(i)*fma(cx*fx+cy*fy+cz*fz, cx*ux+cy*uy+cz*uz+0.33333334f, uF);
 	}
 } // calculate_forcing_terms()
 )+"#endif"+R( // VOLUME_FORCE
@@ -1105,8 +1140,8 @@ string opencl_c_container() { return R( // ########################## begin of O
 	uxx ji; // reads velocities of only neighboring boundary cells, which do not change during simulation
 	for(uint i=1u; i<def_velocity_set; i+=2u) { // loop is entirely unrolled by compiler, no unnecessary memory access is happening
 		const float w6 = -6.0f*w(i); // w6 = -2*w_i*rho_wall/c^2, w(i) = w(i+1) if i is odd, rho_wall is assumed as rho_avg=1 (necessary choice to assure mass conservation)
-		ji = j[i+1u]; fhn[i   ] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i+1u)*u[ji]+c(def_velocity_set+i+1u)*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i+1u)*u[2ul*def_N+(ulong)ji], fhn[i   ]) : fhn[i   ]; // boundary : regular
-		ji = j[i   ]; fhn[i+1u] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, c(i   )*u[ji]+c(def_velocity_set+i   )*u[def_N+(ulong)ji]+c(2u*def_velocity_set+i   )*u[2ul*def_N+(ulong)ji], fhn[i+1u]) : fhn[i+1u];
+		ji = j[i+1u]; fhn[i   ] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, (float)c(i+1u)*u[ji]+(float)c(def_velocity_set+i+1u)*u[def_N+(ulong)ji]+(float)c(2u*def_velocity_set+i+1u)*u[2ul*def_N+(ulong)ji], fhn[i   ]) : fhn[i   ]; // boundary : regular
+		ji = j[i   ]; fhn[i+1u] = (flags[ji]&TYPE_BO)==TYPE_S ? fma(w6, (float)c(i   )*u[ji]+(float)c(def_velocity_set+i   )*u[def_N+(ulong)ji]+(float)c(2u*def_velocity_set+i   )*u[2ul*def_N+(ulong)ji], fhn[i+1u]) : fhn[i+1u];
 	}
 } // apply_moving_boundaries()
 )+"#endif"+R( // MOVING_BOUNDARIES
@@ -1218,13 +1253,13 @@ string opencl_c_container() { return R( // ########################## begin of O
 	for(uint i=0u; i<def_velocity_set; i++) phij[i] = phit[i];
 )+"#endif"+R( // D3Q27
 }
-)+R(float c_D3Q27(const uint i) { // avoid constant keyword by encapsulating data in function which gets inlined by compiler
-	const float c[3*27] = {
-		0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, // x
-		0, 0, 0, 1,-1, 0, 0, 1,-1, 0, 0, 1,-1,-1, 1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, 1,-1, // y
-		0, 0, 0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0,-1, 1,-1, 1, 1,-1,-1, 1, 1,-1, 1,-1  // z
-	};
-	return c[i];
+)+R(constant char c_D3Q27_data[3*27] = {
+	0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, // x
+	0, 0, 0, 1,-1, 0, 0, 1,-1, 0, 0, 1,-1,-1, 1, 0, 0, 1,-1, 1,-1, 1,-1,-1, 1, 1,-1, // y
+	0, 0, 0, 0, 0, 1,-1, 0, 0, 1,-1, 1,-1, 0, 0,-1, 1,-1, 1, 1,-1,-1, 1, 1,-1, 1,-1  // z
+};
+)+R(float c_D3Q27(const uint i) {
+	return (float)c_D3Q27_data[i];
 }
 )+R(float calculate_curvature(const uxx n, const float* phit, const global float* phi) { // calculate surface curvature, always use D3Q27 stencil here, source: https://doi.org/10.3390/computation10020021
 )+"#ifndef D2Q9"+R(
@@ -1269,7 +1304,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const float center_offset = plic_cube(phit[0], by); // calculate z-offset PLIC of center point only once
 	for(uint i=1u; i<9u; i++) { // iterate over neighbors, no loop unrolling here (50% better perfoemance without loop unrolling)
 		if(phit[i]>0.0f&&phit[i]<1.0f) { // limit neighbors to interface cells
-			const float3 ei = (float3)(c(i), c(9u+i), 0.0f); // assume neighbor normal vector is the same as center normal vector
+			const float3 ei = (float3)((float)c(i), (float)c(9u+i), 0.0f); // assume neighbor normal vector is the same as center normal vector
 			const float offset = plic_cube(phit[i], by)-center_offset;
 			p[number++] = (float2)(dot(ei, bx), dot(ei, by)+offset); // do coordinate system transformation into (x, f(x)) and apply PLIC pffsets
 		}
@@ -1386,7 +1421,11 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // MOVING_BOUNDARIES
 	}
 	float feq[def_velocity_set]; // f_equilibrium
-	calculate_f_eq(rho[n], u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n], feq);
+	float rhon = rho[               n];
+	float uxn  = u[                 n];
+	float uyn  = u[    def_N+(ulong)n];
+	float uzn  = u[2ul*def_N+(ulong)n];
+	calculate_f_eq(rhon, uxn, uyn, uzn, feq);
 )+"#ifdef SURFACE"+R( // automatically generate the interface layer between fluid and gas
 	{ // separate block to avoid variable name conflicts
 		float phin = phi[n];
@@ -1396,8 +1435,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			for(uint i=1u; i<def_velocity_set; i++) change = change||(flagsj[i]&TYPE_SU)==TYPE_F; // if neighbor flag fluid is set, the cell must be interface
 			if(change) { // create interface automatically if phi has not explicitely defined for the interface layer
 				flagsn = (flagsn&~TYPE_SU)|TYPE_I; // cell must be interface
-				phin = 0.5f;
-				float rhon, uxn, uyn, uzn; // initialize interface cells with average density/velocity of fluid neighbors
+				phin = 0.5f; // initialize interface cells with average density/velocity of fluid neighbors
 				average_neighbors_fluid(n, rho, u, flags, &rhon, &uxn, &uyn, &uzn); // get average rho/u from all fluid neighbors
 				calculate_f_eq(rhon, uxn, uyn, uzn, feq); // calculate equilibrium DDFs
 			}
@@ -1411,7 +1449,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 			phin = 1.0f;
 		}
 		phi[n] = phin;
-		mass[n] = phin*rho[n];
+		mass[n] = phin*rhon;
 		massex[n] = 0.0f; // reset excess mass
 		flags[n] = flagsn;
 	}
@@ -1419,7 +1457,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef TEMPERATURE"+R(
 	{ // separate block to avoid variable name conflicts
 		float geq[7];
-		calculate_g_eq(T[n], u[n], u[def_N+(ulong)n], u[2ul*def_N+(ulong)n], geq);
+		calculate_g_eq(T[n], uxn, uyn, uzn, geq);
 		uxx j7[7]; // neighbors of D3Q7 subset
 		neighbors_temperature(n, j7);
 		store_g(n, geq, gi, j7, 1ul);
@@ -1582,7 +1620,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		float Hxx=0.0f, Hyy=0.0f, Hzz=0.0f, Hxy=0.0f, Hxz=0.0f, Hyz=0.0f; // non-equilibrium stress tensor
 		for(uint i=1u; i<def_velocity_set; i++) {
 			const float fneqi = fhn[i]-feq[i];
-			const float cxi=c(i), cyi=c(def_velocity_set+i), czi=c(2u*def_velocity_set+i);
+			const float cxi=(float)c(i), cyi=(float)c(def_velocity_set+i), czi=(float)c(2u*def_velocity_set+i);
 			Hxx += cxi*cxi*fneqi; //Hyx += cyi*cxi*fneqi; Hzx += czi*cxi*fneqi; // symmetric tensor
 			Hxy += cxi*cyi*fneqi; Hyy += cyi*cyi*fneqi; //Hzy += czi*cyi*fneqi;
 			Hxz += cxi*czi*fneqi; Hyz += cyi*czi*fneqi; Hzz += czi*czi*fneqi;
@@ -2067,38 +2105,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return index(coordinates[direction]);
 }
 
-)+R(uint index_transfer(const uint side_i) {
-	const uchar index_transfer_data[2u*def_dimensions*def_transfers] = {
-)+"#if defined(D2Q9)"+R(
-		1,  5,  7, // xp
-		2,  6,  8, // xm
-		3,  5,  8, // yp
-		4,  6,  7  // ym
-)+"#elif defined(D3Q15)"+R(
-		1,  7, 14,  9, 11, // xp
-		2,  8, 13, 10, 12, // xm
-		3,  7, 12,  9, 13, // yp
-		4,  8, 11, 10, 14, // ym
-		5,  7, 10, 11, 13, // zp
-		6,  8,  9, 12, 14  // zm
-)+"#elif defined(D3Q19)"+R(
-		1,  7, 13,  9, 15, // xp
-		2,  8, 14, 10, 16, // xm
-		3,  7, 14, 11, 17, // yp
-		4,  8, 13, 12, 18, // ym
-		5,  9, 16, 11, 18, // zp
-		6, 10, 15, 12, 17  // zm
-)+"#elif defined(D3Q27)"+R(
-		1,  7, 13,  9, 15, 19, 26, 21, 23, // xp
-		2,  8, 14, 10, 16, 20, 25, 22, 24, // xm
-		3,  7, 14, 11, 17, 19, 24, 21, 25, // yp
-		4,  8, 13, 12, 18, 20, 23, 22, 26, // ym
-		5,  9, 16, 11, 18, 19, 22, 23, 25, // zp
-		6, 10, 15, 12, 17, 20, 21, 24, 26  // zm
-)+"#endif"+R( // D3Q27
-	};
-	return (uint)index_transfer_data[side_i];
-}
 )+R(void extract_fi(const uint a, const uint A, const uxx n, const uint side, const ulong t, global fpxx_copy* transfer_buffer, const global fpxx_copy* fi) {
 	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
@@ -2969,7 +2975,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		uk[22] = u_cache[x0+yq+zp]; // 0#+
 		uk[23] = u_cache[x0+yp+zq]; // 0+#
 	}
-	uint j[8];
+	uxx j[8];
 	calculate_j8(xyz, j);
 )+"#else"+R( // do not use local memory
 	uxx j[32];
