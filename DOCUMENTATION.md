@@ -23,9 +23,9 @@
   - Download and install [AMD GPU Drivers](https://www.amd.com/en/support/download/linux-drivers.html), which contain the OpenCL Runtime, with:
     ```bash
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev rocm-opencl-icd rocm-opencl-runtime
     mkdir -p ~/amdgpu
-    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/31.50/ubuntu/resolute/amdgpu-install_31.50.315000-1_all.deb
+    wget -P ~/amdgpu https://repo.radeon.com/amdgpu-install/31.60/ubuntu/resolute/amdgpu-install_31.60.316000-1_all.deb
     sudo apt install -y ~/amdgpu/amdgpu-install*.deb
     sudo amdgpu-install -y --usecase=graphics,rocm,opencl --opencl=rocr
     sudo usermod -a -G render,video $(whoami)
@@ -40,7 +40,7 @@
   - The the [OpenCL Runtime](https://github.com/intel/compute-runtime/releases) has to be installed separately with:
     ```bash
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev intel-opencl-icd
+    sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev intel-opencl-icd libze1
     sudo usermod -a -G render $(whoami)
     sudo shutdown -r now
     ```
@@ -60,13 +60,13 @@
 
   - Option 1: Download and install the [oneAPI DPC++ Compiler](https://github.com/intel/llvm/releases?q=%22oneAPI+DPC%2B%2B+Compiler+dependencies%22) and [oneTBB](https://github.com/uxlfoundation/oneTBB/releases) with:
     ```bash
-    export OCLV="oclcpuexp-2026.22.6.1.17_160000_rel"
-    export TBBV="oneapi-tbb-2023.1.0"
+    export OCLV="oclcpuexp-2026.23.10.0.02_160000_rel"
+    export TBBV="oneapi-tbb-2023.2.0"
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y g++ git make ocl-icd-libopencl1 ocl-icd-opencl-dev
     sudo mkdir -p ~/cpurt /opt/intel/${OCLV} /etc/OpenCL/vendors /etc/ld.so.conf.d
-    sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2026-WW28/${OCLV}.tar.gz
-    sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2023.1.0/${TBBV}-lin.tgz
+    sudo wget -P ~/cpurt https://github.com/intel/llvm/releases/download/2026-WW42/${OCLV}.tar.gz
+    sudo wget -P ~/cpurt https://github.com/uxlfoundation/oneTBB/releases/download/v2023.2.0/${TBBV}-lin.tgz
     sudo tar -zxvf ~/cpurt/${OCLV}.tar.gz -C /opt/intel/${OCLV}
     sudo tar -zxvf ~/cpurt/${TBBV}-lin.tgz -C /opt/intel
     echo /opt/intel/${OCLV}/x64/libintelocl.so | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
