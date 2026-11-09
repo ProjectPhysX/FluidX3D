@@ -222,6 +222,7 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 	println("|----------------'------------------------------------------------------------|");
 }
 inline vector<Device_Info> get_devices(const bool print_info=true) { // returns a vector of all available OpenCL devices
+	set_environment_variable((char*)"NVCL_DISABLE_MAX_MEM_ALLOC_SIZE_CHECK=1"); // fix maximum buffer allocation size limit for Nvidia GPUs with driver 610 or newer
 	set_environment_variable((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
 	set_environment_variable((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
 	vector<Device_Info> devices; // get all devices of all platforms
