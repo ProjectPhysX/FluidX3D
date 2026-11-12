@@ -1,7 +1,7 @@
 #pragma once
 
 #define WORKGROUP_SIZE 64 // needs to be 64 to fully use AMD GPUs
-//#define PTX
+//#define DUMP_ASSEMBLY // dump GPU assembly (Nvidia PTX / AMD ISA)
 //#define LOG
 
 // https://github.com/KhronosGroup/OpenCL-Headers
@@ -225,6 +225,9 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 	set_environment_variable((char*)"NVCL_DISABLE_MAX_MEM_ALLOC_SIZE_CHECK=1"); // fix maximum buffer allocation size limit for Nvidia GPUs with driver 610 or newer
 	set_environment_variable((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
 	set_environment_variable((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
+#ifdef DUMP_ASSEMBLY
+	set_environment_variable((char*)"AMD_OCL_BUILD_OPTIONS_APPEND=\"-save-temps\""); // dump AMD ISA assembly
+#endif // DUMP_ASSEMBLY
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
 	cl::Platform::get(&cl_platforms);
@@ -293,7 +296,7 @@ private:
 		string(info.patch_nvidia_fp16         ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
 		string(info.patch_legacy_gpu_fma      ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
 		string(info.intel_compute_capability  ? "\n #define cl_intel_compute_capability "+to_string(info.intel_compute_capability) : "")+ // allows querying Intel compute capability
-		string(info.nvidia_compute_capability ? "\n #define cl_nv_compute_capability "+to_string(info.nvidia_compute_capability) : "")+ // allows querying Nvidia compute capability for inline PTX
+		string(info.nvidia_compute_capability ? "\n #define cl_nv_compute_capability "+to_string(info.nvidia_compute_capability) : "")+ // allows querying Nvidia compute capability for inline PTX assembly
 		string(info.is_dp4a_capable==0u       ? "\n #undef __opencl_c_integer_dot_product_input_4x8bit\n #undef __opencl_c_integer_dot_product_input_4x8bit_packed" : "")+ // patch false dp4a reporting on Intel
 		"\n #define cl_workgroup_size "+to_string(WORKGROUP_SIZE)+"u"
 		"\n #ifdef cl_khr_fp64"
@@ -328,9 +331,9 @@ public:
 #endif // LOG
 		if(error) print_error("OpenCL C code compilation failed with error code "+to_string(error)+". Make sure there are no errors in kernel.cpp.");
 		else print_info("OpenCL C code successfully compiled.");
-#ifdef PTX // generate assembly (ptx) file for OpenCL code
-		write_file("bin/kernel.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // save binary (ptx file)
-#endif // PTX
+#ifdef DUMP_ASSEMBLY
+		write_file("bin/kernel.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // dump Nvidia PTX assembly
+#endif // DUMP_ASSEMBLY
 		this->exists = true;
 	}
 	inline Device() {} // default constructor
