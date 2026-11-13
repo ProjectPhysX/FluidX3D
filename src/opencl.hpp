@@ -1,8 +1,8 @@
 #pragma once
 
 #define WORKGROUP_SIZE 64 // needs to be 64 to fully use AMD GPUs
-//#define DUMP_ASSEMBLY // dump GPU assembly (Nvidia PTX / AMD ISA)
-//#define LOG
+//#define DUMP_ASSEMBLY // dump GPU/CPU assembly of OpenCL kernels (AMD ISA / Nvidia PTX / Intel vISA / CPU x86) into bin/ folder
+//#define DUMP_BUILD_LOG // dump OpenCL build log to bin/kernel.log
 
 // https://github.com/KhronosGroup/OpenCL-Headers
 // https://github.com/KhronosGroup/OpenCL-CLHPP
@@ -13,6 +13,9 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 120 // macOS only supports OpenCL 1.2
 #endif // macOS
 #include <CL/opencl.hpp>
+#ifdef DUMP_ASSEMBLY
+#define UTILITIES_FILE
+#endif // DUMP_ASSEMBLY
 #include "utilities.hpp"
 using cl::Event;
 
@@ -226,7 +229,12 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 	set_environment_variable((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
 	set_environment_variable((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
 #ifdef DUMP_ASSEMBLY
-	set_environment_variable((char*)"AMD_OCL_BUILD_OPTIONS_APPEND=\"-save-temps\""); // dump AMD ISA assembly
+	set_environment_variable((char*)"AMD_OCL_BUILD_OPTIONS_APPEND=\"-save-temps=./bin/\""); // dump AMD ISA assembly as .s file
+	set_environment_variable((char*)"NEO_CACHE_PERSISTENT=0"); // temporarily disable Intel GPU shader cache
+	set_environment_variable((char*)"IGC_ShaderDumpEnable=1"); // dump Intel vISA assembly as .asm/.isaasm/.visaasm files (only works on Linux)
+	set_environment_variable((char*)"IGC_DumpToCustomDir=./bin/"); // set directory for dumping Intel vISA assembly
+	set_environment_variable((char*)"CL_CONFIG_DUMP_ASM=True"); // dump CPU x86 assembly as .s file
+	set_environment_variable((char*)"CL_CONFIG_DUMP_FILE_NAME_PREFIX=./bin/kernel_x86_asm"); // set directory for dumping CPU x86 assembly
 #endif // DUMP_ASSEMBLY
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
@@ -320,19 +328,19 @@ public:
 		cl_source.push_back({ kernel_code.c_str(), kernel_code.length() });
 		this->cl_program = cl::Program(info.cl_context, cl_source);
 		const string build_options = "-cl-std=CL"+info.opencl_c_version+" -cl-finite-math-only -cl-no-signed-zeros -cl-mad-enable"+(info.patch_intel_gpu_above_4gb ? " -cl-intel-greater-than-4GB-buffer-required" : "");
-#ifndef LOG
+#ifndef DUMP_BUILD_LOG
 		int error = cl_program.build({ info.cl_device }, (build_options+" -w").c_str()); // compile OpenCL C code, disable warnings
 		if(error) print_warning(cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device)); // print build log
-#else // LOG, generate logfile for OpenCL code compilation
+#else // DUMP_BUILD_LOG, generate logfile for OpenCL code compilation
 		int error = cl_program.build({ info.cl_device }, build_options.c_str()); // compile OpenCL C code
 		const string log = cl_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(info.cl_device);
 		write_file("bin/kernel.log", log); // save build log
 		if((uint)log.length()>2u) print_warning(log); // print build log
-#endif // LOG
+#endif // DUMP_BUILD_LOG
 		if(error) print_error("OpenCL C code compilation failed with error code "+to_string(error)+". Make sure there are no errors in kernel.cpp.");
 		else print_info("OpenCL C code successfully compiled.");
 #ifdef DUMP_ASSEMBLY
-		write_file("bin/kernel.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // dump Nvidia PTX assembly
+		if(info.nvidia_compute_capability>0u) write_file("bin/kernel.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // dump Nvidia PTX assembly to bin/kernel.ptx
 #endif // DUMP_ASSEMBLY
 		this->exists = true;
 	}
