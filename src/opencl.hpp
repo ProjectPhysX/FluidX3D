@@ -229,12 +229,12 @@ inline vector<Device_Info> get_devices(const bool print_info=true) { // returns 
 	set_environment_variable((char*)"GPU_SINGLE_ALLOC_PERCENT=100"); // fix maximum buffer allocation size limit for AMD GPUs
 	set_environment_variable((char*)"CL_CONFIG_CPU_FORCE_MAX_MEM_ALLOC_SIZE=17179869183GB"); // fix maximum buffer allocation size limit in Intel CPU Runtime for OpenCL, 2^34-1 is max non-overflowing value
 #ifdef DUMP_ASSEMBLY
-	set_environment_variable((char*)"AMD_OCL_BUILD_OPTIONS_APPEND=\"-save-temps=./bin/\""); // dump AMD ISA assembly as .s file
+	set_environment_variable((char*)"AMD_OCL_BUILD_OPTIONS_APPEND=\"-save-temps=./bin/kernel_amd\""); // dump AMD ISA assembly as kernel_amd_*.s file
 	set_environment_variable((char*)"NEO_CACHE_PERSISTENT=0"); // temporarily disable Intel GPU shader cache
 	set_environment_variable((char*)"IGC_ShaderDumpEnable=1"); // dump Intel vISA assembly as .asm/.isaasm/.visaasm files (only works on Linux)
 	set_environment_variable((char*)"IGC_DumpToCustomDir=./bin/"); // set directory for dumping Intel vISA assembly
-	set_environment_variable((char*)"CL_CONFIG_DUMP_ASM=True"); // dump CPU x86 assembly as .s file
-	set_environment_variable((char*)"CL_CONFIG_DUMP_FILE_NAME_PREFIX=./bin/kernel_x86_asm"); // set directory for dumping CPU x86 assembly
+	set_environment_variable((char*)"CL_CONFIG_DUMP_ASM=True"); // dump CPU x86 assembly as kernel_x86_*.s file
+	set_environment_variable((char*)"CL_CONFIG_DUMP_FILE_NAME_PREFIX=./bin/kernel_x86"); // set directory for dumping CPU x86 assembly
 #endif // DUMP_ASSEMBLY
 	vector<Device_Info> devices; // get all devices of all platforms
 	vector<cl::Platform> cl_platforms; // get all platforms (drivers)
@@ -340,7 +340,7 @@ public:
 		if(error) print_error("OpenCL C code compilation failed with error code "+to_string(error)+". Make sure there are no errors in kernel.cpp.");
 		else print_info("OpenCL C code successfully compiled.");
 #ifdef DUMP_ASSEMBLY
-		if(info.nvidia_compute_capability>0u) write_file("bin/kernel.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // dump Nvidia PTX assembly to bin/kernel.ptx
+		if(info.nvidia_compute_capability>0u) write_file("bin/kernel_nvidia.ptx", (char*)&cl_program.getInfo<CL_PROGRAM_BINARIES>()[0][0]); // dump Nvidia PTX assembly to bin/kernel_nvidia.ptx
 #endif // DUMP_ASSEMBLY
 		this->exists = true;
 	}
