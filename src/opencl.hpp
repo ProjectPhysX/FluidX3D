@@ -1,7 +1,7 @@
 #pragma once
 
 #define WORKGROUP_SIZE 64 // needs to be 64 to fully use AMD GPUs
-//#define DUMP_ASSEMBLY // dump GPU/CPU assembly of OpenCL kernels (AMD ISA / Nvidia PTX / Intel vISA / CPU x86) into bin/ folder
+//#define DUMP_ASSEMBLY // dump GPU/CPU assembly of OpenCL kernels (AMD ISA / Intel vISA / Nvidia PTX / CPU x86) into bin/ folder
 //#define DUMP_BUILD_LOG // dump OpenCL build log to bin/kernel.log
 
 // https://github.com/KhronosGroup/OpenCL-Headers
