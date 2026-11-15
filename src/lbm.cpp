@@ -410,8 +410,16 @@ string LBM_Domain::device_defines(const Device_Info& device_info) const { return
 #if defined(FP16S)
 	"\n	#define fpxx half" // switchable data type (scaled IEEE-754 16-bit floating-point format: 1-5-10, exp-30, +-1.99902344, +-1.86446416E-9, +-1.81898936E-12, 3.311 digits)
 	"\n	#define fpxx_copy ushort" // switchable data type for direct copying (scaled IEEE-754 16-bit floating-point format: 1-5-10, exp-30, +-1.99902344, +-1.86446416E-9, +-1.81898936E-12, 3.311 digits)
-	"\n	#define load(p,o) (vload_half(o,p)*3.0517578E-5f)" // special function for loading half
+	"\n	#define load(p,o) vload_half(o,p)*3.0517578E-5f" // special function for loading half
 	"\n	#define store(p,o,x) vstore_half_rte((x)*32768.0f,o,p)" // special function for storing half
+	+string(device_info.is_cpu ? // vload_half()/vstore_half_rte() are not vectorized by the Intel CPU Runtime --> replace with half load/store with casting (which are vectorized to packed vcvtph2ps/vcvtps2ph)
+		"\n	#ifdef cl_khr_fp16" // but only if cl_khr_fp16 extension is supported
+		"\n	#undef load"
+		"\n	#undef store"
+		"\n	#define load(p,o) (float)((p)[o])*3.0517578E-5f"
+		"\n	#define store(p,o,x) (p)[o]=(half)((x)*32768.0f)"
+		"\n	#endif" // cl_khr_fp16
+	:"")+""
 #elif defined(FP16C)
 	"\n	#define fpxx ushort" // switchable data type (custom 16-bit floating-point format: 1-4-11, exp-15, +-1.99951168, +-6.10351562E-5, +-2.98023224E-8, 3.612 digits), 12.5% slower than IEEE-754 16-bit
 	"\n	#define fpxx_copy ushort" // switchable data type for direct copying (custom 16-bit floating-point format: 1-4-11, exp-15, +-1.99951168, +-6.10351562E-5, +-2.98023224E-8, 3.612 digits), 12.5% slower than IEEE-754 16-bit
@@ -423,6 +431,12 @@ string LBM_Domain::device_defines(const Device_Info& device_info) const { return
 	"\n	#define load(p,o) (p)[o]" // regular float read
 	"\n	#define store(p,o,x) (p)[o]=(x)" // regular float write
 #endif // FP32
+
+#if !defined(SURFACE)&&!defined(TEMPERATURE) // these extensions have additional stores that must not execute for skipped cells
+	+string(device_info.is_cpu ? // for CPUs, guard clause for halo/flags would cause thread divergence; avoid to continue as SIMD and enable unmasked SIMD load/store
+		"\n	#define CPU_BRANCHLESS_GUARD_CLAUSE"
+	:"")+""
+#endif // !SURFACE&&!TEMPERATURE
 
 #ifdef UPDATE_FIELDS
 	"\n	#define UPDATE_FIELDS"

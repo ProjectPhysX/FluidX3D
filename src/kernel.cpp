@@ -1500,16 +1500,31 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // TEMPERATURE
 )+") {"+R( // stream_collide()
 	const uxx n = get_global_id(0); // n = x+(y+z*Ny)*Nx
+)+"#ifdef CPU_BRANCHLESS_GUARD_CLAUSE"+R( // for CPUs, guard clause for halo/flags would cause thread divergence; avoid to continue as SIMD and enable unmasked SIMD load/store
+	if(n>=(uxx)def_N) return; // don't execute stream_collide() outside of the grid
+	const uchar flagsn = flags[n]; // cache flags[n] for multiple readings
+	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
+	const bool skip = is_halo(n)||flagsn_bo==TYPE_S||flagsn_su==TYPE_G; // if cell is halo or solid boundary or gas, skip
+)+"#else"+R( // CPU_BRANCHLESS_GUARD_CLAUSE
 	if(n>=(uxx)def_N||is_halo(n)) return; // don't execute stream_collide() on halo
 	const uchar flagsn = flags[n]; // cache flags[n] for multiple readings
 	const uchar flagsn_bo=flagsn&TYPE_BO, flagsn_su=flagsn&TYPE_SU; // extract boundary and surface flags
 	if(flagsn_bo==TYPE_S||flagsn_su==TYPE_G) return; // if cell is solid boundary or gas, just return
+)+"#endif"+R( // CPU_BRANCHLESS_GUARD_CLAUSE
 
 	uxx j[def_velocity_set]; // neighbor indices
 	neighbors(n, j); // calculate neighbor indices
 
 	float fhn[def_velocity_set]; // local DDFs
 	load_f(n, fhn, fi, j, t); // perform streaming (part 2)
+)+"#ifdef CPU_BRANCHLESS_GUARD_CLAUSE"+R(
+	float fsn[def_velocity_set]; // keep and swap loaded DDFs so they are later written for skipped cells to the same memory locations they were loaded from
+	fsn[0] = fhn[0];
+	for(uint i=1u; i<def_velocity_set; i+=2u) {
+		fsn[i   ] = fhn[i+1u];
+		fsn[i+1u] = fhn[i   ];
+	}
+)+"#endif"+R( // CPU_BRANCHLESS_GUARD_CLAUSE
 
 )+"#ifdef MOVING_BOUNDARIES"+R(
 	if(flagsn_bo==TYPE_MS) apply_moving_boundaries(fhn, j, u, flags); // apply Dirichlet velocity boundaries if necessary (reads velocities of only neighboring boundary cells, which do not change during simulation)
@@ -1604,6 +1619,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#ifdef EQUILIBRIUM_BOUNDARIES"+R(
 	if(flagsn_bo!=TYPE_E) // only update fields for non-TYPE_E cells
 )+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
+)+"#ifdef CPU_BRANCHLESS_GUARD_CLAUSE"+R(
+	if(!skip) // skipped cells don't update fields
+)+"#endif"+R( // CPU_BRANCHLESS_GUARD_CLAUSE
 	{
 		rho[n] = rhon; // update density field
 		store3(u, n, (float3)(uxn, uyn, uzn)); // update velocity field
@@ -1670,6 +1688,9 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+"#endif"+R( // EQUILIBRIUM_BOUNDARIES
 )+"#endif"+R( // TRT
 
+)+"#ifdef CPU_BRANCHLESS_GUARD_CLAUSE"+R(
+	for(uint i=0u; i<def_velocity_set; i++) fhn[i] = skip ? fsn[i] : fhn[i]; // skipped cells write back loaded DDFs unchanged
+)+"#endif"+R( // CPU_BRANCHLESS_GUARD_CLAUSE
 	store_f(n, fhn, fi, j, t); // perform streaming (part 1)
 } // stream_collide()
 

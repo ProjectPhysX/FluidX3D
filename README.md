@@ -270,6 +270,18 @@ The fastest and most memory efficient lattice Boltzmann CFD software, running on
   - fixed missing type cast in OpenCL-Wrapper
   - fixed crash/segfault on exit
   - removed `opencl_unroll_hint` again (unsupported on some older GPUs)
+- [v3.9](https://github.com/ProjectPhysX/FluidX3D/releases/tag/v3.9) (15.11.2026) [changes](https://github.com/ProjectPhysX/FluidX3D/compare/v3.8...v3.9) (faster CPU FP16S)
+  - enabled vectorized FP16S load/store and branchless guard clause on CPUs, FP16S on CPUs is now up to 4x faster, FP16C up to 1.5x faster, FP32 up to 1.2x faster
+  - moved index tables from scratchpad to constant memory space and other minor micro-optimizations
+  - added dumping for AMD ISA, Intel vISA and CPU x86 assembly, along Nvidia PTX
+  - display max workgroup size in device infos
+  - updated driver install instructions
+  - fixed maximum buffer allocation size limit for Nvidia GPUs with driver 610 or newer
+  - fixed temperature advection artifacting at `beta=0` with volume force
+  - fixed streamline rendering in 3D with `Nz=1`
+  - fixed integer overflow in `graphics_q()`
+  - fixed wrong OpenCL barriers
+  - hardened `read_bmp()` and `read_stl_raw()` against corrupt files
 
 </details>
 
@@ -537,6 +549,8 @@ Here are [performance benchmarks](https://doi.org/10.3390/computation10060092) o
 In consequence, the arithmetic intensity of this implementation is 2.37 (FP32/FP32) or 5.27 (FP32/FP16S) or 16.56 (FP32/FP16C) FLOPs/Byte. So performance is only limited by memory bandwidth. The table in the left 3 columns shows the hardware specs as found in the data sheets (theoretical peak FP32 compute performance, memory capacity, theoretical peak memory bandwidth). The right 3 columns show the measured FluidX3D performance for FP32/FP32, FP32/FP16S, FP32/FP16C floating-point precision settings, with the ([roofline model](https://en.wikipedia.org/wiki/Roofline_model) efficiency) in round brackets, indicating how much % of theoretical peak memory bandwidth are being used.
 
 If your GPU/CPU is not on the list yet, you can report your benchmarks [here](https://github.com/ProjectPhysX/FluidX3D/issues/8).
+
+*benchmarks are from before v3.9 update and lack latest CPU optimizations
 
 ```mermaid
 ---
@@ -1015,133 +1029,135 @@ section Orange Pi 5 Mali-G610 MP4
 section Samsung Mali-G72 MP18
 	230 :ARM, 0, 230
 
-section 2x EPYC 9754
+section 2x EPYC 9754*
 	5179 :AMDCPU, 0, 5179
-section 2x EPYC 9654
+section 2x EPYC 9654*
 	4092 :AMDCPU, 0, 4092
-section 2x EPYC 9555
+section 2x EPYC 9555*
 	3123 :AMDCPU, 0, 3123
-section 2x EPYC 9554
+section 2x EPYC 9554*
 	2552 :AMDCPU, 0, 2552
-section 1x EPYC 9124
+section 1x EPYC 9124*
 	772 :AMDCPU, 0, 772
-section 2x EPYC 7713
+section 2x EPYC 7713*
 	1418 :AMDCPU, 0, 1418
-section 2x EPYC 7352
+section 2x EPYC 7352*
 	739 :AMDCPU, 0, 739
-section 2x EPYC 7313
+section 2x EPYC 7313*
 	498 :AMDCPU, 0, 498
-section 2x EPYC 7302
+section 2x EPYC 7302*
 	784 :AMDCPU, 0, 784
-section 2x Xeon 6980P
+section 2x Xeon 6980P*
 	7875 :IntelCPU, 0, 7875
-section 2x Xeon 6979P
+section 2x Xeon 6979P*
 	8135 :IntelCPU, 0, 8135
-section 2x Xeon 6960P
+section 2x Xeon 6960P*
 	5477 :IntelCPU, 0, 5477
-section 2x Platinum 8592+
+section 2x Platinum 8592+*
 	3135 :IntelCPU, 0, 3135
-section 2x Gold 6548N
+section 2x Gold 6548N*
 	1811 :IntelCPU, 0, 1811
-section 2x CPU Max 9480
+section 2x CPU Max 9480*
 	2037 :IntelCPU, 0, 2037
-section 2x Platinum 8480+
+section 2x Platinum 8480+*
 	2162 :IntelCPU, 0, 2162
-section 2x Platinum 8470
+section 2x Platinum 8470*
 	2068 :IntelCPU, 0, 2068
-section 2x Gold 6438Y+
+section 2x Gold 6438Y+*
 	1945 :IntelCPU, 0, 1945
-section 2x Platinum 8380
+section 2x Platinum 8380*
 	1410 :IntelCPU, 0, 1410
-section 2x Platinum 8358
+section 2x Platinum 8358*
 	1285 :IntelCPU, 0, 1285
-section 2x Platinum 8256
+section 2x Platinum 8256*
 	396 :IntelCPU, 0, 396
-section 2x Platinum 8153
+section 2x Platinum 8153*
 	691 :IntelCPU, 0, 691
-section 2x Gold 6248R
+section 2x Gold 6248R*
 	755 :IntelCPU, 0, 755
-section 2x Gold 6128
+section 2x Gold 6128*
 	254 :IntelCPU, 0, 254
-section Phi 7210
+section Phi 7210*
 	415 :IntelCPU, 0, 415
-section 4x E5-4620 v4
+section 4x E5-4620 v4*
 	460 :IntelCPU, 0, 460
-section 2x E5-2630 v4
+section 2x E5-2630 v4*
 	264 :IntelCPU, 0, 264
-section 2x E5-2623 v4
+section 2x E5-2623 v4*
 	125 :IntelCPU, 0, 125
-section 2x E5-2680 v3
+section 2x E5-2680 v3*
 	304 :IntelCPU, 0, 304
 section GH200 Neoverse-V2
 	1323 :NvidiaCPU, 0, 1323
-section TR PRO 7995WX
+section TR PRO 7995WX*
 	1715 :AMDCPU, 0, 1715
-section TR 3970X
+section TR 3970X*
 	463 :AMDCPU, 0, 463
-section TR 1950X
+section TR 1950X*
 	273 :AMDCPU, 0, 273
-section Ryzen 7900X3D
+section Ryzen 7900X3D*
 	521 :AMDCPU, 0, 521
-section Ryzen 7800X3D
+section Ryzen 7800X3D*
 	363 :AMDCPU, 0, 363
-section Ryzen 5700X3D
+section Ryzen 5700X3D*
 	229 :AMDCPU, 0, 229
-section FX-6100
+section FX-6100*
 	22 :AMDCPU, 0, 22
-section Athlon X2 QL-65
+section Athlon X2 QL-65*
 	3 :AMDCPU, 0, 3
-section w9-3595X
+section w9-3595X*
 	1393 :IntelCPU, 0, 1393
-section w7-3445
+section w7-3445*
 	1173 :IntelCPU, 0, 1173
 section Ultra X7 358H
-	544 :IntelCPU, 0, 544
+	621 :IntelCPU, 0, 621
 section Ultra 7 258V
-	287 :IntelCPU, 0, 287
-section Ultra 9 185H
+	291 :IntelCPU, 0, 291
+section Ultra 9 185H*
 	317 :IntelCPU, 0, 317
-section Ultra 9 285K
+section Ultra 9 285K*
 	620 :IntelCPU, 0, 620
-section i9-14900K
+section i9-14900K*
 	490 :IntelCPU, 0, 490
 section i7-13700K
-	504 :IntelCPU, 0, 504
+	676 :IntelCPU, 0, 676
 section i7-1265U
-	128 :IntelCPU, 0, 128
-section i9-11900KB
+	235 :IntelCPU, 0, 235
+section i9-11900KB*
 	208 :IntelCPU, 0, 208
-section i9-10980XE
+section i9-10980XE*
 	286 :IntelCPU, 0, 286
-section E-2288G
+section E-2288G*
 	198 :IntelCPU, 0, 198
-section i7-9700
+section i7-9700*
 	103 :IntelCPU, 0, 103
-section i5-9600
+section i5-9600*
 	147 :IntelCPU, 0, 147
 section i7-8700K
-	152 :IntelCPU, 0, 152
-section E-2176G
+	178 :IntelCPU, 0, 178
+section E-2176G*
 	201 :IntelCPU, 0, 201
-section i7-7700HQ
+section i7-7700HQ*
 	108 :IntelCPU, 0, 108
-section E3-1240 v5
+section E3-1240 v5*
 	141 :IntelCPU, 0, 141
-section i5-5300U
+section i5-5300U*
 	37 :IntelCPU, 0, 37
 section i7-4771
-	100 :IntelCPU, 0, 100
-section i7-4770
+	104 :IntelCPU, 0, 104
+section i7-4770*
 	104 :IntelCPU, 0, 104
 section i7-4720HQ
-	80 :IntelCPU, 0, 80
-section N2807
+	90 :IntelCPU, 0, 90
+section N2807*
 	7 :IntelCPU, 0, 7
 ```
 
 <details><summary>Single-GPU/CPU Benchmark Table</summary>
 
 Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
+
+*benchmarks are from before v3.9 update and lack latest CPU optimizations
 
 | Device                                           | FP32<br>[TFlops/s] | Mem<br>[GB] | BW<br>[GB/s] | FP32/FP32<br>[MLUPs/s] | FP32/FP16S<br>[MLUPs/s] | FP32/FP16C<br>[MLUPs/s] |
 | :----------------------------------------------- | -----------------: | ----------: | -----------: | ---------------------: | ----------------------: | ----------------------: |
@@ -1367,66 +1383,66 @@ Colors: 🔴 AMD, 🔵 Intel, 🟢 Nvidia, ⚪ Apple, 🟣 ARM, 🟡 Glenfly
 | 🟣&nbsp;Mali-G610&nbsp;MP4 (Orange&nbsp;Pi&nbsp;5) |             0.06 |          16 |           34 |              130 (58%) |               232 (52%) |                93 (21%) |
 | 🟣&nbsp;Mali-G72&nbsp;MP18 (Samsung&nbsp;S9+)    |               0.24 |           4 |           29 |              110 (59%) |               230 (62%) |                21 ( 6%) |
 |                                                  |                    |             |              |                        |                         |                         |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754                   |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654                   |              43.62 |        1536 |          922 |             3087 (51%) |              3675 (31%) |              4092 (34%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9555                   |              34.41 |        2304 |         1229 |             3123 (39%) |              2054 (13%) |              2027 (13%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9554                   |              30.72 |         384 |          922 |             2552 (42%) |              2127 (18%) |              2144 (18%) |
-| 🔴&nbsp;1x&nbsp;EPYC&nbsp;9124                   |               3.69 |         128 |          307 |              772 (38%) |               579 (15%) |               586 (15%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7713                   |               8.19 |         512 |          410 |             1298 (48%) |               492 ( 9%) |              1418 (27%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7352                   |               3.53 |         512 |          410 |              739 (28%) |               106 ( 2%) |               412 ( 8%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7313                   |               3.07 |         128 |          410 |              498 (19%) |               367 ( 7%) |               418 ( 8%) |
-| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7302                   |               3.07 |         128 |          410 |              784 (29%) |               336 ( 6%) |               411 ( 8%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6980P                  |              98.30 |        6144 |         1690 |             7875 (71%) |              5112 (23%) |              5610 (26%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6979P                  |              92.16 |        3072 |         1690 |             8135 (74%) |              4175 (19%) |              4622 (21%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6960P                  |              70.04 |        2304 |         1229 |             5477 (68%) |              3387 (21%) |              3986 (25%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8592+    |              31.13 |        1024 |          717 |             3135 (67%) |              2359 (25%) |              2466 (26%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6548N        |              22.94 |        2048 |          666 |             1811 (42%) |              1388 (16%) |              1425 (16%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480 |              27.24 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+    |              28.67 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8470     |              25.29 |        2048 |          614 |             1865 (46%) |              1909 (24%) |              2068 (26%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6438Y+       |              16.38 |        1024 |          614 |             1945 (48%) |              1219 (15%) |              1257 (16%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380     |              23.55 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8358     |              21.30 |         256 |          410 |             1285 (48%) |              1007 (19%) |              1120 (21%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8256     |               3.89 |        1536 |          282 |              396 (22%) |               158 ( 4%) |               175 ( 5%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8153     |               8.19 |         384 |          256 |              691 (41%) |               290 ( 9%) |               328 (10%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6248R        |              18.43 |         384 |          282 |              755 (41%) |               566 (15%) |               694 (19%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6128         |               5.22 |         192 |          256 |              254 (15%) |               185 ( 6%) |               193 ( 6%) |
-| 🔵&nbsp;Xeon&nbsp;Phi&nbsp;7210                  |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
-| 🔵&nbsp;4x&nbsp;Xeon&nbsp;E5-4620&nbsp;v4        |               2.69 |         512 |          273 |              460 (26%) |               275 ( 8%) |               239 ( 7%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2630&nbsp;v4        |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2623&nbsp;v4        |               0.67 |          64 |          137 |              125 (14%) |                66 ( 4%) |                59 ( 3%) |
-| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2680&nbsp;v3        |               1.92 |         128 |          137 |              304 (34%) |               234 (13%) |               291 (16%) |
-| 🟢&nbsp;GH200&nbsp;Neoverse-V2&nbsp;CPU          |               7.88 |         480 |          384 |             1323 (53%) |               853 (17%) |               683 (14%) |
-| 🔴&nbsp;Threadripper&nbsp;PRO&nbsp;7995WX        |              15.36 |         256 |          333 |             1134 (52%) |              1697 (39%) |              1715 (40%) |
-| 🔴&nbsp;Threadripper&nbsp;3970X                  |               3.79 |         128 |          102 |              376 (56%) |               103 ( 8%) |               463 (35%) |
-| 🔴&nbsp;Threadripper&nbsp;1950X                  |               0.87 |         128 |           85 |              273 (49%) |                43 ( 4%) |               151 (14%) |
-| 🔴&nbsp;Ryzen&nbsp;9&nbsp;7900X3D                |               1.69 |         128 |           83 |              278 (51%) |               521 (48%) |               462 (43%) |
-| 🔴&nbsp;Ryzen&nbsp;7&nbsp;7800X3D                |               1.08 |          32 |          102 |              296 (44%) |               361 (27%) |               363 (27%) |
-| 🔴&nbsp;Ryzen&nbsp;7&nbsp;5700X3D                |               0.87 |          32 |           51 |              229 (68%) |               135 (20%) |               173 (26%) |
-| 🔴&nbsp;FX-6100                                  |               0.16 |          16 |           26 |               11 ( 7%) |                11 ( 3%) |                22 ( 7%) |
-| 🔴&nbsp;Athlon&nbsp;X2&nbsp;QL-65                |               0.03 |           4 |           11 |                3 ( 4%) |                 2 ( 2%) |                 3 ( 2%) |
-| 🔵&nbsp;Xeon&nbsp;w9-3595X                       |              15.36 |         256 |          307 |             1304 (65%) |              1179 (30%) |              1393 (35%) |
-| 🔵&nbsp;Xeon&nbsp;w7-3445                        |               6.66 |         256 |          307 |             1173 (58%) |               518 (13%) |               613 (15%) |
-| 🔵&nbsp;Core&nbsp;Ultra&nbsp;X7&nbsp;358H        |               1.93 |          32 |          154 |              544 (54%) |               190 (10%) |               323 (16%) |
-| 🔵&nbsp;Core&nbsp;Ultra&nbsp;7&nbsp;258V         |               0.56 |          32 |          137 |              287 (32%) |               123 ( 7%) |               167 ( 9%) |
-| 🔵&nbsp;Core&nbsp;Ultra&nbsp;9&nbsp;185H         |               1.79 |          16 |           90 |              317 (54%) |               267 (23%) |               288 (25%) |
-| 🔵&nbsp;Core&nbsp;Ultra&nbsp;9&nbsp;285K         |               3.76 |          48 |           90 |              340 (58%) |               376 (32%) |               620 (53%) |
-| 🔵&nbsp;Core&nbsp;i9-14900K                      |               3.74 |          32 |           96 |              443 (71%) |               453 (36%) |               490 (39%) |
-| 🔵&nbsp;Core&nbsp;i7-13700K                      |               2.51 |          64 |           90 |              504 (86%) |               398 (34%) |               424 (36%) |
-| 🔵&nbsp;Core&nbsp;i7-1265U                       |               1.23 |          32 |           77 |              128 (26%) |                62 ( 6%) |                58 ( 6%) |
-| 🔵&nbsp;Core&nbsp;i9-11900KB                     |               0.84 |          32 |           51 |              109 (33%) |               195 (29%) |               208 (31%) |
-| 🔵&nbsp;Core&nbsp;i9-10980XE                     |               3.23 |         128 |           94 |              286 (47%) |               251 (21%) |               223 (18%) |
-| 🔵&nbsp;Xeon&nbsp;E-2288G                        |               0.95 |          32 |           43 |              196 (70%) |               182 (33%) |               198 (36%) |
-| 🔵&nbsp;Core&nbsp;i7-9700                        |               0.77 |          64 |           43 |              103 (37%) |                62 (11%) |                95 (17%) |
-| 🔵&nbsp;Core&nbsp;i5-9600                        |               0.60 |          16 |           43 |              146 (52%) |               127 (23%) |               147 (27%) |
-| 🔵&nbsp;Core&nbsp;i7-8700K                       |               0.71 |          16 |           51 |              152 (45%) |               134 (20%) |               116 (17%) |
-| 🔵&nbsp;Xeon&nbsp;E-2176G                        |               0.71 |          64 |           42 |              201 (74%) |               136 (25%) |               148 (27%) |
-| 🔵&nbsp;Core&nbsp;i7-7700HQ                      |               0.36 |          12 |           38 |               81 (32%) |                82 (16%) |               108 (22%) |
-| 🔵&nbsp;Xeon&nbsp;E3-1240&nbsp;v5                |               0.50 |          32 |           34 |              141 (63%) |                75 (17%) |                88 (20%) |
-| 🔵&nbsp;Core&nbsp;i7-4771                        |               0.45 |          24 |           26 |              100 (60%) |                22 ( 7%) |                74 (22%) |
-| 🔵&nbsp;Core&nbsp;i7-4770                        |               0.44 |          16 |           26 |              104 (62%) |                69 (21%) |                59 (18%) |
-| 🔵&nbsp;Core&nbsp;i7-4720HQ                      |               0.33 |          16 |           26 |               80 (48%) |                23 ( 7%) |                60 (18%) |
-| 🔵&nbsp;Celeron&nbsp;N2807                       |               0.01 |           4 |           11 |                7 (10%) |                 3 ( 2%) |                 3 ( 2%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9754*                  |              50.79 |        3072 |          922 |             3276 (54%) |              5077 (42%) |              5179 (43%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9654*                  |              43.62 |        1536 |          922 |             3087 (51%) |              3675 (31%) |              4092 (34%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9555*                  |              34.41 |        2304 |         1229 |             3123 (39%) |              2054 (13%) |              2027 (13%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;9554*                  |              30.72 |         384 |          922 |             2552 (42%) |              2127 (18%) |              2144 (18%) |
+| 🔴&nbsp;1x&nbsp;EPYC&nbsp;9124*                  |               3.69 |         128 |          307 |              772 (38%) |               579 (15%) |               586 (15%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7713*                  |               8.19 |         512 |          410 |             1298 (48%) |               492 ( 9%) |              1418 (27%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7352*                  |               3.53 |         512 |          410 |              739 (28%) |               106 ( 2%) |               412 ( 8%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7313*                  |               3.07 |         128 |          410 |              498 (19%) |               367 ( 7%) |               418 ( 8%) |
+| 🔴&nbsp;2x&nbsp;EPYC&nbsp;7302*                  |               3.07 |         128 |          410 |              784 (29%) |               336 ( 6%) |               411 ( 8%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6980P*                 |              98.30 |        6144 |         1690 |             7875 (71%) |              5112 (23%) |              5610 (26%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6979P*                 |              92.16 |        3072 |         1690 |             8135 (74%) |              4175 (19%) |              4622 (21%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;6960P*                 |              70.04 |        2304 |         1229 |             5477 (68%) |              3387 (21%) |              3986 (25%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8592+*   |              31.13 |        1024 |          717 |             3135 (67%) |              2359 (25%) |              2466 (26%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6548N*       |              22.94 |        2048 |          666 |             1811 (42%) |              1388 (16%) |              1425 (16%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;CPU&nbsp;Max&nbsp;9480* |              27.24 |         256 |          614 |             2037 (51%) |              1520 (19%) |              1464 (18%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8480+*   |              28.67 |         512 |          614 |             2162 (54%) |              1845 (23%) |              1884 (24%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8470*    |              25.29 |        2048 |          614 |             1865 (46%) |              1909 (24%) |              2068 (26%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6438Y+*      |              16.38 |        1024 |          614 |             1945 (48%) |              1219 (15%) |              1257 (16%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8380*    |              23.55 |        2048 |          410 |             1410 (53%) |              1159 (22%) |              1298 (24%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8358*    |              21.30 |         256 |          410 |             1285 (48%) |              1007 (19%) |              1120 (21%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8256*    |               3.89 |        1536 |          282 |              396 (22%) |               158 ( 4%) |               175 ( 5%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Platinum&nbsp;8153*    |               8.19 |         384 |          256 |              691 (41%) |               290 ( 9%) |               328 (10%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6248R*       |              18.43 |         384 |          282 |              755 (41%) |               566 (15%) |               694 (19%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;Gold&nbsp;6128*        |               5.22 |         192 |          256 |              254 (15%) |               185 ( 6%) |               193 ( 6%) |
+| 🔵&nbsp;Xeon&nbsp;Phi&nbsp;7210*                 |               5.32 |         192 |          102 |              415 (62%) |               193 (15%) |               223 (17%) |
+| 🔵&nbsp;4x&nbsp;Xeon&nbsp;E5-4620&nbsp;v4*       |               2.69 |         512 |          273 |              460 (26%) |               275 ( 8%) |               239 ( 7%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2630&nbsp;v4*       |               1.41 |          64 |          137 |              264 (30%) |               146 ( 8%) |               129 ( 7%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2623&nbsp;v4*       |               0.67 |          64 |          137 |              125 (14%) |                66 ( 4%) |                59 ( 3%) |
+| 🔵&nbsp;2x&nbsp;Xeon&nbsp;E5-2680&nbsp;v3*       |               1.92 |         128 |          137 |              304 (34%) |               234 (13%) |               291 (16%) |
+| 🟢&nbsp;GH200&nbsp;Neoverse-V2&nbsp;CPU           |               7.88 |         480 |          384 |             1323 (53%) |               853 (17%) |               683 (14%) |
+| 🔴&nbsp;Threadripper&nbsp;PRO&nbsp;7995WX*       |              15.36 |         256 |          333 |             1134 (52%) |              1697 (39%) |              1715 (40%) |
+| 🔴&nbsp;Threadripper&nbsp;3970X*                 |               3.79 |         128 |          102 |              376 (56%) |               103 ( 8%) |               463 (35%) |
+| 🔴&nbsp;Threadripper&nbsp;1950X*                 |               0.87 |         128 |           85 |              273 (49%) |                43 ( 4%) |               151 (14%) |
+| 🔴&nbsp;Ryzen&nbsp;9&nbsp;7900X3D*               |               1.69 |         128 |           83 |              278 (51%) |               521 (48%) |               462 (43%) |
+| 🔴&nbsp;Ryzen&nbsp;7&nbsp;7800X3D*               |               1.08 |          32 |          102 |              296 (44%) |               361 (27%) |               363 (27%) |
+| 🔴&nbsp;Ryzen&nbsp;7&nbsp;5700X3D*               |               0.87 |          32 |           51 |              229 (68%) |               135 (20%) |               173 (26%) |
+| 🔴&nbsp;FX-6100*                                 |               0.16 |          16 |           26 |               11 ( 7%) |                11 ( 3%) |                22 ( 7%) |
+| 🔴&nbsp;Athlon&nbsp;X2&nbsp;QL-65*               |               0.03 |           4 |           11 |                3 ( 4%) |                 2 ( 2%) |                 3 ( 2%) |
+| 🔵&nbsp;Xeon&nbsp;w9-3595X*                      |              15.36 |         256 |          307 |             1304 (65%) |              1179 (30%) |              1393 (35%) |
+| 🔵&nbsp;Xeon&nbsp;w7-3445*                       |               6.66 |         256 |          307 |             1173 (58%) |               518 (13%) |               613 (15%) |
+| 🔵&nbsp;Core&nbsp;Ultra&nbsp;X7&nbsp;358H        |               1.93 |          32 |          154 |              621 (62%) |               520 (26%) |               323 (16%) |
+| 🔵&nbsp;Core&nbsp;Ultra&nbsp;7&nbsp;258V         |               0.56 |          32 |          137 |              291 (33%) |               266 (15%) |               192 (11%) |
+| 🔵&nbsp;Core&nbsp;Ultra&nbsp;9&nbsp;185H*        |               1.79 |          16 |           90 |              317 (54%) |               267 (23%) |               288 (25%) |
+| 🔵&nbsp;Core&nbsp;Ultra&nbsp;9&nbsp;285K*        |               3.76 |          48 |           90 |              340 (58%) |               376 (32%) |               620 (53%) |
+| 🔵&nbsp;Core&nbsp;i9-14900K*                     |               3.74 |          32 |           96 |              443 (71%) |               453 (36%) |               490 (39%) |
+| 🔵&nbsp;Core&nbsp;i7-13700K                      |               2.51 |          64 |           90 |              504 (86%) |               676 (58%) |               484 (42%) |
+| 🔵&nbsp;Core&nbsp;i7-1265U                       |               1.23 |          32 |           77 |              235 (47%) |               189 (19%) |               126 (13%) |
+| 🔵&nbsp;Core&nbsp;i9-11900KB*                    |               0.84 |          32 |           51 |              109 (33%) |               195 (29%) |               208 (31%) |
+| 🔵&nbsp;Core&nbsp;i9-10980XE*                    |               3.23 |         128 |           94 |              286 (47%) |               251 (21%) |               223 (18%) |
+| 🔵&nbsp;Xeon&nbsp;E-2288G*                       |               0.95 |          32 |           43 |              196 (70%) |               182 (33%) |               198 (36%) |
+| 🔵&nbsp;Core&nbsp;i7-9700*                       |               0.77 |          64 |           43 |              103 (37%) |                62 (11%) |                95 (17%) |
+| 🔵&nbsp;Core&nbsp;i5-9600*                       |               0.60 |          16 |           43 |              146 (52%) |               127 (23%) |               147 (27%) |
+| 🔵&nbsp;Core&nbsp;i7-8700K                       |               0.71 |          16 |           51 |              152 (45%) |               178 (27%) |               177 (27%) |
+| 🔵&nbsp;Xeon&nbsp;E-2176G*                       |               0.71 |          64 |           42 |              201 (74%) |               136 (25%) |               148 (27%) |
+| 🔵&nbsp;Core&nbsp;i7-7700HQ*                     |               0.36 |          12 |           38 |               81 (32%) |                82 (16%) |               108 (22%) |
+| 🔵&nbsp;Xeon&nbsp;E3-1240&nbsp;v5*               |               0.50 |          32 |           34 |              141 (63%) |                75 (17%) |                88 (20%) |
+| 🔵&nbsp;Core&nbsp;i7-4771                        |               0.45 |          24 |           26 |              104 (62%) |                96 (29%) |                80 (24%) |
+| 🔵&nbsp;Core&nbsp;i7-4770*                       |               0.44 |          16 |           26 |              104 (62%) |                69 (21%) |                59 (18%) |
+| 🔵&nbsp;Core&nbsp;i7-4720HQ                      |               0.33 |          16 |           26 |               90 (54%) |                82 (25%) |                69 (21%) |
+| 🔵&nbsp;Celeron&nbsp;N2807*                      |               0.01 |           4 |           11 |                7 (10%) |                 3 ( 2%) |                 3 ( 2%) |
 
 </details>
 
