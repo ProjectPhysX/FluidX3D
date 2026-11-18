@@ -144,6 +144,7 @@ public:
 	void set_f(const float fx, const float fy, const float fz) { set_fx(fx); set_fy(fy); set_fz(fz); } // set global froce per volume
 
 	void voxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S, const float3& rotation_center=float3(0.0f), const float3& linear_velocity=float3(0.0f), const float3& rotational_velocity=float3(0.0f)); // voxelize mesh
+	void voxelize_sdf_on_device(const SDF* sdf, const float3& center, const float3x3& rotation, const float scale, const uchar flag); // voxelize SDF on GPU
 	void enqueue_unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // remove voxelized triangle mesh from LBM grid
 
 #ifdef GRAPHICS
@@ -542,6 +543,10 @@ public:
 	void voxelize_stl(const string& path, const float3x3& rotation, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center)
 	void voxelize_stl(const string& path, const float3& center, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (no rotation)
 	void voxelize_stl(const string& path, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center, no rotation)
+	void voxelize_sdf(const string& path, const float3& center, const float3x3& rotation, const float scale=1.0f, const uchar flag=TYPE_S); // read and voxelize binary SDF file
+	void voxelize_sdf(const string& path, const float3x3& rotation, const float scale=1.0f, const uchar flag=TYPE_S); // read and voxelize binary SDF file (place in box center)
+	void voxelize_sdf(const string& path, const float3& center, const float scale=1.0f, const uchar flag=TYPE_S); // read and voxelize binary SDF file (no rotation)
+	void voxelize_sdf(const string& path, const float scale=1.0f, const uchar flag=TYPE_S); // read and voxelize binary SDF file (place in box center, no rotation)
 
 #ifdef GRAPHICS
 	class Graphics {
