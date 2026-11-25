@@ -153,34 +153,34 @@ struct Device_Info {
 		const cl_bool* idpap_bits = (cl_bool*)&idpap; // on some unsupported devices, values are random, so only claim is_dp4a_capable if all bits are set correctly
 		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
-			uint major=0u, minor=0u;
+			uint major=0u, minor=0u; // https://github.com/ROCm/rocm-systems/blob/develop/projects/rocprofiler-compute/sample/mega_kernel/README.md
 			const int error_major = clGetDeviceInfo(cl_device(), CL_DEVICE_GFXIP_MAJOR_AMD, sizeof(uint), &major, 0); // cl_device.getInfo<CL_DEVICE_GFXIP_MAJOR_AMD>() doesn't compile
 			const int error_minor = clGetDeviceInfo(cl_device(), CL_DEVICE_GFXIP_MINOR_AMD, sizeof(uint), &minor, 0); // cl_device.getInfo<CL_DEVICE_GFXIP_MINOR_AMD>() doesn't compile
-			if(is_gpu&&error_major==0&&error_minor==0) amd_compute_capability = 100u*major+minor;
+			if(is_gpu&&error_major==0&&error_minor==0) amd_compute_capability = 100u*major+minor; // https://github.com/ROCm/rocm-systems/blob/develop/projects/rocprofiler-sdk/source/lib/common/defines.hpp#L71-L73
 			const bool is_full_profile = trim(cl_device.getInfo<CL_DEVICE_PROFILE>())=="FULL_PROFILE"; // rusticl reports "EMBEDDED_PROFILE"
 			const bool amd_dual_cu = is_gpu&&is_full_profile&&amd_compute_capability>=1000u; // identify RDNA/RDNA2/RDNA3/RDNA4 GPUs where dual CUs are reported
-			const bool amd_ipc_4 = is_gpu&&(amd_compute_capability==942u||amd_compute_capability==950u||amd_compute_capability>=1100u); // identify CDNA3/CDNA4 GPUs (ipc=4 for scalar float) and RDNA3/RDNA4 GPUs (can dual-issue float2)
+			const bool amd_ipc_4 = is_gpu&&(amd_compute_capability==904u||amd_compute_capability==905u||amd_compute_capability>=1100u); // identify CDNA3/CDNA4 GPUs (ipc=4 for scalar float) and RDNA3/RDNA4 GPUs (can dual-issue float2)
 			if(amd_dual_cu) compute_units *= 2u; // some AMD GPUs wrongly report the number of dual CUs as the number of CUs
 			if(amd_ipc_4) ipc = 4u; // some AMD GPUs support dual-issuging of float2 vector type, or have ipc=4 for scalar float
 			cores_per_cu = is_gpu ? 64.0f : 0.5f; // 64 cores/CU (GPUs), 1/2 core/CU (CPUs)
 			const string amd_device_name = trim(cl_device.getInfo<CL_DEVICE_BOARD_NAME_AMD>());
 			if(is_gpu&&length(amd_device_name)>0u) name = amd_device_name; // for AMD GPUs, CL_DEVICE_NAME wrongly outputs chip codename, and CL_DEVICE_BOARD_NAME_AMD outputs actual device name
 		} else if(vendor_id==0x8086) { // Intel GPU/CPU
-			const uint intel_device_ip_version = (uint)cl_device.getInfo<CL_DEVICE_IP_VERSION_INTEL>()&0xFFFFC03Fu; // bits 22-31: major, bits 14-21: minor, bits 0-5: revision, https://github.com/openvinotoolkit/openvino/blob/master/src/plugins/intel_gpu/src/runtime/ocl/ocl_device.cpp#L150-L158
-			intel_compute_capability = 100000u*(intel_device_ip_version>>22)+100u*((intel_device_ip_version>>14)&0xFFu)+(intel_device_ip_version&0x3Fu); // for example 2000100 means compute capability 20.001.00, https://github.com/intel/compute-runtime/blob/master/third_party/aot_config_headers/platforms.h
+			const uint intel_device_ip_version = (uint)cl_device.getInfo<CL_DEVICE_IP_VERSION_INTEL>()&0xFFFFC03Fu; // bits 22-31: major, bits 14-21: minor, bits 0-5: revision, https://github.com/intel/compute-runtime/blob/master/third_party/aot_config_headers/platforms.h
+			intel_compute_capability = 100000u*(intel_device_ip_version>>22)+100u*((intel_device_ip_version>>14)&0xFFu)+(intel_device_ip_version&0x3Fu); // for example 2000100 means compute capability 20.001.00, https://github.com/openvinotoolkit/openvino/blob/master/src/plugins/intel_gpu/src/runtime/ocl/ocl_device.cpp
 			const bool intel_16_cores_per_cu = (intel_compute_capability>=1206000u&&intel_compute_capability<1207000u)||(intel_compute_capability>=2000000u); // (PVC/Xe2/Xe3)
 			cores_per_cu = is_gpu ? (intel_16_cores_per_cu ? 16.0f : 8.0f) : 0.5f; // Intel GPUs have 16 cores/CU (PVC/Xe2/Xe3) or 8 cores/CU (Xe1), Intel CPUs (with HT) have 1/2 core/CU
 			if(is_gpu&&!uses_ram) { // fix wrong global memory capacity reporting for Intel dGPUs
 #if defined(_WIN32)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp#L953
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*50ull/49ull)/1048576ull); // 98% on Windows https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/windows/wddm_memory_manager.cpp
 #elif defined(__linux__)
-				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp#L1547
+				memory = (uint)((cl_device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()*20ull/19ull)/1048576ull); // 95% on Linux   https://github.com/intel/compute-runtime/blob/master/shared/source/os_interface/linux/drm_memory_manager.cpp
 #endif // Linux
 			}
 			patch_intel_gpu_above_4gb = patch_intel_gpu_above_4gb||(is_gpu&&memory>4096u); // enable memory allocations greater than 4GB for Intel GPUs with >4GB VRAM
 			if(is_cpu) is_dp4a_capable = 0u; // native dp4a in Intel CPU Runtime for OpenCL is slower than emulated dp4a
 		} else if(vendor_id==0x10DE||vendor_id==0x13B5) { // Nvidia GPU/CPU
-			if(is_gpu) nvidia_compute_capability = 10u*(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV>()+(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV>();
+			if(is_gpu) nvidia_compute_capability = 10u*(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV>()+(uint)cl_device.getInfo<CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV>(); // https://developer.nvidia.com/cuda/gpus/legacy https://developer.nvidia.com/cuda/gpus
 			const bool nvidia__32_cores_per_cu = (nvidia_compute_capability <30u); // identify Fermi GPUs
 			const bool nvidia_192_cores_per_cu = (nvidia_compute_capability>=30u&&nvidia_compute_capability< 50u); // identify Kepler GPUs
 			const bool nvidia__64_cores_per_cu = (nvidia_compute_capability>=70u&&nvidia_compute_capability<=80u)||nvidia_compute_capability==60u; // identify Volta, Turing, P100, A100, A30
