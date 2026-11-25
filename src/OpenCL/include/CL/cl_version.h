@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018-2020 The Khronos Group Inc.
+ * Copyright (c) 2018-2026 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 
 /* Detect which version to target */
 #if !defined(CL_TARGET_OPENCL_VERSION)
-#pragma message("cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)")
-#define CL_TARGET_OPENCL_VERSION 300
+#pragma message("cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 310 (OpenCL 3.1)")
+#define CL_TARGET_OPENCL_VERSION 310
 #endif
 #if CL_TARGET_OPENCL_VERSION != 100 && \
     CL_TARGET_OPENCL_VERSION != 110 && \
@@ -28,14 +28,18 @@
     CL_TARGET_OPENCL_VERSION != 200 && \
     CL_TARGET_OPENCL_VERSION != 210 && \
     CL_TARGET_OPENCL_VERSION != 220 && \
-    CL_TARGET_OPENCL_VERSION != 300
-#pragma message("cl_version: CL_TARGET_OPENCL_VERSION is not a valid value (100, 110, 120, 200, 210, 220, 300). Defaulting to 300 (OpenCL 3.0)")
+    CL_TARGET_OPENCL_VERSION != 300 && \
+    CL_TARGET_OPENCL_VERSION != 310
+#pragma message("cl_version: CL_TARGET_OPENCL_VERSION is not a valid value (100, 110, 120, 200, 210, 220, 300, 310). Defaulting to 310 (OpenCL 3.1)")
 #undef CL_TARGET_OPENCL_VERSION
-#define CL_TARGET_OPENCL_VERSION 300
+#define CL_TARGET_OPENCL_VERSION 310
 #endif
 
 
 /* OpenCL Version */
+#if CL_TARGET_OPENCL_VERSION >= 310 && !defined(CL_VERSION_3_1)
+#define CL_VERSION_3_1  1
+#endif
 #if CL_TARGET_OPENCL_VERSION >= 300 && !defined(CL_VERSION_3_0)
 #define CL_VERSION_3_0  1
 #endif

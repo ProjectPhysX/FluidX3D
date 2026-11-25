@@ -106,6 +106,7 @@ struct Device_Info {
 	uint is_fp64_capable=0u, is_fp32_capable=0u, is_fp16_capable=0u, is_int64_capable=0u, is_int32_capable=0u, is_int16_capable=0u, is_int8_capable=0u, is_dp4a_capable=0u;
 	uint cores = 0u; // for CPUs, compute_units is the number of threads (twice the number of cores with hyperthreading)
 	float tflops = 0.0f; // estimated device FP32 floating point performance in TeraFLOPs/s
+	uint amd_compute_capability = 0u; // compute capability for AMD GPUs
 	uint intel_compute_capability = 0u; // compute capability for Intel GPUs, for example intel_compute_capability=2000100 means compute capability 20.001.00
 	uint nvidia_compute_capability = 0u; // compute capability for Nvidia GPUs, for example nvidia_compute_capability=61 means compute capability 6.1
 	bool patch_intel_gpu_above_4gb = false; // memory allocations greater than 4GB need to be specifically enabled on Intel GPUs
@@ -152,9 +153,13 @@ struct Device_Info {
 		const cl_bool* idpap_bits = (cl_bool*)&idpap; // on some unsupported devices, values are random, so only claim is_dp4a_capable if all bits are set correctly
 		is_dp4a_capable = is_dp4a_capable&&dp4a_error==0&&idpap_bits[0]==1&&idpap_bits[1]==1&&idpap_bits[2]==1&&idpap_bits[3]==1&&idpap_bits[4]==1&&idpap_bits[5]==1;
 		if(vendor_id==0x1002) { // AMD GPU/CPU
+			uint major=0u, minor=0u;
+			const int error_major = clGetDeviceInfo(cl_device(), CL_DEVICE_GFXIP_MAJOR_AMD, sizeof(uint), &major, 0); // cl_device.getInfo<CL_DEVICE_GFXIP_MAJOR_AMD>() doesn't compile
+			const int error_minor = clGetDeviceInfo(cl_device(), CL_DEVICE_GFXIP_MINOR_AMD, sizeof(uint), &minor, 0); // cl_device.getInfo<CL_DEVICE_GFXIP_MINOR_AMD>() doesn't compile
+			if(is_gpu&&error_major==0&&error_minor==0) amd_compute_capability = 100u*major+minor;
 			const bool is_full_profile = trim(cl_device.getInfo<CL_DEVICE_PROFILE>())=="FULL_PROFILE"; // rusticl reports "EMBEDDED_PROFILE"
-			const bool amd_dual_cu = is_gpu&&is_full_profile&&contains_any(to_lower(name), {"gfx10", "gfx11", "gfx12"}); // identify RDNA/RDNA2/RDNA3/RDNA4 GPUs where dual CUs are reported
-			const bool amd_ipc_4 = is_gpu&&contains_any(to_lower(name), {"gfx11", "gfx12", "gfx942", "gfx950"}); // identify RDNA3/RDNA4 GPUs (can dual-issue float2) and CDNA3/CDNA4 GPUs (ipc=4 for scalar float)
+			const bool amd_dual_cu = is_gpu&&is_full_profile&&amd_compute_capability>=1000u; // identify RDNA/RDNA2/RDNA3/RDNA4 GPUs where dual CUs are reported
+			const bool amd_ipc_4 = is_gpu&&(amd_compute_capability==942u||amd_compute_capability==950u||amd_compute_capability>=1100u); // identify CDNA3/CDNA4 GPUs (ipc=4 for scalar float) and RDNA3/RDNA4 GPUs (can dual-issue float2)
 			if(amd_dual_cu) compute_units *= 2u; // some AMD GPUs wrongly report the number of dual CUs as the number of CUs
 			if(amd_ipc_4) ipc = 4u; // some AMD GPUs support dual-issuging of float2 vector type, or have ipc=4 for scalar float
 			cores_per_cu = is_gpu ? 64.0f : 0.5f; // 64 cores/CU (GPUs), 1/2 core/CU (CPUs)
@@ -303,6 +308,7 @@ private:
 	inline string enable_device_capabilities() const { return // enable FP64/FP16 capabilities if available
 		string(info.patch_nvidia_fp16         ? "\n #define cl_khr_fp16"                : "")+ // Nvidia Pascal and newer GPUs with driver>=520.00 don't report cl_khr_fp16, but do support basic FP16 arithmetic
 		string(info.patch_legacy_gpu_fma      ? "\n #define fma(a, b, c) ((a)*(b)+(c))" : "")+ // some old GPUs have terrible fma performance, so replace with a*b+c
+		string(info.amd_compute_capability    ? "\n #define cl_amd_compute_capability "+to_string(info.amd_compute_capability) : "")+ // allows querying AMD compute capability
 		string(info.intel_compute_capability  ? "\n #define cl_intel_compute_capability "+to_string(info.intel_compute_capability) : "")+ // allows querying Intel compute capability
 		string(info.nvidia_compute_capability ? "\n #define cl_nv_compute_capability "+to_string(info.nvidia_compute_capability) : "")+ // allows querying Nvidia compute capability for inline PTX assembly
 		string(info.is_dp4a_capable==0u       ? "\n #undef __opencl_c_integer_dot_product_input_4x8bit\n #undef __opencl_c_integer_dot_product_input_4x8bit_packed" : "")+ // patch false dp4a reporting on Intel
