@@ -217,6 +217,7 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 #else // unknown operating system
 	const string os = "unknown operating system";
 #endif // operating system
+	const string cc = ", compute capability ";
 	println("\r|----------------.------------------------------------------------------------|");
 	println("| Device ID      | "+alignl(58, to_string(d.id)                             )+" |");
 	println("| Device Name    | "+alignl(58, d.name                                      )+" |");
@@ -226,7 +227,7 @@ inline void print_device_info(const Device_Info& d) { // print OpenCL device inf
 	println("| Compute Units  | "+alignl(58, to_string(d.compute_units)+" at "+to_string(d.clock_frequency)+" MHz ("+to_string(d.cores)+" cores, "+to_string(d.tflops, 3)+" TFLOPs/s)")+" |");
 	println("| Memory, Cache  | "+alignl(58, to_string(d.memory)+" MB "+(d.uses_ram ? "" : "V")+"RAM, "+to_string(d.global_cache)+" KB global / "+to_string(d.local_cache)+" KB local")+" |");
 	println("| Buffer Limits  | "+alignl(58, to_string(d.max_global_buffer)+" MB global, "+to_string(d.max_constant_buffer)+" KB constant")+" |");
-	println("| Max Workgroup  | "+alignl(58, to_string(d.max_workgroup_size)+" threads")+" |");
+	println("| Capabilities   | "+alignl(58, "max "+to_string(d.max_workgroup_size)+" threads/WG"+(d.amd_compute_capability ? cc+to_string(d.amd_compute_capability)+" (AMD)" : d.intel_compute_capability ? cc+to_string(d.intel_compute_capability)+" (Intel)" : d.nvidia_compute_capability ? cc+to_string(d.nvidia_compute_capability)+" (Nvidia)" : ""))+" |");
 	println("|----------------'------------------------------------------------------------|");
 }
 inline vector<Device_Info> get_devices(const bool print_info=true) { // returns a vector of all available OpenCL devices
