@@ -2383,6 +2383,94 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 } // voxelize_mesh()
 
+)+R(kernel void voxelize_sdf)+"("+R(global uchar* flags, const uchar flag, const global float* sdf_data, const global float* sdf_params)+") {"+R( // voxelize_sdf()
+	const uxx n = get_global_id(0);
+	if(n>=(uxx)def_N) return;
+
+	// Unpack parameters
+	const uint sdf_Nx = as_uint(sdf_params[0]);
+	const uint sdf_Ny = as_uint(sdf_params[1]);
+	const uint sdf_Nz = as_uint(sdf_params[2]);
+	const float sdf_cell_size = sdf_params[3];
+	const float3 sdf_origin = (float3)(sdf_params[4], sdf_params[5], sdf_params[6]);
+	const float3 center_lbm = (float3)(sdf_params[7], sdf_params[8], sdf_params[9]);
+	const float world_to_lbm = sdf_params[10];
+	// Inverse rotation matrix (row-major)
+	const float3 rot_row0 = (float3)(sdf_params[11], sdf_params[12], sdf_params[13]);
+	const float3 rot_row1 = (float3)(sdf_params[14], sdf_params[15], sdf_params[16]);
+	const float3 rot_row2 = (float3)(sdf_params[17], sdf_params[18], sdf_params[19]);
+
+	// Get LBM coordinates
+	const uint3 xyz = coordinates(n);
+	const float3 lbm_pos = (float3)(xyz.x + 0.5f, xyz.y + 0.5f, xyz.z + 0.5f);
+
+	// Transform LBM -> World -> SDF coordinates
+	// 1. Compute offset from LBM center
+	const float3 offset_lbm = (lbm_pos - center_lbm) / world_to_lbm;
+	// 2. Apply inverse rotation to get offset in SDF world space
+	const float3 offset_world = (float3)(dot(rot_row0, offset_lbm), dot(rot_row1, offset_lbm), dot(rot_row2, offset_lbm));
+	// 3. Add SDF world center to get world position
+	const float3 sdf_world_size = (float3)(sdf_Nx, sdf_Ny, sdf_Nz) * sdf_cell_size;
+	const float3 sdf_world_center = sdf_origin + 0.5f * sdf_world_size;
+	const float3 world_pos = offset_world + sdf_world_center;
+	// 4. Convert to SDF grid coordinates
+	const float3 sdf_coord = (world_pos - sdf_origin) / sdf_cell_size;
+
+	// Check bounds
+	if(sdf_coord.x < 0.0f || sdf_coord.x >= (float)(sdf_Nx-1u) ||
+	   sdf_coord.y < 0.0f || sdf_coord.y >= (float)(sdf_Ny-1u) ||
+	   sdf_coord.z < 0.0f || sdf_coord.z >= (float)(sdf_Nz-1u)) {
+		return;  // Outside SDF bounds
+	}
+
+	// Trilinear interpolation
+	const uint x0 = (uint)sdf_coord.x;
+	const uint y0 = (uint)sdf_coord.y;
+	const uint z0 = (uint)sdf_coord.z;
+	const uint x1 = min(x0 + 1u, sdf_Nx - 1u);
+	const uint y1 = min(y0 + 1u, sdf_Ny - 1u);
+	const uint z1 = min(z0 + 1u, sdf_Nz - 1u);
+
+	const float fx = sdf_coord.x - (float)x0;
+	const float fy = sdf_coord.y - (float)y0;
+	const float fz = sdf_coord.z - (float)z0;
+
+	// Sample SDF at 8 corners (SDF uses x + Nx*(y + Ny*z) indexing)
+	const ulong sdf_index_000 = (ulong)x0 + (ulong)sdf_Nx * ((ulong)y0 + (ulong)sdf_Ny * (ulong)z0);
+	const ulong sdf_index_001 = (ulong)x0 + (ulong)sdf_Nx * ((ulong)y0 + (ulong)sdf_Ny * (ulong)z1);
+	const ulong sdf_index_010 = (ulong)x0 + (ulong)sdf_Nx * ((ulong)y1 + (ulong)sdf_Ny * (ulong)z0);
+	const ulong sdf_index_011 = (ulong)x0 + (ulong)sdf_Nx * ((ulong)y1 + (ulong)sdf_Ny * (ulong)z1);
+	const ulong sdf_index_100 = (ulong)x1 + (ulong)sdf_Nx * ((ulong)y0 + (ulong)sdf_Ny * (ulong)z0);
+	const ulong sdf_index_101 = (ulong)x1 + (ulong)sdf_Nx * ((ulong)y0 + (ulong)sdf_Ny * (ulong)z1);
+	const ulong sdf_index_110 = (ulong)x1 + (ulong)sdf_Nx * ((ulong)y1 + (ulong)sdf_Ny * (ulong)z0);
+	const ulong sdf_index_111 = (ulong)x1 + (ulong)sdf_Nx * ((ulong)y1 + (ulong)sdf_Ny * (ulong)z1);
+
+	const float c000 = sdf_data[sdf_index_000];
+	const float c001 = sdf_data[sdf_index_001];
+	const float c010 = sdf_data[sdf_index_010];
+	const float c011 = sdf_data[sdf_index_011];
+	const float c100 = sdf_data[sdf_index_100];
+	const float c101 = sdf_data[sdf_index_101];
+	const float c110 = sdf_data[sdf_index_110];
+	const float c111 = sdf_data[sdf_index_111];
+
+	// Trilinear interpolation
+	const float c00 = c000 * (1.0f - fx) + c100 * fx;
+	const float c01 = c001 * (1.0f - fx) + c101 * fx;
+	const float c10 = c010 * (1.0f - fx) + c110 * fx;
+	const float c11 = c011 * (1.0f - fx) + c111 * fx;
+
+	const float c0 = c00 * (1.0f - fy) + c10 * fy;
+	const float c1 = c01 * (1.0f - fy) + c11 * fy;
+
+	const float sdf_value = c0 * (1.0f - fz) + c1 * fz;
+
+	// Mark as solid if inside (negative SDF)
+	if(sdf_value <= 0.0f) {
+		flags[n] = (flags[n] & ~TYPE_BO) | flag;
+	}
+} // voxelize_sdf()
+
 )+R(kernel void unvoxelize_mesh(global uchar* flags, const uchar flag, float x0, float y0, float z0, float x1, float y1, float z1) { // remove voxelized triangle mesh
 	const uxx n = get_global_id(0);
 	const float3 p = position(coordinates(n))+(float3)(0.5f*(float)((int)def_Nx+2*def_Ox)-0.5f, 0.5f*(float)((int)def_Ny+2*def_Oy)-0.5f, 0.5f*(float)((int)def_Nz+2*def_Oz)-0.5f);
